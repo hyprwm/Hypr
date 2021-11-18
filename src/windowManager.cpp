@@ -33,6 +33,10 @@ bool WindowManager::handleEvent() {
                 Events::eventEnter(ev);
                 Debug::log(LOG, "Event dispatched ENTER");
                 break;
+            case XCB_LEAVE_NOTIFY:
+                Events::eventLeave(ev);
+                Debug::log(LOG, "Event dispatched LEAVE");
+                break;
             case XCB_DESTROY_NOTIFY:
                 Events::eventDestroy(ev);
                 Debug::log(LOG, "Event dispatched DESTROY");
@@ -61,13 +65,34 @@ bool WindowManager::handleEvent() {
 void WindowManager::refreshDirtyWindows() {
     for(auto& window : windows) {
         if (window.getDirty()) {
-            Values[0] = (int)window.getSize().x;
-            Values[1] = (int)window.getSize().y;
+            Values[0] = (int)window.getEffectiveSize().x;
+            Values[1] = (int)window.getEffectiveSize().y;
             xcb_configure_window(WindowManager::DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, Values);
 
-            Values[0] = (int)window.getPosition().x;
-            Values[1] = (int)window.getPosition().y;
+            Values[0] = (int)window.getEffectivePosition().x;
+            Values[1] = (int)window.getEffectivePosition().y;
             xcb_configure_window(WindowManager::DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, Values);
+
+            // Focused special border.
+            if (window.getDrawable() == WindowManager::LastWindow) {
+                Values[0] = (int)BORDERSIZE;
+                xcb_configure_window(WindowManager::DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_BORDER_WIDTH, Values);
+
+                // Update the position because the border makes the window jump
+                // I have added the bordersize vec2d before in the setEffectiveSizePosUsingConfig function.
+                Values[0] = (int)window.getEffectivePosition().x - BORDERSIZE;
+                Values[1] = (int)window.getEffectivePosition().y - BORDERSIZE;
+                xcb_configure_window(WindowManager::DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, Values);
+
+                Values[0] = 0xFF3333;  // RED :)
+                xcb_change_window_attributes(WindowManager::DisplayConnection, window.getDrawable(), XCB_CW_BORDER_PIXEL, Values);
+            } else {
+                Values[0] = 0;
+                xcb_configure_window(WindowManager::DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_BORDER_WIDTH, Values);
+
+                Values[0] = 0x555555;  // GRAY :)
+                xcb_change_window_attributes(WindowManager::DisplayConnection, window.getDrawable(), XCB_CW_BORDER_PIXEL, Values);
+            }
 
             window.setDirty(false);
 
@@ -79,6 +104,11 @@ void WindowManager::refreshDirtyWindows() {
 void WindowManager::setFocusedWindow(xcb_drawable_t window) {
     if (window && window != WindowManager::Screen->root) {
         xcb_set_input_focus(WindowManager::DisplayConnection, XCB_INPUT_FOCUS_POINTER_ROOT, window, XCB_CURRENT_TIME);
+
+        // Fix border from the old window that was in focus.
+        if (const auto PLASTWINDOW = WindowManager::getWindowFromDrawable(WindowManager::LastWindow); PLASTWINDOW)
+            PLASTWINDOW->setDirty(true);
+
         WindowManager::LastWindow = window;
     }
 }
@@ -120,6 +150,17 @@ void WindowManager::removeWindowFromVectorSafe(xcb_drawable_t window) {
     }
 }
 
+void setEffectiveSizePosUsingConfig(CWindow* pWindow) {
+    // for now only border.
+    // todo: gaps.
+
+    if (!pWindow)
+        return;
+
+    pWindow->setEffectivePosition(pWindow->getPosition() + Vector2D(BORDERSIZE, BORDERSIZE));
+    pWindow->setEffectiveSize(pWindow->getSize() - (Vector2D(BORDERSIZE, BORDERSIZE) * 2));
+}
+
 void calculateNewTileSetOldTile(CWindow* pWindow) {
     const auto PLASTWINDOW = WindowManager::getWindowFromDrawable(WindowManager::LastWindow);
     if (PLASTWINDOW) {
@@ -142,6 +183,9 @@ void calculateNewTileSetOldTile(CWindow* pWindow) {
         pWindow->setSize(Vector2D(WindowManager::Screen->width_in_pixels, WindowManager::Screen->height_in_pixels));
         pWindow->setPosition(Vector2D(0, 0));
     }
+
+    setEffectiveSizePosUsingConfig(pWindow);
+    setEffectiveSizePosUsingConfig(PLASTWINDOW);
 }
 
 void WindowManager::calculateNewWindowParams(CWindow* pWindow) {
@@ -218,9 +262,11 @@ void WindowManager::fixWindowOnClose(CWindow* pClosedWindow) {
     if (!neighbor)
         return; // No neighbor. Don't update, easy.
 
-
     // update neighbor to "eat" closed.
     eatWindow(neighbor, pClosedWindow);
 
     neighbor->setDirty(true);
+    WindowManager::setFocusedWindow(neighbor->getDrawable()); // Set focus. :)
+
+    setEffectiveSizePosUsingConfig(neighbor);
 }

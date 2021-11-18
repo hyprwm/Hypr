@@ -10,6 +10,12 @@ void Events::eventEnter(xcb_generic_event_t* event) {
     WindowManager::getWindowFromDrawable(E->event)->setDirty(true);
 }
 
+void Events::eventLeave(xcb_generic_event_t* event) {
+    const auto E = reinterpret_cast<xcb_leave_notify_event_t*>(event);
+
+    //
+}
+
 void Events::eventDestroy(xcb_generic_event_t* event) {
     const xcb_destroy_notify_event_t* E = reinterpret_cast<xcb_destroy_notify_event_t*>(event);
     xcb_kill_client(WindowManager::DisplayConnection, E->window);

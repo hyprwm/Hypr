@@ -5,6 +5,12 @@
 
 #include <vector>
 
+
+// temp config values
+#define BORDERSIZE 1
+#define GAPS_IN 10
+#define GAPS_OUT 20
+
 namespace WindowManager {
     inline xcb_connection_t*    DisplayConnection;
     inline xcb_screen_t*        Screen;

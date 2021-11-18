@@ -3,6 +3,7 @@
 
 namespace Events {
     EVENT(Enter);
+    EVENT(Leave);
     EVENT(Destroy);
     EVENT(MapWindow);
 };
