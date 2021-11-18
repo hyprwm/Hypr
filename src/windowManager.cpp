@@ -204,7 +204,7 @@ bool isNeighbor(CWindow* a, CWindow* b) {
     const auto POSA = a->getPosition();
     const auto POSB = b->getPosition();
     const auto SIZEA = a->getSize();
-    const auto SIZEB = a->getSize();
+    const auto SIZEB = b->getSize();
 
     if (POSA.x != 0) {
         if (STICKS(POSA.x, (POSB.x + SIZEB.x))) {
