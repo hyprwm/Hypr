@@ -17,7 +17,7 @@ void Events::eventLeave(xcb_generic_event_t* event) {
 }
 
 void Events::eventDestroy(xcb_generic_event_t* event) {
-    const xcb_destroy_notify_event_t* E = reinterpret_cast<xcb_destroy_notify_event_t*>(event);
+    const auto E = reinterpret_cast<xcb_destroy_notify_event_t*>(event);
     xcb_kill_client(WindowManager::DisplayConnection, E->window);
 
     // fix last window
@@ -31,7 +31,7 @@ void Events::eventDestroy(xcb_generic_event_t* event) {
 }
 
 void Events::eventMapWindow(xcb_generic_event_t* event) {
-    const xcb_map_request_event_t* E = reinterpret_cast<xcb_map_request_event_t*>(event);
+    const auto E = reinterpret_cast<xcb_map_request_event_t*>(event);
 
     // Map the window
     xcb_map_window(WindowManager::DisplayConnection, E->window);
