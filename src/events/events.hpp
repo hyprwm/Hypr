@@ -6,4 +6,5 @@ namespace Events {
     EVENT(Leave);
     EVENT(Destroy);
     EVENT(MapWindow);
+    EVENT(KeyPress);
 };

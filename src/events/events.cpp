@@ -60,3 +60,15 @@ void Events::eventMapWindow(xcb_generic_event_t* event) {
  
     WindowManager::setFocusedWindow(E->window);
 }
+
+void Events::eventKeyPress(xcb_generic_event_t* event) {
+    const auto E = reinterpret_cast<xcb_key_press_event_t*>(event);
+
+    const auto KEYSYM = KeybindManager::getKeysymFromKeycode(E->detail);
+
+    for (auto& keybind : KeybindManager::keybinds) {
+        if (keybind.getKeysym() != 0 && keybind.getKeysym() == KEYSYM && KeybindManager::modToMask(keybind.getMod()) == E->state) {
+            keybind.getDispatcher()(keybind.getCommand());
+        }
+    }
+}

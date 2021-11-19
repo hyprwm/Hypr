@@ -2,23 +2,31 @@
 #include "./events/events.hpp"
 
 void WindowManager::setupManager() {
+    KeybindManager::reloadAllKeybinds();
+
     WindowManager::Values[0] = XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_STRUCTURE_NOTIFY | XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY | XCB_EVENT_MASK_PROPERTY_CHANGE;
     xcb_change_window_attributes_checked(WindowManager::DisplayConnection, WindowManager::Screen->root,
                                          XCB_CW_EVENT_MASK, WindowManager::Values);
     xcb_ungrab_key(WindowManager::DisplayConnection, XCB_GRAB_ANY, WindowManager::Screen->root, XCB_MOD_MASK_ANY);
-    /*int key_table_size = sizeof(keys) / sizeof(*keys);
-    for (int i = 0; i < key_table_size; ++i) {
-        xcb_keycode_t *keycode = xcb_get_keycodes(keys[i].keysym);
-        if (keycode != NULL) {
-            xcb_grab_key(WindowManager::DisplayConnection, 1, WindowManager::Screen->root, keys[i].mod, *keycode,
-                         XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
-        }
+
+    for (auto& keybind : KeybindManager::keybinds) {
+        xcb_grab_key(WindowManager::DisplayConnection, 1, WindowManager::Screen->root,
+            KeybindManager::modToMask(keybind.getMod()), KeybindManager::getKeycodeFromKeysym(keybind.getKeysym()),
+            XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
     }
+
     xcb_flush(WindowManager::DisplayConnection);
-    xcb_grab_button(WindowManager::DisplayConnection, 0, WindowManager::Screen->root, XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE, XCB_GRAB_MODE_ASYNC,
-                    XCB_GRAB_MODE_ASYNC, WindowManager::Screen->root, XCB_NONE, 1, MOD1);
-    xcb_grab_button(WindowManager::DisplayConnection, 0, WindowManager::Screen->root, XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE, XCB_GRAB_MODE_ASYNC,
-                    XCB_GRAB_MODE_ASYNC, WindowManager::Screen->root, XCB_NONE, 3, MOD1);*/
+
+    xcb_grab_button(WindowManager::DisplayConnection, 0,
+        WindowManager::Screen->root, XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE,
+        XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, WindowManager::Screen->root, XCB_NONE,
+        1, KeybindManager::modToMask(MOD_SUPER));
+    
+    xcb_grab_button(WindowManager::DisplayConnection, 0,
+        WindowManager::Screen->root, XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE,
+        XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, WindowManager::Screen->root, XCB_NONE,
+        3, KeybindManager::modToMask(MOD_SUPER));
+    
     xcb_flush(WindowManager::DisplayConnection);
 }
 
@@ -26,7 +34,7 @@ bool WindowManager::handleEvent() {
     if (xcb_connection_has_error(WindowManager::DisplayConnection))
         return false;
 
-    xcb_generic_event_t* ev = xcb_wait_for_event(WindowManager::DisplayConnection);
+    const auto ev = xcb_wait_for_event(WindowManager::DisplayConnection);
     if (ev != NULL) {
         switch (ev->response_type & ~0x80) {
             case XCB_ENTER_NOTIFY:
@@ -44,6 +52,11 @@ bool WindowManager::handleEvent() {
             case XCB_MAP_REQUEST:
                 Events::eventMapWindow(ev);
                 Debug::log(LOG, "Event dispatched MAP");
+                break;
+            case XCB_KEY_PRESS:
+            case XCB_BUTTON_PRESS:
+                Events::eventKeyPress(ev);
+                Debug::log(LOG, "Event dispatched KEYPRESS");
                 break;
 
             default:

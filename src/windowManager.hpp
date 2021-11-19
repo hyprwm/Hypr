@@ -5,6 +5,8 @@
 
 #include <vector>
 
+#include "KeybindManager.hpp"
+
 
 // temp config values
 #define BORDERSIZE 1
