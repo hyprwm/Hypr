@@ -151,14 +151,25 @@ void WindowManager::removeWindowFromVectorSafe(xcb_drawable_t window) {
 }
 
 void setEffectiveSizePosUsingConfig(CWindow* pWindow) {
-    // for now only border.
-    // todo: gaps.
 
     if (!pWindow)
         return;
 
+    // set some flags.
+    const bool DISPLAYLEFT          = pWindow->getPosition().x == 0;
+    const bool DISPLAYRIGHT         = pWindow->getPosition().x + pWindow->getSize().x == WindowManager::Screen->width_in_pixels;
+    const bool DISPLAYTOP           = pWindow->getPosition().y == 0;
+    const bool DISPLAYBOTTOM        = pWindow->getPosition().y + pWindow->getSize().y == WindowManager::Screen->height_in_pixels;
+
     pWindow->setEffectivePosition(pWindow->getPosition() + Vector2D(BORDERSIZE, BORDERSIZE));
     pWindow->setEffectiveSize(pWindow->getSize() - (Vector2D(BORDERSIZE, BORDERSIZE) * 2));
+
+    // do gaps, set top left
+    pWindow->setEffectivePosition(pWindow->getEffectivePosition() + Vector2D(DISPLAYLEFT ? GAPS_OUT : GAPS_IN, DISPLAYTOP ? GAPS_OUT : GAPS_IN));
+    // fix to old size bottom right
+    pWindow->setEffectiveSize(pWindow->getEffectiveSize() - Vector2D(DISPLAYLEFT ? GAPS_OUT : GAPS_IN, DISPLAYTOP ? GAPS_OUT : GAPS_IN));
+    // set bottom right
+    pWindow->setEffectiveSize(pWindow->getEffectiveSize() - Vector2D(DISPLAYRIGHT ? GAPS_OUT : GAPS_IN, DISPLAYBOTTOM ? GAPS_OUT : GAPS_IN));
 }
 
 void calculateNewTileSetOldTile(CWindow* pWindow) {
@@ -231,6 +242,36 @@ bool isNeighbor(CWindow* a, CWindow* b) {
     return false;
 }
 
+bool canEatWindow(CWindow* a, CWindow* toEat) {
+    // Pos is min of both.
+    const auto POSAFTEREAT = Vector2D(std::min(a->getPosition().x, toEat->getPosition().x), std::min(a->getPosition().y, toEat->getPosition().y));
+
+    // Size is pos + size max - pos
+    const auto OPPCORNERA = Vector2D(POSAFTEREAT) + a->getSize();
+    const auto OPPCORNERB = toEat->getPosition() + toEat->getSize();
+
+    const auto SIZEAFTEREAT = Vector2D(std::max(OPPCORNERA.x, OPPCORNERB.x), std::max(OPPCORNERA.y, OPPCORNERB.y)) - POSAFTEREAT;
+
+    const auto doOverlap = [&](CWindow* b) {
+        const auto RIGHT1 = Vector2D(POSAFTEREAT.x + SIZEAFTEREAT.x, POSAFTEREAT.y + SIZEAFTEREAT.y);
+        const auto RIGHT2 = b->getPosition() + b->getSize();
+        const auto LEFT1 = POSAFTEREAT;
+        const auto LEFT2 = b->getPosition();
+
+        return !(LEFT1.x >= RIGHT2.x || LEFT2.x >= RIGHT1.x || LEFT1.y >= RIGHT2.y || LEFT2.y >= RIGHT1.y);
+    };
+
+    for (auto& w : WindowManager::windows) {
+        if (w.getDrawable() == a->getDrawable() || w.getDrawable() == toEat->getDrawable())
+            continue;
+
+        if (doOverlap(&w))
+            return false;
+    }
+
+    return true;
+}
+
 void eatWindow(CWindow* a, CWindow* toEat) {
 
     // Pos is min of both.
@@ -253,7 +294,7 @@ void WindowManager::fixWindowOnClose(CWindow* pClosedWindow) {
         if (w.getDrawable() == pClosedWindow->getDrawable())
             continue;
 
-        if (isNeighbor(&w, pClosedWindow)) {
+        if (isNeighbor(&w, pClosedWindow) && canEatWindow(&w, pClosedWindow)) {
             neighbor = &w;
             break;
         }

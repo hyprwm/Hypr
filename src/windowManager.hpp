@@ -8,7 +8,7 @@
 
 // temp config values
 #define BORDERSIZE 1
-#define GAPS_IN 10
+#define GAPS_IN 5
 #define GAPS_OUT 20
 
 namespace WindowManager {
