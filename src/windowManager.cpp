@@ -60,7 +60,7 @@ bool WindowManager::handleEvent() {
                 break;
 
             default:
-                Debug::log(WARN, "Unknown event: " + std::to_string(ev->response_type & ~0x80));
+                //Debug::log(WARN, "Unknown event: " + std::to_string(ev->response_type & ~0x80));
                 break;
         }
 
@@ -364,6 +364,22 @@ CWindow* getNeighborInDir(char dir) {
     return nullptr;
 }
 
+// I don't know if this works, it might be an issue with my nested Xorg session I am using rn to test this.
+// Will check later.
+// TODO:
+void WindowManager::warpCursorTo(Vector2D to) {
+    const auto POINTERCOOKIE = xcb_query_pointer(WindowManager::DisplayConnection, WindowManager::Screen->root);
+
+    xcb_query_pointer_reply_t* pointerreply = xcb_query_pointer_reply(WindowManager::DisplayConnection, POINTERCOOKIE, NULL);
+    if (!pointerreply) {
+        Debug::log(ERR, "Couldn't query pointer.");
+        return;
+    }
+
+    xcb_warp_pointer(WindowManager::DisplayConnection, XCB_NONE, WindowManager::Screen->root, 0, 0, 0, 0, (int)to.x, (int)to.y);
+    free(pointerreply);
+}
+
 void WindowManager::moveActiveWindowTo(char dir) {
 
     const auto CURRENTWINDOW = WindowManager::getWindowFromDrawable(WindowManager::LastWindow);
@@ -391,4 +407,7 @@ void WindowManager::moveActiveWindowTo(char dir) {
 
     setEffectiveSizePosUsingConfig(neighbor);
     setEffectiveSizePosUsingConfig(CURRENTWINDOW);
+
+    // finish by moving the cursor to the current window
+    WindowManager::warpCursorTo(CURRENTWINDOW->getPosition() + CURRENTWINDOW->getSize() / 2.f);
 }

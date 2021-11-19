@@ -36,4 +36,5 @@ namespace WindowManager {
     void                        fixWindowOnClose(CWindow*);
 
     void                        moveActiveWindowTo(char);
+    void                        warpCursorTo(Vector2D);
 };
