@@ -78,6 +78,8 @@ bool WindowManager::handleEvent() {
 void WindowManager::refreshDirtyWindows() {
     for(auto& window : windows) {
         if (window.getDirty()) {
+            
+
             Values[0] = (int)window.getEffectiveSize().x;
             Values[1] = (int)window.getEffectiveSize().y;
             xcb_configure_window(WindowManager::DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, Values);
@@ -109,7 +111,7 @@ void WindowManager::refreshDirtyWindows() {
 
             window.setDirty(false);
 
-            Debug::log(LOG, "Refreshed dirty window.");
+            Debug::log(LOG, "Refreshed dirty window, with an ID of " + std::to_string(window.getDrawable()));
         }
     }
 }
@@ -131,8 +133,6 @@ CWindow* WindowManager::getWindowFromDrawable(xcb_drawable_t window) {
         if (w.getDrawable() == window) {
             return &w;
         }
-
-        Debug::log(LOG, "Not " + std::to_string(w.getDrawable()));
     }
     return nullptr;
 }
@@ -159,7 +159,6 @@ void WindowManager::removeWindowFromVectorSafe(xcb_drawable_t window) {
             WindowManager::windows.push_back(p);
             continue;
         }
-        Debug::log(LOG, "Is, removing: " + std::to_string(p.getDrawable()));
     }
 }
 
@@ -286,7 +285,7 @@ bool canEatWindow(CWindow* a, CWindow* toEat) {
 }
 
 void eatWindow(CWindow* a, CWindow* toEat) {
-    
+
     // Size is pos + size max - pos
     const auto OPPCORNERA = a->getPosition() + a->getSize();
     const auto OPPCORNERB = toEat->getPosition() + toEat->getSize();
@@ -323,4 +322,73 @@ void WindowManager::fixWindowOnClose(CWindow* pClosedWindow) {
     WindowManager::setFocusedWindow(neighbor->getDrawable()); // Set focus. :)
 
     setEffectiveSizePosUsingConfig(neighbor);
+}
+
+CWindow* getNeighborInDir(char dir) {
+
+    const auto CURRENTWINDOW = WindowManager::getWindowFromDrawable(WindowManager::LastWindow);
+
+    if (!CURRENTWINDOW)
+        return nullptr;
+
+    const auto POSA = CURRENTWINDOW->getPosition();
+    const auto SIZEA = CURRENTWINDOW->getSize();
+
+    for (auto& w : WindowManager::windows) {
+        if (w.getDrawable() == CURRENTWINDOW->getDrawable())
+            continue;
+
+        const auto POSB = w.getPosition();
+        const auto SIZEB = w.getSize();
+
+        switch (dir) {
+            case 'l':
+                if (STICKS(POSA.x, POSB.x + SIZEB.x))
+                    return &w;
+                break;
+            case 'r':
+                if (STICKS(POSA.x + SIZEA.x, POSB.x))
+                    return &w;
+                break;
+            case 't':
+                if (STICKS(POSA.y, POSB.y + SIZEB.y))
+                    return &w;
+                break;
+            case 'b':
+                if (STICKS(POSA.y + SIZEA.y, POSB.y))
+                    return &w;
+                break;
+        }
+    }
+
+    return nullptr;
+}
+
+void WindowManager::moveActiveWindowTo(char dir) {
+
+    const auto CURRENTWINDOW = WindowManager::getWindowFromDrawable(WindowManager::LastWindow);
+
+    if (!CURRENTWINDOW)
+        return;
+
+    const auto neighbor = getNeighborInDir(dir);
+
+    if (!neighbor)
+        return;
+
+    // swap their stuff and mark dirty
+    const auto TEMP_SIZEA = CURRENTWINDOW->getSize();
+    const auto TEMP_POSA = CURRENTWINDOW->getPosition();
+
+    CURRENTWINDOW->setSize(neighbor->getSize());
+    CURRENTWINDOW->setPosition(neighbor->getPosition());
+
+    neighbor->setSize(TEMP_SIZEA);
+    neighbor->setPosition(TEMP_POSA);
+
+    CURRENTWINDOW->setDirty(true);
+    neighbor->setDirty(true);
+
+    setEffectiveSizePosUsingConfig(neighbor);
+    setEffectiveSizePosUsingConfig(CURRENTWINDOW);
 }

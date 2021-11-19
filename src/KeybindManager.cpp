@@ -17,9 +17,16 @@ void KeybindManager::reloadAllKeybinds() {
     // todo: config
     KeybindManager::keybinds.push_back(Keybind(MOD_SUPER, 0x72 /* R */, "dmenu_run", &KeybindManager::call));
     KeybindManager::keybinds.push_back(Keybind(MOD_SUPER, 0x71 /* Q */, "kitty", &KeybindManager::call));
+    KeybindManager::keybinds.push_back(Keybind(MOD_SUPER, 0xff0d /* Enter */, "xterm", &KeybindManager::call));
     KeybindManager::keybinds.push_back(Keybind(MOD_SUPER, 0x62 /* G */, "google-chrome-stable", &KeybindManager::call));
 
     KeybindManager::keybinds.push_back(Keybind(MOD_SUPER, 0x63 /* C */, "", &KeybindManager::killactive));
+
+    // move window
+    KeybindManager::keybinds.push_back(Keybind(MOD_SUPER, 0xff51 /* < */, "l", &KeybindManager::movewindow));
+    KeybindManager::keybinds.push_back(Keybind(MOD_SUPER, 0xff53 /* > */, "r", &KeybindManager::movewindow));
+    KeybindManager::keybinds.push_back(Keybind(MOD_SUPER, 0xff52 /* ^ */, "t", &KeybindManager::movewindow));
+    KeybindManager::keybinds.push_back(Keybind(MOD_SUPER, 0xff54 /* v */, "b", &KeybindManager::movewindow));
 }
 
 unsigned int KeybindManager::modToMask(MODS mod) {
@@ -94,4 +101,8 @@ void KeybindManager::call(std::string args) {
         _exit(0);
     }
     wait(NULL);
+}
+
+void KeybindManager::movewindow(std::string arg) {
+    WindowManager::moveActiveWindowTo(arg[0]);
 }

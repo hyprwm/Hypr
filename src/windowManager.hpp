@@ -34,4 +34,6 @@ namespace WindowManager {
 
     void                        calculateNewWindowParams(CWindow*);
     void                        fixWindowOnClose(CWindow*);
+
+    void                        moveActiveWindowTo(char);
 };

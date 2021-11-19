@@ -21,4 +21,4 @@
 #define EVENT(name) \
     void event##name(xcb_generic_event_t* event);
 
-#define STICKS(a, b) abs(a - b) < 2
+#define STICKS(a, b) abs((a) - (b)) < 2
