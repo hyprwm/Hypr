@@ -286,13 +286,13 @@ bool canEatWindow(CWindow* a, CWindow* toEat) {
 }
 
 void eatWindow(CWindow* a, CWindow* toEat) {
-
-    // Pos is min of both.
-    a->setPosition(Vector2D(std::min(a->getPosition().x, toEat->getPosition().x), std::min(a->getPosition().y, toEat->getPosition().y)));
-
+    
     // Size is pos + size max - pos
     const auto OPPCORNERA = a->getPosition() + a->getSize();
     const auto OPPCORNERB = toEat->getPosition() + toEat->getSize();
+
+    // Pos is min of both.
+    a->setPosition(Vector2D(std::min(a->getPosition().x, toEat->getPosition().x), std::min(a->getPosition().y, toEat->getPosition().y)));
 
     a->setSize(Vector2D(std::max(OPPCORNERA.x, OPPCORNERB.x), std::max(OPPCORNERA.y, OPPCORNERB.y)) - a->getPosition());
 }
