@@ -15,8 +15,11 @@ void KeybindManager::reloadAllKeybinds() {
     KeybindManager::keybinds.clear();
 
     // todo: config
-    KeybindManager::keybinds.push_back(Keybind(MOD_SUPER, 0x72 /* R */, "krunner", &KeybindManager::call));
+    KeybindManager::keybinds.push_back(Keybind(MOD_SUPER, 0x72 /* R */, "dmenu_run", &KeybindManager::call));
+    KeybindManager::keybinds.push_back(Keybind(MOD_SUPER, 0x71 /* Q */, "kitty", &KeybindManager::call));
     KeybindManager::keybinds.push_back(Keybind(MOD_SUPER, 0x62 /* G */, "google-chrome-stable", &KeybindManager::call));
+
+    KeybindManager::keybinds.push_back(Keybind(MOD_SUPER, 0x63 /* C */, "", &KeybindManager::killactive));
 }
 
 unsigned int KeybindManager::modToMask(MODS mod) {
@@ -48,6 +51,11 @@ xcb_keycode_t KeybindManager::getKeycodeFromKeysym(xcb_keysym_t keysym) {
 
 // Dispatchers
 
+void KeybindManager::killactive(std::string args) {
+    // args unused
+    xcb_kill_client(WindowManager::DisplayConnection, WindowManager::LastWindow);
+}
+
 void KeybindManager::call(std::string args) {
     if (fork() == 0) {
         setsid();
@@ -77,12 +85,9 @@ void KeybindManager::call(std::string args) {
 
             execvp((char*)command.c_str(), (char**)argsarr);
         } else {
-            char* argsarr[1];
-            argsarr[0] = "";
-
             Debug::log(LOG, "Executing " + command + " with 0 args.");
 
-            execvp((char*)command.c_str(), (char**)argsarr);
+            execvp((char*)command.c_str(), nullptr);
         }
 
         

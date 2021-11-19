@@ -16,4 +16,5 @@ namespace KeybindManager {
 
     // Dispatchers
     void                call(std::string args);
+    void                killactive(std::string args);
 };
