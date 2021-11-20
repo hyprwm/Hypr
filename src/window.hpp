@@ -1,6 +1,7 @@
 #pragma once
 
 #include "defines.hpp"
+#include "utilities/Workspace.hpp"
 
 class CWindow {
 public:
@@ -24,6 +25,9 @@ public:
     EXPOSED_MEMBER(Position, Vector2D, vec);
     EXPOSED_MEMBER(IsFloating, bool, b);
     EXPOSED_MEMBER(Drawable, xcb_drawable_t, i);
+
+    // Workspace pointer
+    EXPOSED_MEMBER(WorkspaceID, int, i);
     
 
 private:

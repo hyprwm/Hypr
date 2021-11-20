@@ -28,6 +28,13 @@ void CWindowManager::setupManager() {
         3, KeybindManager::modToMask(MOD_SUPER));
     
     xcb_flush(DisplayConnection);   
+
+    // Add a workspace to the monitor
+    CWorkspace protoWorkspace;
+    protoWorkspace.setID(1);
+    workspaces.push_back(protoWorkspace);
+    activeWorkspace = &workspaces[0];
+    //
 }
 
 bool CWindowManager::handleEvent() {
@@ -70,15 +77,59 @@ bool CWindowManager::handleEvent() {
     // refresh and apply the parameters of all dirty windows.
     refreshDirtyWindows();
 
+    // remove unused workspaces
+    cleanupUnusedWorkspaces();
+
     xcb_flush(DisplayConnection);
 
     return true;
 }
 
+void CWindowManager::cleanupUnusedWorkspaces() {
+    std::vector<CWorkspace> temp = workspaces;
+
+    workspaces.clear();
+
+    for (auto& work : temp) {
+        if (work.getID() != activeWorkspace->getID()) {
+            // check if it has any children
+            bool hasChildren = false;
+            for (auto& window : windows) {
+                if (window.getWorkspaceID() == work.getID()) {
+                    hasChildren = true;
+                    break;
+                }
+            }
+
+            if (hasChildren) {
+                // Has windows opened on it.
+                workspaces.push_back(work);
+            }
+        } else {
+            // Foreground workspace
+            workspaces.push_back(work);
+        }
+    }
+}
+
 void CWindowManager::refreshDirtyWindows() {
     for(auto& window : windows) {
         if (window.getDirty()) {
-            
+
+            // first and foremost, let's check if the window isn't on a different workspace
+            if (window.getWorkspaceID() != activeWorkspace->getID()) {
+                // Move it to hades
+                Values[0] = (int)1500000; // hmu when monitors actually have that many pixels
+                Values[1] = (int)1500000; // and we are still using xorg =)
+                xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, Values);
+
+                // Set the size JIC.
+                Values[0] = (int)window.getEffectiveSize().x;
+                Values[1] = (int)window.getEffectiveSize().y;
+                xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, Values);
+
+                continue;
+            }
 
             Values[0] = (int)window.getEffectiveSize().x;
             Values[1] = (int)window.getEffectiveSize().y;
@@ -224,6 +275,10 @@ void CWindowManager::calculateNewWindowParams(CWindow* pWindow) {
 }
 
 bool CWindowManager::isNeighbor(CWindow* a, CWindow* b) {
+
+    if (a->getWorkspaceID() != b->getWorkspaceID())
+        return false; // Different workspaces
+
     const auto POSA = a->getPosition();
     const auto POSB = b->getPosition();
     const auto SIZEA = a->getSize();
@@ -274,7 +329,7 @@ bool CWindowManager::canEatWindow(CWindow* a, CWindow* toEat) {
     };
 
     for (auto& w : windows) {
-        if (w.getDrawable() == a->getDrawable() || w.getDrawable() == toEat->getDrawable())
+        if (w.getDrawable() == a->getDrawable() || w.getDrawable() == toEat->getDrawable() || w.getWorkspaceID() != toEat->getWorkspaceID())
             continue;
 
         if (doOverlap(&w))
@@ -335,7 +390,7 @@ CWindow* CWindowManager::getNeighborInDir(char dir) {
     const auto SIZEA = CURRENTWINDOW->getSize();
 
     for (auto& w : windows) {
-        if (w.getDrawable() == CURRENTWINDOW->getDrawable())
+        if (w.getDrawable() == CURRENTWINDOW->getDrawable() || w.getWorkspaceID() != CURRENTWINDOW->getWorkspaceID())
             continue;
 
         const auto POSB = w.getPosition();
@@ -409,4 +464,39 @@ void CWindowManager::moveActiveWindowTo(char dir) {
 
     // finish by moving the cursor to the current window
     warpCursorTo(CURRENTWINDOW->getPosition() + CURRENTWINDOW->getSize() / 2.f);
+}
+
+void CWindowManager::changeWorkspaceByID(int ID) {
+    for (auto& workspace : workspaces) {
+        if (workspace.getID() == ID) {
+            activeWorkspace = &workspace;
+            LastWindow = -1;
+            return;
+        }
+    }
+
+    // If we are here it means the workspace is new. Let's create it.
+    CWorkspace newWorkspace;
+    newWorkspace.setID(ID);
+    workspaces.push_back(newWorkspace);
+    activeWorkspace = &workspaces[workspaces.size() - 1];
+    LastWindow = -1;
+}
+
+void CWindowManager::setAllWorkspaceWindowsDirtyByID(int ID) {
+    int workspaceID = -1;
+    for (auto& workspace : workspaces) {
+        if (workspace.getID() == ID) {
+            workspaceID = workspace.getID();
+            break;
+        }
+    }
+
+    if (workspaceID == -1)
+        return;
+
+    for (auto& window : windows) {
+        if (window.getWorkspaceID() == workspaceID)
+            window.setDirty(true);
+    }
 }

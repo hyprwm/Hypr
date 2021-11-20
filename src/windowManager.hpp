@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "KeybindManager.hpp"
+#include "./utilities/Workspace.hpp"
 
 
 // temp config values
@@ -23,6 +24,9 @@ public:
     std::vector<CWindow>        windows; // windows never left. It has always been hiding amongst us.
     xcb_drawable_t              LastWindow = -1;
 
+    std::vector<CWorkspace>     workspaces;
+    CWorkspace*                 activeWorkspace = nullptr;
+
     CWindow*                    getWindowFromDrawable(xcb_drawable_t);
     void                        addWindowToVectorSafe(CWindow);
     void                        removeWindowFromVectorSafe(xcb_drawable_t);
@@ -39,16 +43,20 @@ public:
     void                        moveActiveWindowTo(char);
     void                        warpCursorTo(Vector2D);
 
+    void                        changeWorkspaceByID(int);
+    void                        setAllWorkspaceWindowsDirtyByID(int);
+
 private:
 
     // Internal WM functions that don't have to be exposed
-    
+
     CWindow*                    getNeighborInDir(char dir);
     void                        eatWindow(CWindow* a, CWindow* toEat);
     bool                        canEatWindow(CWindow* a, CWindow* toEat);
     bool                        isNeighbor(CWindow* a, CWindow* b);
     void                        calculateNewTileSetOldTile(CWindow* pWindow);
     void                        setEffectiveSizePosUsingConfig(CWindow* pWindow);
+    void                        cleanupUnusedWorkspaces();
 
 };
 

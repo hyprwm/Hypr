@@ -41,6 +41,7 @@ void Events::eventMapWindow(xcb_generic_event_t* event) {
     window.setDrawable(E->window);
     window.setIsFloating(false);
     window.setDirty(true);
+    window.setWorkspaceID(g_pWindowManager->activeWorkspace->getID());
 
     // Also sets the old one
     g_pWindowManager->calculateNewWindowParams(&window);

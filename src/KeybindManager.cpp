@@ -27,6 +27,12 @@ void KeybindManager::reloadAllKeybinds() {
     KeybindManager::keybinds.push_back(Keybind(MOD_SUPER, 0xff53 /* > */, "r", &KeybindManager::movewindow));
     KeybindManager::keybinds.push_back(Keybind(MOD_SUPER, 0xff52 /* ^ */, "t", &KeybindManager::movewindow));
     KeybindManager::keybinds.push_back(Keybind(MOD_SUPER, 0xff54 /* v */, "b", &KeybindManager::movewindow));
+
+    // workspace binds
+    for (int i = 0; i < 10; ++i) {
+        // MOD + 1-9
+        KeybindManager::keybinds.push_back(Keybind(MOD_SUPER, 0x31 + i, std::to_string(i + 1), &KeybindManager::changeworkspace));
+    }
 }
 
 unsigned int KeybindManager::modToMask(MODS mod) {
@@ -105,4 +111,20 @@ void KeybindManager::call(std::string args) {
 
 void KeybindManager::movewindow(std::string arg) {
     g_pWindowManager->moveActiveWindowTo(arg[0]);
+}
+
+void KeybindManager::changeworkspace(std::string arg) {
+    int ID = -1;
+    try {
+        ID = std::stoi(arg.c_str());
+    } catch (...) { ; }
+
+    if (ID != -1) {
+        Debug::log(LOG, "Changing the current workspace to " + std::to_string(ID));
+
+        //                                                                                vvvv shouldn't be nullptr wallah
+        g_pWindowManager->setAllWorkspaceWindowsDirtyByID(g_pWindowManager->activeWorkspace->getID());
+        g_pWindowManager->changeWorkspaceByID(ID);
+        g_pWindowManager->setAllWorkspaceWindowsDirtyByID(ID);
+    }
 }
