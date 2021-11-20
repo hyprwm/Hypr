@@ -10,19 +10,19 @@ Started by Vaxry on 2021 / 11 / 17
 int main(int argc, char** argv) {
     Debug::log(LOG, "Hypr debug log. Built on " + std::string(__DATE__) + " at " + std::string(__TIME__));
 
-    WindowManager::DisplayConnection = xcb_connect(NULL, NULL);
-    if (const auto RET = xcb_connection_has_error(WindowManager::DisplayConnection); RET != 0) {
+    g_pWindowManager->DisplayConnection = xcb_connect(NULL, NULL);
+    if (const auto RET = xcb_connection_has_error(g_pWindowManager->DisplayConnection); RET != 0) {
         Debug::log(CRIT, "Connection Failed! Return: " + std::to_string(RET));
         return RET;
     }
 
-    WindowManager::Screen = xcb_setup_roots_iterator(xcb_get_setup(WindowManager::DisplayConnection)).data;
+    g_pWindowManager->Screen = xcb_setup_roots_iterator(xcb_get_setup(g_pWindowManager->DisplayConnection)).data;
 
-    WindowManager::setupManager();
+    g_pWindowManager->setupManager();
 
     Debug::log(LOG, "Hypr Started!");
 
-    while (WindowManager::handleEvent()) {
+    while (g_pWindowManager->handleEvent()) {
         ;
     }
 

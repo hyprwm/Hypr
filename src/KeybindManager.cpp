@@ -43,14 +43,14 @@ unsigned int KeybindManager::modToMask(MODS mod) {
 }
 
 xcb_keysym_t KeybindManager::getKeysymFromKeycode(xcb_keycode_t keycode) {
-    const auto KEYSYMS = xcb_key_symbols_alloc(WindowManager::DisplayConnection);
+    const auto KEYSYMS = xcb_key_symbols_alloc(g_pWindowManager->DisplayConnection);
     const auto KEYSYM = (!(KEYSYMS) ? 0 : xcb_key_symbols_get_keysym(KEYSYMS, keycode, 0));
     xcb_key_symbols_free(KEYSYMS);
     return KEYSYM;
 }
 
 xcb_keycode_t KeybindManager::getKeycodeFromKeysym(xcb_keysym_t keysym) {
-    const auto KEYSYMS = xcb_key_symbols_alloc(WindowManager::DisplayConnection);
+    const auto KEYSYMS = xcb_key_symbols_alloc(g_pWindowManager->DisplayConnection);
     const auto KEYCODE = (!(KEYSYMS) ? NULL : xcb_key_symbols_get_keycode(KEYSYMS, keysym));
     xcb_key_symbols_free(KEYSYMS);
     return KEYCODE ? *KEYCODE : 0;
@@ -60,7 +60,7 @@ xcb_keycode_t KeybindManager::getKeycodeFromKeysym(xcb_keysym_t keysym) {
 
 void KeybindManager::killactive(std::string args) {
     // args unused
-    xcb_kill_client(WindowManager::DisplayConnection, WindowManager::LastWindow);
+    xcb_kill_client(g_pWindowManager->DisplayConnection, g_pWindowManager->LastWindow);
 }
 
 void KeybindManager::call(std::string args) {
@@ -104,5 +104,5 @@ void KeybindManager::call(std::string args) {
 }
 
 void KeybindManager::movewindow(std::string arg) {
-    WindowManager::moveActiveWindowTo(arg[0]);
+    g_pWindowManager->moveActiveWindowTo(arg[0]);
 }

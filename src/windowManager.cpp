@@ -1,40 +1,40 @@
 #include "windowManager.hpp"
 #include "./events/events.hpp"
 
-void WindowManager::setupManager() {
+void CWindowManager::setupManager() {
     KeybindManager::reloadAllKeybinds();
 
-    WindowManager::Values[0] = XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_STRUCTURE_NOTIFY | XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY | XCB_EVENT_MASK_PROPERTY_CHANGE;
-    xcb_change_window_attributes_checked(WindowManager::DisplayConnection, WindowManager::Screen->root,
-                                         XCB_CW_EVENT_MASK, WindowManager::Values);
-    xcb_ungrab_key(WindowManager::DisplayConnection, XCB_GRAB_ANY, WindowManager::Screen->root, XCB_MOD_MASK_ANY);
+    Values[0] = XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_STRUCTURE_NOTIFY | XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY | XCB_EVENT_MASK_PROPERTY_CHANGE;
+    xcb_change_window_attributes_checked(DisplayConnection, Screen->root,
+                                         XCB_CW_EVENT_MASK, Values);
+    xcb_ungrab_key(DisplayConnection, XCB_GRAB_ANY, Screen->root, XCB_MOD_MASK_ANY);
 
     for (auto& keybind : KeybindManager::keybinds) {
-        xcb_grab_key(WindowManager::DisplayConnection, 1, WindowManager::Screen->root,
+        xcb_grab_key(DisplayConnection, 1, Screen->root,
             KeybindManager::modToMask(keybind.getMod()), KeybindManager::getKeycodeFromKeysym(keybind.getKeysym()),
             XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
     }
 
-    xcb_flush(WindowManager::DisplayConnection);
+    xcb_flush(DisplayConnection);
 
-    xcb_grab_button(WindowManager::DisplayConnection, 0,
-        WindowManager::Screen->root, XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE,
-        XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, WindowManager::Screen->root, XCB_NONE,
+    xcb_grab_button(DisplayConnection, 0,
+        Screen->root, XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE,
+        XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, Screen->root, XCB_NONE,
         1, KeybindManager::modToMask(MOD_SUPER));
     
-    xcb_grab_button(WindowManager::DisplayConnection, 0,
-        WindowManager::Screen->root, XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE,
-        XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, WindowManager::Screen->root, XCB_NONE,
+    xcb_grab_button(DisplayConnection, 0,
+        Screen->root, XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE,
+        XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, Screen->root, XCB_NONE,
         3, KeybindManager::modToMask(MOD_SUPER));
     
-    xcb_flush(WindowManager::DisplayConnection);
+    xcb_flush(DisplayConnection);   
 }
 
-bool WindowManager::handleEvent() {
-    if (xcb_connection_has_error(WindowManager::DisplayConnection))
+bool CWindowManager::handleEvent() {
+    if (xcb_connection_has_error(DisplayConnection))
         return false;
 
-    const auto ev = xcb_wait_for_event(WindowManager::DisplayConnection);
+    const auto ev = xcb_wait_for_event(DisplayConnection);
     if (ev != NULL) {
         switch (ev->response_type & ~0x80) {
             case XCB_ENTER_NOTIFY:
@@ -68,45 +68,45 @@ bool WindowManager::handleEvent() {
     }
 
     // refresh and apply the parameters of all dirty windows.
-    WindowManager::refreshDirtyWindows();
+    refreshDirtyWindows();
 
-    xcb_flush(WindowManager::DisplayConnection);
+    xcb_flush(DisplayConnection);
 
     return true;
 }
 
-void WindowManager::refreshDirtyWindows() {
+void CWindowManager::refreshDirtyWindows() {
     for(auto& window : windows) {
         if (window.getDirty()) {
             
 
             Values[0] = (int)window.getEffectiveSize().x;
             Values[1] = (int)window.getEffectiveSize().y;
-            xcb_configure_window(WindowManager::DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, Values);
+            xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, Values);
 
             Values[0] = (int)window.getEffectivePosition().x;
             Values[1] = (int)window.getEffectivePosition().y;
-            xcb_configure_window(WindowManager::DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, Values);
+            xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, Values);
 
             // Focused special border.
-            if (window.getDrawable() == WindowManager::LastWindow) {
+            if (window.getDrawable() == LastWindow) {
                 Values[0] = (int)BORDERSIZE;
-                xcb_configure_window(WindowManager::DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_BORDER_WIDTH, Values);
+                xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_BORDER_WIDTH, Values);
 
                 // Update the position because the border makes the window jump
                 // I have added the bordersize vec2d before in the setEffectiveSizePosUsingConfig function.
                 Values[0] = (int)window.getEffectivePosition().x - BORDERSIZE;
                 Values[1] = (int)window.getEffectivePosition().y - BORDERSIZE;
-                xcb_configure_window(WindowManager::DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, Values);
+                xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, Values);
 
                 Values[0] = 0xFF3333;  // RED :)
-                xcb_change_window_attributes(WindowManager::DisplayConnection, window.getDrawable(), XCB_CW_BORDER_PIXEL, Values);
+                xcb_change_window_attributes(DisplayConnection, window.getDrawable(), XCB_CW_BORDER_PIXEL, Values);
             } else {
                 Values[0] = 0;
-                xcb_configure_window(WindowManager::DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_BORDER_WIDTH, Values);
+                xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_BORDER_WIDTH, Values);
 
                 Values[0] = 0x555555;  // GRAY :)
-                xcb_change_window_attributes(WindowManager::DisplayConnection, window.getDrawable(), XCB_CW_BORDER_PIXEL, Values);
+                xcb_change_window_attributes(DisplayConnection, window.getDrawable(), XCB_CW_BORDER_PIXEL, Values);
             }
 
             window.setDirty(false);
@@ -116,20 +116,20 @@ void WindowManager::refreshDirtyWindows() {
     }
 }
 
-void WindowManager::setFocusedWindow(xcb_drawable_t window) {
-    if (window && window != WindowManager::Screen->root) {
-        xcb_set_input_focus(WindowManager::DisplayConnection, XCB_INPUT_FOCUS_POINTER_ROOT, window, XCB_CURRENT_TIME);
+void CWindowManager::setFocusedWindow(xcb_drawable_t window) {
+    if (window && window != Screen->root) {
+        xcb_set_input_focus(DisplayConnection, XCB_INPUT_FOCUS_POINTER_ROOT, window, XCB_CURRENT_TIME);
 
         // Fix border from the old window that was in focus.
-        if (const auto PLASTWINDOW = WindowManager::getWindowFromDrawable(WindowManager::LastWindow); PLASTWINDOW)
+        if (const auto PLASTWINDOW = getWindowFromDrawable(LastWindow); PLASTWINDOW)
             PLASTWINDOW->setDirty(true);
 
-        WindowManager::LastWindow = window;
+        LastWindow = window;
     }
 }
 
-CWindow* WindowManager::getWindowFromDrawable(xcb_drawable_t window) {
-    for(auto& w : WindowManager::windows) {
+CWindow* CWindowManager::getWindowFromDrawable(xcb_drawable_t window) {
+    for(auto& w : windows) {
         if (w.getDrawable() == window) {
             return &w;
         }
@@ -137,41 +137,41 @@ CWindow* WindowManager::getWindowFromDrawable(xcb_drawable_t window) {
     return nullptr;
 }
 
-void WindowManager::addWindowToVectorSafe(CWindow window) {
-    for (auto& w : WindowManager::windows) {
+void CWindowManager::addWindowToVectorSafe(CWindow window) {
+    for (auto& w : windows) {
         if (w.getDrawable() == window.getDrawable())
             return; // Do not add if already present.
     }
-    WindowManager::windows.push_back(window);
+    windows.push_back(window);
 }
 
-void WindowManager::removeWindowFromVectorSafe(xcb_drawable_t window) {
+void CWindowManager::removeWindowFromVectorSafe(xcb_drawable_t window) {
 
     if (!window)
         return;
 
-    std::vector<CWindow> temp = WindowManager::windows;
+    std::vector<CWindow> temp = windows;
 
-    WindowManager::windows.clear();
+    windows.clear();
     
     for(auto p : temp) {
         if (p.getDrawable() != window) {
-            WindowManager::windows.push_back(p);
+            windows.push_back(p);
             continue;
         }
     }
 }
 
-void setEffectiveSizePosUsingConfig(CWindow* pWindow) {
+void CWindowManager::setEffectiveSizePosUsingConfig(CWindow* pWindow) {
 
     if (!pWindow)
         return;
 
     // set some flags.
     const bool DISPLAYLEFT          = pWindow->getPosition().x == 0;
-    const bool DISPLAYRIGHT         = pWindow->getPosition().x + pWindow->getSize().x == WindowManager::Screen->width_in_pixels;
+    const bool DISPLAYRIGHT         = pWindow->getPosition().x + pWindow->getSize().x == Screen->width_in_pixels;
     const bool DISPLAYTOP           = pWindow->getPosition().y == 0;
-    const bool DISPLAYBOTTOM        = pWindow->getPosition().y + pWindow->getSize().y == WindowManager::Screen->height_in_pixels;
+    const bool DISPLAYBOTTOM        = pWindow->getPosition().y + pWindow->getSize().y == Screen->height_in_pixels;
 
     pWindow->setEffectivePosition(pWindow->getPosition() + Vector2D(BORDERSIZE, BORDERSIZE));
     pWindow->setEffectiveSize(pWindow->getSize() - (Vector2D(BORDERSIZE, BORDERSIZE) * 2));
@@ -184,8 +184,8 @@ void setEffectiveSizePosUsingConfig(CWindow* pWindow) {
     pWindow->setEffectiveSize(pWindow->getEffectiveSize() - Vector2D(DISPLAYRIGHT ? GAPS_OUT : GAPS_IN, DISPLAYBOTTOM ? GAPS_OUT : GAPS_IN));
 }
 
-void calculateNewTileSetOldTile(CWindow* pWindow) {
-    const auto PLASTWINDOW = WindowManager::getWindowFromDrawable(WindowManager::LastWindow);
+void CWindowManager::calculateNewTileSetOldTile(CWindow* pWindow) {
+    const auto PLASTWINDOW = getWindowFromDrawable(LastWindow);
     if (PLASTWINDOW) {
         const auto PLASTSIZE = PLASTWINDOW->getSize();
         const auto PLASTPOS = PLASTWINDOW->getPosition();
@@ -203,7 +203,7 @@ void calculateNewTileSetOldTile(CWindow* pWindow) {
         PLASTWINDOW->setDirty(true);
     } else {
         // Open a fullscreen window
-        pWindow->setSize(Vector2D(WindowManager::Screen->width_in_pixels, WindowManager::Screen->height_in_pixels));
+        pWindow->setSize(Vector2D(Screen->width_in_pixels, Screen->height_in_pixels));
         pWindow->setPosition(Vector2D(0, 0));
     }
 
@@ -211,7 +211,7 @@ void calculateNewTileSetOldTile(CWindow* pWindow) {
     setEffectiveSizePosUsingConfig(PLASTWINDOW);
 }
 
-void WindowManager::calculateNewWindowParams(CWindow* pWindow) {
+void CWindowManager::calculateNewWindowParams(CWindow* pWindow) {
     // And set old one's if needed.
     if (!pWindow)
         return;
@@ -223,7 +223,7 @@ void WindowManager::calculateNewWindowParams(CWindow* pWindow) {
     pWindow->setDirty(true);
 }
 
-bool isNeighbor(CWindow* a, CWindow* b) {
+bool CWindowManager::isNeighbor(CWindow* a, CWindow* b) {
     const auto POSA = a->getPosition();
     const auto POSB = b->getPosition();
     const auto SIZEA = a->getSize();
@@ -254,7 +254,7 @@ bool isNeighbor(CWindow* a, CWindow* b) {
     return false;
 }
 
-bool canEatWindow(CWindow* a, CWindow* toEat) {
+bool CWindowManager::canEatWindow(CWindow* a, CWindow* toEat) {
     // Pos is min of both.
     const auto POSAFTEREAT = Vector2D(std::min(a->getPosition().x, toEat->getPosition().x), std::min(a->getPosition().y, toEat->getPosition().y));
 
@@ -273,7 +273,7 @@ bool canEatWindow(CWindow* a, CWindow* toEat) {
         return !(LEFT1.x >= RIGHT2.x || LEFT2.x >= RIGHT1.x || LEFT1.y >= RIGHT2.y || LEFT2.y >= RIGHT1.y);
     };
 
-    for (auto& w : WindowManager::windows) {
+    for (auto& w : windows) {
         if (w.getDrawable() == a->getDrawable() || w.getDrawable() == toEat->getDrawable())
             continue;
 
@@ -284,7 +284,7 @@ bool canEatWindow(CWindow* a, CWindow* toEat) {
     return true;
 }
 
-void eatWindow(CWindow* a, CWindow* toEat) {
+void CWindowManager::eatWindow(CWindow* a, CWindow* toEat) {
 
     // Size is pos + size max - pos
     const auto OPPCORNERA = a->getPosition() + a->getSize();
@@ -296,13 +296,13 @@ void eatWindow(CWindow* a, CWindow* toEat) {
     a->setSize(Vector2D(std::max(OPPCORNERA.x, OPPCORNERB.x), std::max(OPPCORNERA.y, OPPCORNERB.y)) - a->getPosition());
 }
 
-void WindowManager::fixWindowOnClose(CWindow* pClosedWindow) {
+void CWindowManager::fixWindowOnClose(CWindow* pClosedWindow) {
     if (!pClosedWindow)
         return;
 
     // get the first neighboring window
     CWindow* neighbor = nullptr;
-    for(auto& w : WindowManager::windows) {
+    for(auto& w : windows) {
         if (w.getDrawable() == pClosedWindow->getDrawable())
             continue;
 
@@ -319,14 +319,14 @@ void WindowManager::fixWindowOnClose(CWindow* pClosedWindow) {
     eatWindow(neighbor, pClosedWindow);
 
     neighbor->setDirty(true);
-    WindowManager::setFocusedWindow(neighbor->getDrawable()); // Set focus. :)
+    setFocusedWindow(neighbor->getDrawable()); // Set focus. :)
 
     setEffectiveSizePosUsingConfig(neighbor);
 }
 
-CWindow* getNeighborInDir(char dir) {
+CWindow* CWindowManager::getNeighborInDir(char dir) {
 
-    const auto CURRENTWINDOW = WindowManager::getWindowFromDrawable(WindowManager::LastWindow);
+    const auto CURRENTWINDOW = getWindowFromDrawable(LastWindow);
 
     if (!CURRENTWINDOW)
         return nullptr;
@@ -334,7 +334,7 @@ CWindow* getNeighborInDir(char dir) {
     const auto POSA = CURRENTWINDOW->getPosition();
     const auto SIZEA = CURRENTWINDOW->getSize();
 
-    for (auto& w : WindowManager::windows) {
+    for (auto& w : windows) {
         if (w.getDrawable() == CURRENTWINDOW->getDrawable())
             continue;
 
@@ -367,22 +367,21 @@ CWindow* getNeighborInDir(char dir) {
 // I don't know if this works, it might be an issue with my nested Xorg session I am using rn to test this.
 // Will check later.
 // TODO:
-void WindowManager::warpCursorTo(Vector2D to) {
-    const auto POINTERCOOKIE = xcb_query_pointer(WindowManager::DisplayConnection, WindowManager::Screen->root);
+void CWindowManager::warpCursorTo(Vector2D to) {
+    const auto POINTERCOOKIE = xcb_query_pointer(DisplayConnection, Screen->root);
 
-    xcb_query_pointer_reply_t* pointerreply = xcb_query_pointer_reply(WindowManager::DisplayConnection, POINTERCOOKIE, NULL);
+    xcb_query_pointer_reply_t* pointerreply = xcb_query_pointer_reply(DisplayConnection, POINTERCOOKIE, NULL);
     if (!pointerreply) {
         Debug::log(ERR, "Couldn't query pointer.");
         return;
     }
 
-    xcb_warp_pointer(WindowManager::DisplayConnection, XCB_NONE, WindowManager::Screen->root, 0, 0, 0, 0, (int)to.x, (int)to.y);
+    xcb_warp_pointer(DisplayConnection, XCB_NONE, Screen->root, 0, 0, 0, 0, (int)to.x, (int)to.y);
     free(pointerreply);
 }
 
-void WindowManager::moveActiveWindowTo(char dir) {
-
-    const auto CURRENTWINDOW = WindowManager::getWindowFromDrawable(WindowManager::LastWindow);
+void CWindowManager::moveActiveWindowTo(char dir) {
+    const auto CURRENTWINDOW = getWindowFromDrawable(LastWindow);
 
     if (!CURRENTWINDOW)
         return;
@@ -409,5 +408,5 @@ void WindowManager::moveActiveWindowTo(char dir) {
     setEffectiveSizePosUsingConfig(CURRENTWINDOW);
 
     // finish by moving the cursor to the current window
-    WindowManager::warpCursorTo(CURRENTWINDOW->getPosition() + CURRENTWINDOW->getSize() / 2.f);
+    warpCursorTo(CURRENTWINDOW->getPosition() + CURRENTWINDOW->getSize() / 2.f);
 }

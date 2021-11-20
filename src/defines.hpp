@@ -5,6 +5,7 @@
 #include <xcb/xcb_keysyms.h>
 
 #include <string>
+#include <memory>
 
 #include "./helpers/Vector.hpp"
 
