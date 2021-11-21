@@ -31,6 +31,7 @@ public:
     CWorkspace*                 activeWorkspace = nullptr;
 
     CStatusBar                  statusBar;
+    std::thread*                barThread;
 
     CWindow*                    getWindowFromDrawable(xcb_drawable_t);
     void                        addWindowToVectorSafe(CWindow);

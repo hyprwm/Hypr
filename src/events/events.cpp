@@ -1,6 +1,6 @@
 #include "events.hpp"
 
-void handle(sigval val) {
+void handle() {
     g_pWindowManager->statusBar.draw();
 
     // check config
@@ -8,15 +8,13 @@ void handle(sigval val) {
 }
 
 void Events::setThread() {
-    sigevent eventsig;
-    eventsig.sigev_notify = SIGEV_THREAD;
-    eventsig.sigev_notify_function = handle;
-    eventsig.sigev_notify_attributes = NULL;
-    eventsig.sigev_value.sival_ptr = &timerid;
-    timer_create(CLOCK_REALTIME, &eventsig, &timerid);
 
-    itimerspec t = {{0, 1000 * (1000 / ConfigManager::getInt("max_fps"))}, {1, 0}};
-    timer_settime(timerid, 0, &t, 0);
+    g_pWindowManager->barThread = new std::thread([&]() {
+        for (;;) {
+            handle();
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000 / ConfigManager::getInt("max_fps")));
+        }
+    });
 }
 
 void Events::eventEnter(xcb_generic_event_t* event) {
