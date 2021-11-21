@@ -63,7 +63,7 @@ void Events::eventMapWindow(xcb_generic_event_t* event) {
     window.setIsFloating(false);
     window.setDirty(true);
     const auto CURRENTSCREEN = g_pWindowManager->getMonitorFromCursor()->ID;
-    window.setWorkspaceID(g_pWindowManager->activeWorkspaces[CURRENTSCREEN]->getID());
+    window.setWorkspaceID(g_pWindowManager->activeWorkspaces[CURRENTSCREEN]);
     window.setMonitor(CURRENTSCREEN);
 
     window.setDefaultPosition(Vector2D(0,0));
@@ -96,6 +96,8 @@ void Events::eventButtonPress(xcb_generic_event_t* event) {
     for (auto& keybind : KeybindManager::keybinds) {
         if (keybind.getKeysym() != 0 && keybind.getKeysym() == KEYSYM && KeybindManager::modToMask(keybind.getMod()) == E->state) {
             keybind.getDispatcher()(keybind.getCommand());
+            return;
+            // TODO: fix duplicating keybinds
         }
     }
 }

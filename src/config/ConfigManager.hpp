@@ -13,6 +13,8 @@ namespace ConfigManager {
     inline std::map<std::string_view, SConfigValue> configValues;
     inline time_t       lastModifyTime = 0;
 
+    inline bool         loadBar = false;
+
     void                init();
     void                loadConfigLoadVars();
     void                tick();

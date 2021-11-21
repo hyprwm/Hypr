@@ -16,7 +16,7 @@ void ConfigManager::init() {
     configValues["bar_height"].intValue = 15;
     configValues["max_fps"].intValue = 60;
 
-    ConfigManager::loadConfigLoadVars();
+    loadConfigLoadVars();
 }
 
 void handleBind(const std::string& command, const std::string& value) {
@@ -139,9 +139,13 @@ void ConfigManager::loadConfigLoadVars() {
 
     g_pWindowManager->setAllWindowsDirty();
 
-    // Reload the bar as well
-    g_pWindowManager->statusBar.destroy();
-    g_pWindowManager->statusBar.setup(Vector2D(-1,-1), Vector2D(g_pWindowManager->Screen->width_in_pixels, configValues["bar_height"].intValue));
+    // Reload the bar as well, don't load it before the default is loaded.
+    if (loadBar) {
+        g_pWindowManager->statusBar.destroy();
+        g_pWindowManager->statusBar.setup(Vector2D(-1, -1), Vector2D(g_pWindowManager->monitors[g_pWindowManager->statusBar.getMonitorID()].vecSize.x, configValues["bar_height"].intValue));
+    }
+
+    loadBar = true;
 }
 
 void emptyEvent() {

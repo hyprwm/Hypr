@@ -32,7 +32,7 @@ public:
     xcb_drawable_t              LastWindow = -1;
 
     std::vector<CWorkspace>     workspaces;
-    std::vector<CWorkspace*>    activeWorkspaces;
+    std::vector<int>            activeWorkspaces;
 
     CStatusBar                  statusBar;
     std::thread*                barThread;

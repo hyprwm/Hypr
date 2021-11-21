@@ -86,16 +86,13 @@ void KeybindManager::killactive(std::string args) {
 void KeybindManager::call(std::string args) {
 
     if (fork() == 0) {
-        setsid();
-        if (fork() != 0) {
-            _exit(0);
-        }
+        //setsid();
 
         execl("/bin/sh", "/bin/sh", "-c", args.c_str(), nullptr);
 
         _exit(0);
     }
-    wait(NULL);
+    //wait(NULL);
 }
 
 void KeybindManager::movewindow(std::string arg) {
@@ -119,8 +116,8 @@ void KeybindManager::changeworkspace(std::string arg) {
             MONITOR = g_pWindowManager->getMonitorFromCursor();
         }
 
-        //                                                                                vvvv shouldn't be nullptr wallah
-        g_pWindowManager->setAllWorkspaceWindowsDirtyByID(g_pWindowManager->activeWorkspaces[MONITOR->ID]->getID());
+
+        g_pWindowManager->setAllWorkspaceWindowsDirtyByID(g_pWindowManager->activeWorkspaces[MONITOR->ID]);
         g_pWindowManager->changeWorkspaceByID(ID);
         g_pWindowManager->setAllWorkspaceWindowsDirtyByID(ID);
     }
@@ -129,11 +126,11 @@ void KeybindManager::changeworkspace(std::string arg) {
 void KeybindManager::toggleActiveWindowFullscreen(std::string unusedArg) {
     const auto MONITOR = g_pWindowManager->getMonitorFromWindow(g_pWindowManager->getWindowFromDrawable(g_pWindowManager->LastWindow));
 
-    g_pWindowManager->setAllWorkspaceWindowsDirtyByID(g_pWindowManager->activeWorkspaces[MONITOR->ID]->getID());
+    g_pWindowManager->setAllWorkspaceWindowsDirtyByID(g_pWindowManager->activeWorkspaces[MONITOR->ID]);
 
     if (auto WINDOW = g_pWindowManager->getWindowFromDrawable(g_pWindowManager->LastWindow) ; WINDOW) {
         WINDOW->setFullscreen(!WINDOW->getFullscreen());
-        g_pWindowManager->activeWorkspaces[MONITOR->ID]->setHasFullscreenWindow(WINDOW->getFullscreen());
+        g_pWindowManager->getWorkspaceByID(g_pWindowManager->activeWorkspaces[MONITOR->ID])->setHasFullscreenWindow(WINDOW->getFullscreen());
     }
 }
 
