@@ -163,8 +163,12 @@ void CWindowManager::refreshDirtyWindows() {
     for(auto& window : windows) {
         if (window.getDirty()) {
 
+            // Fullscreen flag
+            bool bHasFullscreenWindow = activeWorkspace->getHasFullscreenWindow();
+
             // first and foremost, let's check if the window isn't on a different workspace
-            if (window.getWorkspaceID() != activeWorkspace->getID()) {
+            // or that it is not a non-fullscreen window in a fullscreen workspace
+            if ((window.getWorkspaceID() != activeWorkspace->getID()) || (bHasFullscreenWindow && !window.getFullscreen())) {
                 // Move it to hades
                 Values[0] = (int)1500000; // hmu when monitors actually have that many pixels
                 Values[1] = (int)1500000; // and we are still using xorg =)
@@ -174,6 +178,25 @@ void CWindowManager::refreshDirtyWindows() {
                 Values[0] = (int)window.getEffectiveSize().x;
                 Values[1] = (int)window.getEffectiveSize().y;
                 xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, Values);
+
+                continue;
+            }
+
+            // Fullscreen window. No border, all screen.
+            if (window.getFullscreen()) {
+                Values[0] = 0;
+                xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_BORDER_WIDTH, Values);
+
+                Values[0] = 0x555555;  // GRAY :)
+                xcb_change_window_attributes(DisplayConnection, window.getDrawable(), XCB_CW_BORDER_PIXEL, Values);
+
+                Values[0] = (int)Screen->width_in_pixels;
+                Values[1] = (int)Screen->height_in_pixels;
+                xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, Values);
+
+                Values[0] = (int)0;
+                Values[1] = (int)0;
+                xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, Values);
 
                 continue;
             }
@@ -401,6 +424,10 @@ void CWindowManager::eatWindow(CWindow* a, CWindow* toEat) {
 void CWindowManager::fixWindowOnClose(CWindow* pClosedWindow) {
     if (!pClosedWindow)
         return;
+
+    // Fix if was fullscreen
+    if (pClosedWindow->getFullscreen())
+        activeWorkspace->setHasFullscreenWindow(false);
 
     // get the first neighboring window
     CWindow* neighbor = nullptr;

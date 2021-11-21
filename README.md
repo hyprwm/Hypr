@@ -15,7 +15,7 @@ Hypr is a Linux tiling window manager for Xorg. It's written in XCB with modern 
 - [ ] Floating windows support
 - [ ] Config system
 - [x] Workspaces
-- [ ] Moving windows / user input (e.g. fullscreening)
+- [x] Moving windows / user input (e.g. fullscreening) ~ More to be done probably
 - [ ] True lerp animations
 
 <br/><br/>

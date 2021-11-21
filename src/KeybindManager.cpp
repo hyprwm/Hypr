@@ -28,6 +28,9 @@ void KeybindManager::reloadAllKeybinds() {
     KeybindManager::keybinds.push_back(Keybind(MOD_SUPER, 0xff52 /* ^ */, "t", &KeybindManager::movewindow));
     KeybindManager::keybinds.push_back(Keybind(MOD_SUPER, 0xff54 /* v */, "b", &KeybindManager::movewindow));
 
+    // Fullscreen
+    KeybindManager::keybinds.push_back(Keybind(MOD_SUPER, 0x66 /* F */, "", &KeybindManager::toggleActiveWindowFullscreen));
+
     // workspace binds
     for (int i = 0; i < 10; ++i) {
         // MOD + 1-9
@@ -126,5 +129,14 @@ void KeybindManager::changeworkspace(std::string arg) {
         g_pWindowManager->setAllWorkspaceWindowsDirtyByID(g_pWindowManager->activeWorkspace->getID());
         g_pWindowManager->changeWorkspaceByID(ID);
         g_pWindowManager->setAllWorkspaceWindowsDirtyByID(ID);
+    }
+}
+
+void KeybindManager::toggleActiveWindowFullscreen(std::string unusedArg) {
+    g_pWindowManager->setAllWorkspaceWindowsDirtyByID(g_pWindowManager->activeWorkspace->getID());
+
+    if (auto WINDOW = g_pWindowManager->getWindowFromDrawable(g_pWindowManager->LastWindow) ; WINDOW) {
+        WINDOW->setFullscreen(!WINDOW->getFullscreen());
+        g_pWindowManager->activeWorkspace->setHasFullscreenWindow(WINDOW->getFullscreen());
     }
 }

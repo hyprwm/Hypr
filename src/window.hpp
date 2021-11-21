@@ -26,6 +26,9 @@ public:
     EXPOSED_MEMBER(IsFloating, bool, b);
     EXPOSED_MEMBER(Drawable, xcb_drawable_t, i);
 
+    // Fullscreen
+    EXPOSED_MEMBER(Fullscreen, bool, b);
+
     // Workspace pointer
     EXPOSED_MEMBER(WorkspaceID, int, i);
     

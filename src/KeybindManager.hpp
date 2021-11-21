@@ -19,4 +19,5 @@ namespace KeybindManager {
     void                killactive(std::string args);
     void                movewindow(std::string args);
     void                changeworkspace(std::string args);
+    void                toggleActiveWindowFullscreen(std::string args);
 };

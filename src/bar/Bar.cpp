@@ -93,6 +93,9 @@ int getTextWidth(std::string text, xcb_font_t font) {
 
 void CStatusBar::draw() {
 
+    if (g_pWindowManager->activeWorkspace->getHasFullscreenWindow())
+        return; // Do not draw a bar on a fullscreen window.
+
     xcb_rectangle_t rectangles[] = {{m_vecPosition.x, m_vecPosition.y, m_vecSize.x + m_vecPosition.x, m_vecPosition.y + m_vecSize.y}};
     xcb_poly_fill_rectangle(g_pWindowManager->DisplayConnection, m_iPixmap, m_mContexts["BG"].GContext, 1, rectangles);
 
