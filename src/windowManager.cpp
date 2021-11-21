@@ -92,12 +92,16 @@ bool CWindowManager::handleEvent() {
                 break;
             case XCB_KEY_PRESS:
             case XCB_BUTTON_PRESS:
-                Events::eventKeyPress(ev);
-                Debug::log(LOG, "Event dispatched KEYPRESS");
+                Events::eventButtonPress(ev);
+                Debug::log(LOG, "Event dispatched BUTTON_PRESS");
                 break;
             case XCB_EXPOSE:
                 Events::eventExpose(ev);
                 Debug::log(LOG, "Event dispatched EXPOSE");
+                break;
+            case XCB_KEY_PRESS:
+                
+                Debug::log(LOG, "Event dispatched KEY_PRESS");
                 break;
 
             default:

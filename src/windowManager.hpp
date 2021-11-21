@@ -19,6 +19,8 @@ public:
     xcb_drawable_t              Drawable;
     uint32_t                    Values[3];
 
+    bool                        modKeyDown = false;
+
     uint8_t                     Depth = 32;
     xcb_visualtype_t*           VisualType;
 

@@ -88,7 +88,7 @@ void Events::eventMapWindow(xcb_generic_event_t* event) {
     g_pWindowManager->setFocusedWindow(E->window);
 }
 
-void Events::eventKeyPress(xcb_generic_event_t* event) {
+void Events::eventButtonPress(xcb_generic_event_t* event) {
     const auto E = reinterpret_cast<xcb_key_press_event_t*>(event);
 
     const auto KEYSYM = KeybindManager::getKeysymFromKeycode(E->detail);
@@ -98,6 +98,12 @@ void Events::eventKeyPress(xcb_generic_event_t* event) {
             keybind.getDispatcher()(keybind.getCommand());
         }
     }
+}
+
+void Events::eventKeyPress(xcb_generic_event_t* event) {
+    const auto E = reinterpret_cast<xcb_key_press_event_t*>(event);
+
+    // todo: super resize and move floating
 }
 
 void Events::eventExpose(xcb_generic_event_t* event) {

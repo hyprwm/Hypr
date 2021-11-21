@@ -9,9 +9,9 @@ namespace Events {
     EVENT(Leave);
     EVENT(Destroy);
     EVENT(MapWindow);
-    EVENT(KeyPress);
+    EVENT(ButtonPress);
     EVENT(Expose);
-
+    EVENT(KeyPress);
 
     // A thread to notify xcb to redraw our shiz
     void            redraw();
