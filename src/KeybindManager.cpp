@@ -80,7 +80,7 @@ xcb_keycode_t KeybindManager::getKeycodeFromKeysym(xcb_keysym_t keysym) {
 
 void KeybindManager::killactive(std::string args) {
     // args unused
-    xcb_kill_client(g_pWindowManager->DisplayConnection, g_pWindowManager->LastWindow);
+    xcb_destroy_window(g_pWindowManager->DisplayConnection, g_pWindowManager->LastWindow);
 }
 
 void KeybindManager::call(std::string args) {

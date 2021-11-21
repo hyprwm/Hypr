@@ -45,7 +45,7 @@ void CWindowManager::setupRandrMonitors() {
         monitors[monitors.size() - 1].vecPosition = Vector2D(crtcReply->x, crtcReply->y);
         monitors[monitors.size() - 1].vecSize = Vector2D(crtcReply->width == 0 ? 1920 : crtcReply->width, crtcReply->height);
 
-        monitors[monitors.size() - 1].ID = i;
+        monitors[monitors.size() - 1].ID = monitors.size() - 1;
 
         char* name = (char*)xcb_randr_get_output_info_name(outputReply);
         int nameLen = xcb_randr_get_output_info_name_length(outputReply);
@@ -65,6 +65,11 @@ void CWindowManager::setupRandrMonitors() {
         //listen for screen change events
         xcb_randr_select_input(DisplayConnection, Screen->root, XCB_RANDR_NOTIFY_MASK_SCREEN_CHANGE);
     }
+
+    // Sort monitors for my convenience thanks
+    std::sort(monitors.begin(), monitors.end(), [](SMonitor& a, SMonitor& b) {
+        return a.vecPosition.x < b.vecPosition.x;
+    });
 }
 
 void CWindowManager::setupManager() {
@@ -78,26 +83,10 @@ void CWindowManager::setupManager() {
 
         monitors.push_back(SMonitor());
         monitors[0].vecPosition = Vector2D(0, 0);
-        monitors[0].vecSize = Vector2D(Screen->width_in_pixels / 3.f, Screen->height_in_pixels);
+        monitors[0].vecSize = Vector2D(Screen->width_in_pixels, Screen->height_in_pixels);
         monitors[0].ID = 0;
         monitors[0].szName = "Screen";
-
-        monitors.push_back(SMonitor());
-        monitors[1].vecPosition = Vector2D(Screen->width_in_pixels / 3.f, 0);
-        monitors[1].vecSize = Vector2D(Screen->width_in_pixels / 3.f, Screen->height_in_pixels);
-        monitors[1].ID = 1;
-        monitors[1].szName = "Screen2";
-
-        monitors.push_back(SMonitor());
-        monitors[2].vecPosition = Vector2D(2 * Screen->width_in_pixels / 3.f, 0);
-        monitors[2].vecSize = Vector2D(Screen->width_in_pixels / 3.f, Screen->height_in_pixels);
-        monitors[2].ID = 2;
-        monitors[2].szName = "Screen3";
     }
-
-    // TODO: get it normally.
-    monitors[0].primary = true;
-    monitors[0].hasABar = true;
 
     Debug::log(LOG, "RandR done.");
 
@@ -385,11 +374,13 @@ void CWindowManager::setEffectiveSizePosUsingConfig(CWindow* pWindow) {
     if (!pWindow)
         return;
 
+    const auto MONITOR = getMonitorFromWindow(pWindow);
+
     // set some flags.
-    const bool DISPLAYLEFT          = pWindow->getPosition().x == 0;
-    const bool DISPLAYRIGHT         = pWindow->getPosition().x + pWindow->getSize().x == Screen->width_in_pixels;
-    const bool DISPLAYTOP           = pWindow->getPosition().y == 0;
-    const bool DISPLAYBOTTOM        = pWindow->getPosition().y + pWindow->getSize().y == Screen->height_in_pixels;
+    const bool DISPLAYLEFT          = STICKS(pWindow->getPosition().x, MONITOR->vecPosition.x);
+    const bool DISPLAYRIGHT         = STICKS(pWindow->getPosition().x + pWindow->getSize().x, MONITOR->vecPosition.x + MONITOR->vecSize.x);
+    const bool DISPLAYTOP           = STICKS(pWindow->getPosition().y, MONITOR->vecPosition.y);
+    const bool DISPLAYBOTTOM        = STICKS(pWindow->getPosition().y + pWindow->getSize().y, MONITOR->vecPosition.y + MONITOR->vecSize.y);
 
     pWindow->setEffectivePosition(pWindow->getPosition() + Vector2D(ConfigManager::getInt("border_size"), ConfigManager::getInt("border_size")));
     pWindow->setEffectiveSize(pWindow->getSize() - (Vector2D(ConfigManager::getInt("border_size"), ConfigManager::getInt("border_size")) * 2));
