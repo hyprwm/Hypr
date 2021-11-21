@@ -90,7 +90,6 @@ bool CWindowManager::handleEvent() {
                 Events::eventMapWindow(ev);
                 Debug::log(LOG, "Event dispatched MAP");
                 break;
-            case XCB_KEY_PRESS:
             case XCB_BUTTON_PRESS:
                 Events::eventButtonPress(ev);
                 Debug::log(LOG, "Event dispatched BUTTON_PRESS");
@@ -100,7 +99,7 @@ bool CWindowManager::handleEvent() {
                 Debug::log(LOG, "Event dispatched EXPOSE");
                 break;
             case XCB_KEY_PRESS:
-                
+                Events::eventKeyPress(ev);
                 Debug::log(LOG, "Event dispatched KEY_PRESS");
                 break;
 
