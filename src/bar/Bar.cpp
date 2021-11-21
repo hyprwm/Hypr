@@ -6,15 +6,34 @@
 #include "../windowManager.hpp"
 
 void CStatusBar::setup(Vector2D origin, Vector2D size) {
-    m_vecPosition = origin;
-    m_vecSize = size;
+    if (origin.x != -1 && origin.y != -1) {
+        m_vecPosition = origin;
+    }
+
+    if (size.x != -1 && size.y != -1) {
+        m_vecSize = size;
+    }
+
+    uint32_t values[4];
+
+    // window
+    m_iWindowID = (xcb_generate_id(g_pWindowManager->DisplayConnection));
+
+    values[0] = XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY | XCB_EVENT_MASK_PROPERTY_CHANGE;
+
+    xcb_create_window(g_pWindowManager->DisplayConnection, g_pWindowManager->Depth, m_iWindowID,
+                      g_pWindowManager->Screen->root, m_vecPosition.x, m_vecPosition.y, m_vecSize.x, m_vecSize.y,
+                      0, XCB_WINDOW_CLASS_INPUT_OUTPUT, g_pWindowManager->Screen->root_visual,
+                      XCB_CW_EVENT_MASK, values);
+
+    // map
+    xcb_map_window(g_pWindowManager->DisplayConnection, m_iWindowID);
 
     // Create a pixmap for writing to.
     m_iPixmap = xcb_generate_id(g_pWindowManager->DisplayConnection);
     xcb_create_pixmap(g_pWindowManager->DisplayConnection, g_pWindowManager->Depth, m_iPixmap, m_iWindowID, m_vecSize.x, m_vecSize.y);
 
-    // setup contexts.. ugh.
-    uint32_t values[4];
+    // setup contexts.. ugh..
 
     auto contextBG = &m_mContexts["BG"];
     contextBG->GContext = xcb_generate_id(g_pWindowManager->DisplayConnection);
@@ -61,6 +80,17 @@ void CStatusBar::setup(Vector2D origin, Vector2D size) {
 
     // don't, i use it later
     //xcb_close_font(g_pWindowManager->DisplayConnection, contextBASETEXT->Font);
+}
+
+void CStatusBar::destroy() {
+    xcb_close_font(g_pWindowManager->DisplayConnection, m_mContexts["HITEXT"].Font);
+    xcb_destroy_window(g_pWindowManager->DisplayConnection, m_iWindowID);
+    xcb_destroy_window(g_pWindowManager->DisplayConnection, m_iPixmap);
+
+    xcb_free_gc(g_pWindowManager->DisplayConnection, m_mContexts["BG"].GContext);
+    xcb_free_gc(g_pWindowManager->DisplayConnection, m_mContexts["MEDBG"].GContext);
+    xcb_free_gc(g_pWindowManager->DisplayConnection, m_mContexts["TEXT"].GContext);
+    xcb_free_gc(g_pWindowManager->DisplayConnection, m_mContexts["HITEXT"].GContext);
 }
 
 int getTextWidth(std::string text, xcb_font_t font) {

@@ -16,6 +16,7 @@ public:
 
     void                draw();
     void                setup(Vector2D, Vector2D);
+    void                destroy();
 
 private:
     Vector2D            m_vecSize;

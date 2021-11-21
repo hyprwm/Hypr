@@ -1,20 +1,10 @@
 #include "events.hpp"
 
-void Events::redraw() {
-    xcb_expose_event_t exposeEvent;
-    exposeEvent.window = g_pWindowManager->statusBar.getWindowID();
-    exposeEvent.response_type = XCB_EXPOSE;
-    exposeEvent.x = 0;
-    exposeEvent.y = 0;
-    exposeEvent.width = g_pWindowManager->Screen->width_in_pixels;
-    exposeEvent.height = g_pWindowManager->Screen->height_in_pixels;
-    xcb_send_event(g_pWindowManager->DisplayConnection, false, g_pWindowManager->statusBar.getWindowID(), XCB_EVENT_MASK_EXPOSURE, (char*)&exposeEvent);
-    xcb_flush(g_pWindowManager->DisplayConnection);
-}
-
 void handle(sigval val) {
-    //Events::redraw();
     g_pWindowManager->statusBar.draw();
+
+    // check config
+    ConfigManager::tick();
 }
 
 void Events::setThread() {
@@ -25,7 +15,7 @@ void Events::setThread() {
     eventsig.sigev_value.sival_ptr = &timerid;
     timer_create(CLOCK_REALTIME, &eventsig, &timerid);
 
-    itimerspec t = {{0, 1000 * (1000 / MAX_FPS)}, {1, 0}};
+    itimerspec t = {{0, 1000 * (1000 / ConfigManager::getInt("max_fps"))}, {1, 0}};
     timer_settime(timerid, 0, &t, 0);
 }
 

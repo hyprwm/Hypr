@@ -16,6 +16,7 @@ xcb_visualtype_t* CWindowManager::setupColors() {
 
 void CWindowManager::setupManager() {
     KeybindManager::reloadAllKeybinds();
+    ConfigManager::init();
 
     Values[0] = XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_STRUCTURE_NOTIFY | XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY | XCB_EVENT_MASK_PROPERTY_CHANGE;
     xcb_change_window_attributes_checked(DisplayConnection, Screen->root,
@@ -60,20 +61,7 @@ void CWindowManager::setupManager() {
 
     // ---- INIT THE BAR ---- //
 
-    // window
-    statusBar.setWindowID(xcb_generate_id(DisplayConnection));
-
-    Values[0] = XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY | XCB_EVENT_MASK_PROPERTY_CHANGE;
-
-    xcb_create_window(DisplayConnection, Depth, statusBar.getWindowID(), 
-        Screen->root, 0, 0, Screen->width_in_pixels, BAR_HEIGHT,
-        0, XCB_WINDOW_CLASS_INPUT_OUTPUT, Screen->root_visual,
-        XCB_CW_EVENT_MASK, Values);
-
-    // map
-    xcb_map_window(DisplayConnection, statusBar.getWindowID());
-
-    statusBar.setup(Vector2D(0, 0), Vector2D(Screen->width_in_pixels, BAR_HEIGHT));
+    statusBar.setup(Vector2D(0, 0), Vector2D(Screen->width_in_pixels, ConfigManager::getInt("bar_height")));
 
     // start its' update thread
     Events::setThread();
@@ -163,6 +151,8 @@ void CWindowManager::refreshDirtyWindows() {
     for(auto& window : windows) {
         if (window.getDirty()) {
 
+            setEffectiveSizePosUsingConfig(&window);
+
             // Fullscreen flag
             bool bHasFullscreenWindow = activeWorkspace->getHasFullscreenWindow();
 
@@ -211,13 +201,13 @@ void CWindowManager::refreshDirtyWindows() {
 
             // Focused special border.
             if (window.getDrawable() == LastWindow) {
-                Values[0] = (int)BORDERSIZE;
+                Values[0] = (int)ConfigManager::getInt("border_size");
                 xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_BORDER_WIDTH, Values);
 
                 // Update the position because the border makes the window jump
                 // I have added the bordersize vec2d before in the setEffectiveSizePosUsingConfig function.
-                Values[0] = (int)window.getEffectivePosition().x - BORDERSIZE;
-                Values[1] = (int)window.getEffectivePosition().y - BORDERSIZE;
+                Values[0] = (int)window.getEffectivePosition().x - ConfigManager::getInt("border_size");
+                Values[1] = (int)window.getEffectivePosition().y - ConfigManager::getInt("border_size");
                 xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, Values);
 
                 Values[0] = 0xFF3333;  // RED :)
@@ -294,15 +284,15 @@ void CWindowManager::setEffectiveSizePosUsingConfig(CWindow* pWindow) {
     const bool DISPLAYTOP           = pWindow->getPosition().y == 0;
     const bool DISPLAYBOTTOM        = pWindow->getPosition().y + pWindow->getSize().y == Screen->height_in_pixels;
 
-    pWindow->setEffectivePosition(pWindow->getPosition() + Vector2D(BORDERSIZE, BORDERSIZE));
-    pWindow->setEffectiveSize(pWindow->getSize() - (Vector2D(BORDERSIZE, BORDERSIZE) * 2));
+    pWindow->setEffectivePosition(pWindow->getPosition() + Vector2D(ConfigManager::getInt("border_size"), ConfigManager::getInt("border_size")));
+    pWindow->setEffectiveSize(pWindow->getSize() - (Vector2D(ConfigManager::getInt("border_size"), ConfigManager::getInt("border_size")) * 2));
 
     // do gaps, set top left
-    pWindow->setEffectivePosition(pWindow->getEffectivePosition() + Vector2D(DISPLAYLEFT ? GAPS_OUT : GAPS_IN, DISPLAYTOP ? GAPS_OUT + BAR_HEIGHT : GAPS_IN));
+    pWindow->setEffectivePosition(pWindow->getEffectivePosition() + Vector2D(DISPLAYLEFT ? ConfigManager::getInt("gaps_out") : ConfigManager::getInt("gaps_in"), DISPLAYTOP ? ConfigManager::getInt("gaps_out") + ConfigManager::getInt("bar_height") : ConfigManager::getInt("gaps_in")));
     // fix to old size bottom right
-    pWindow->setEffectiveSize(pWindow->getEffectiveSize() - Vector2D(DISPLAYLEFT ? GAPS_OUT : GAPS_IN, DISPLAYTOP ? GAPS_OUT + BAR_HEIGHT : GAPS_IN));
+    pWindow->setEffectiveSize(pWindow->getEffectiveSize() - Vector2D(DISPLAYLEFT ? ConfigManager::getInt("gaps_out") : ConfigManager::getInt("gaps_in"), DISPLAYTOP ? ConfigManager::getInt("gaps_out") + ConfigManager::getInt("bar_height") : ConfigManager::getInt("gaps_in")));
     // set bottom right
-    pWindow->setEffectiveSize(pWindow->getEffectiveSize() - Vector2D(DISPLAYRIGHT ? GAPS_OUT : GAPS_IN, DISPLAYBOTTOM ? GAPS_OUT : GAPS_IN));
+    pWindow->setEffectiveSize(pWindow->getEffectiveSize() - Vector2D(DISPLAYRIGHT ? ConfigManager::getInt("gaps_out") : ConfigManager::getInt("gaps_in"), DISPLAYBOTTOM ? ConfigManager::getInt("gaps_out") : ConfigManager::getInt("gaps_in")));
 }
 
 void CWindowManager::calculateNewTileSetOldTile(CWindow* pWindow) {
@@ -327,9 +317,6 @@ void CWindowManager::calculateNewTileSetOldTile(CWindow* pWindow) {
         pWindow->setSize(Vector2D(Screen->width_in_pixels, Screen->height_in_pixels));
         pWindow->setPosition(Vector2D(0, 0));
     }
-
-    setEffectiveSizePosUsingConfig(pWindow);
-    setEffectiveSizePosUsingConfig(PLASTWINDOW);
 }
 
 void CWindowManager::calculateNewWindowParams(CWindow* pWindow) {
@@ -449,8 +436,6 @@ void CWindowManager::fixWindowOnClose(CWindow* pClosedWindow) {
 
     neighbor->setDirty(true);
     setFocusedWindow(neighbor->getDrawable()); // Set focus. :)
-
-    setEffectiveSizePosUsingConfig(neighbor);
 }
 
 CWindow* CWindowManager::getNeighborInDir(char dir) {
@@ -533,9 +518,6 @@ void CWindowManager::moveActiveWindowTo(char dir) {
     CURRENTWINDOW->setDirty(true);
     neighbor->setDirty(true);
 
-    setEffectiveSizePosUsingConfig(neighbor);
-    setEffectiveSizePosUsingConfig(CURRENTWINDOW);
-
     // finish by moving the cursor to the current window
     warpCursorTo(CURRENTWINDOW->getPosition() + CURRENTWINDOW->getSize() / 2.f);
 }
@@ -555,6 +537,12 @@ void CWindowManager::changeWorkspaceByID(int ID) {
     workspaces.push_back(newWorkspace);
     activeWorkspace = &workspaces[workspaces.size() - 1];
     LastWindow = -1;
+}
+
+void CWindowManager::setAllWindowsDirty() {
+    for (auto& window : windows) {
+        window.setDirty(true);
+    }
 }
 
 void CWindowManager::setAllWorkspaceWindowsDirtyByID(int ID) {

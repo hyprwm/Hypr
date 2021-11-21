@@ -10,15 +10,7 @@
 #include "KeybindManager.hpp"
 #include "utilities/Workspace.hpp"
 #include "bar/Bar.hpp"
-
-
-// temp config values
-#define BORDERSIZE 1
-#define GAPS_IN 5
-#define GAPS_OUT 20
-#define BAR_HEIGHT 15
-
-#define MAX_FPS 60
+#include "config/ConfigManager.hpp"
 
 class CWindowManager {
 public:
@@ -58,6 +50,8 @@ public:
     void                        setAllWorkspaceWindowsDirtyByID(int);
     int                         getHighestWorkspaceID();
     CWorkspace*                 getWorkspaceByID(int);
+
+    void                        setAllWindowsDirty();
 
 private:
 
