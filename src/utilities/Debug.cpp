@@ -1,4 +1,5 @@
 #include "Debug.hpp"
+#include <fstream>
 
 void Debug::log(LogLevel level, std::string msg) {
     switch (level)
@@ -23,4 +24,16 @@ void Debug::log(LogLevel level, std::string msg) {
             break;
     }
     printf((msg + "\n").c_str());
+
+    // also log to a file
+    const char* const ENVHOME = getenv("HOME");
+
+    const std::string DEBUGPATH = ENVHOME + (std::string) "/.hypr.log";
+    std::ofstream ofs;
+
+    ofs.open(DEBUGPATH, std::ios::out | std::ios::app);
+
+    ofs << msg << "\n";
+
+    ofs.close();
 }
