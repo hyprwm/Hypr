@@ -118,7 +118,7 @@ int getTextWidth(std::string text, xcb_font_t font) {
 
     const auto WIDTH = reply->overall_width;
     free(reply);
-    return WIDTH;
+    return WIDTH + 5;
 }
 
 void CStatusBar::draw() {
@@ -155,10 +155,10 @@ void CStatusBar::draw() {
     }
 
     // Draw time to the right
-    const auto TIMET = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-    const std::string TIME = "Hello World!";
+    std::string TIME = exec("date +%I:%M\\ %p");
+    TIME = TIME.substr(0, TIME.length() - 1);
     xcb_image_text_8(g_pWindowManager->DisplayConnection, TIME.length(), m_iPixmap,
-                     m_mContexts["BASETEXT"].GContext, m_vecSize.x - getTextWidth(TIME, m_mContexts["BASETEXT"].Font) - 2, (m_vecSize.y - (m_vecSize.y - 10) / 2),
+                     m_mContexts["BASETEXT"].GContext, m_vecSize.x - getTextWidth(TIME, m_mContexts["BASETEXT"].Font), (m_vecSize.y - (m_vecSize.y - 10) / 2),
                      TIME.c_str());
 
     xcb_flush(g_pWindowManager->DisplayConnection);

@@ -78,15 +78,21 @@ void CWindowManager::setupManager() {
 
         monitors.push_back(SMonitor());
         monitors[0].vecPosition = Vector2D(0, 0);
-        monitors[0].vecSize = Vector2D(Screen->width_in_pixels / 2.f, Screen->height_in_pixels);
+        monitors[0].vecSize = Vector2D(Screen->width_in_pixels / 3.f, Screen->height_in_pixels);
         monitors[0].ID = 0;
         monitors[0].szName = "Screen";
 
         monitors.push_back(SMonitor());
-        monitors[1].vecPosition = Vector2D(Screen->width_in_pixels / 2.f, 0);
-        monitors[1].vecSize = Vector2D(Screen->width_in_pixels / 2.f, Screen->height_in_pixels);
+        monitors[1].vecPosition = Vector2D(Screen->width_in_pixels / 3.f, 0);
+        monitors[1].vecSize = Vector2D(Screen->width_in_pixels / 3.f, Screen->height_in_pixels);
         monitors[1].ID = 1;
         monitors[1].szName = "Screen2";
+
+        monitors.push_back(SMonitor());
+        monitors[2].vecPosition = Vector2D(2 * Screen->width_in_pixels / 3.f, 0);
+        monitors[2].vecSize = Vector2D(Screen->width_in_pixels / 3.f, Screen->height_in_pixels);
+        monitors[2].ID = 2;
+        monitors[2].szName = "Screen3";
     }
 
     // TODO: get it normally.
@@ -430,7 +436,7 @@ CWindow* CWindowManager::findWindowAtCursor() {
 void CWindowManager::calculateNewTileSetOldTile(CWindow* pWindow) {
     auto PLASTWINDOW = getWindowFromDrawable(LastWindow);
 
-    if (PLASTWINDOW && PLASTWINDOW->getIsFloating()) {
+    if (PLASTWINDOW && (PLASTWINDOW->getIsFloating() || PLASTWINDOW->getWorkspaceID() != pWindow->getWorkspaceID())) {
         // find a window manually
         PLASTWINDOW = findWindowAtCursor();
     }
@@ -482,7 +488,7 @@ void CWindowManager::calculateNewWindowParams(CWindow* pWindow) {
 
 bool CWindowManager::isNeighbor(CWindow* a, CWindow* b) {
 
-    if (a->getWorkspaceID() != b->getWorkspaceID() || getMonitorFromWindow(a) != getMonitorFromWindow(b))
+    if (a->getWorkspaceID() != b->getWorkspaceID())
         return false; // Different workspaces
 
     const auto POSA = a->getPosition();
@@ -571,7 +577,7 @@ void CWindowManager::fixWindowOnClose(CWindow* pClosedWindow) {
     // get the first neighboring window
     CWindow* neighbor = nullptr;
     for(auto& w : windows) {
-        if (w.getDrawable() == pClosedWindow->getDrawable() || getMonitorFromWindow(&w) != getMonitorFromWindow(pClosedWindow))
+        if (w.getDrawable() == pClosedWindow->getDrawable())
             continue;
 
         if (isNeighbor(&w, pClosedWindow) && canEatWindow(&w, pClosedWindow)) {
