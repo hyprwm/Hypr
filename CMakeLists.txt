@@ -5,10 +5,13 @@ project(Hypr
 )
 
 add_compile_options(-std=c++17)
+find_package(Threads REQUIRED)
 
 file(GLOB_RECURSE SRCFILES "src/*.cpp")
 
 add_executable(Hypr ${SRCFILES})
+
+target_link_libraries(Hypr rt)
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
@@ -21,4 +24,5 @@ target_link_libraries(Hypr
         xcb-keysyms
         xcb-randr
         xcb-xinerama
+        ${CMAKE_THREAD_LIBS_INIT}
 )

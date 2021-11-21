@@ -1,6 +1,19 @@
 #include "windowManager.hpp"
 #include "./events/events.hpp"
 
+xcb_visualtype_t* CWindowManager::setupColors() {
+    auto depthIter = xcb_screen_allowed_depths_iterator(Screen);
+    xcb_visualtype_iterator_t visualIter;
+    for (; depthIter.rem; xcb_depth_next(&depthIter)) {
+        if (depthIter.data->depth == Depth) {
+            visualIter = xcb_depth_visuals_iterator(depthIter.data);
+            return visualIter.data;
+        }
+    }
+
+    return nullptr;
+}
+
 void CWindowManager::setupManager() {
     KeybindManager::reloadAllKeybinds();
 
@@ -35,12 +48,42 @@ void CWindowManager::setupManager() {
     workspaces.push_back(protoWorkspace);
     activeWorkspace = &workspaces[0];
     //
+
+    // init visual type, default 32 bit depth
+    // TODO: fix this, ugh
+    Depth = 24; //32
+    VisualType = setupColors();
+    if (VisualType == NULL) {
+        Depth = 24;
+        VisualType = setupColors();
+    }
+
+    // ---- INIT THE BAR ---- //
+
+    // window
+    statusBar.setWindowID(xcb_generate_id(DisplayConnection));
+
+    Values[0] = XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY | XCB_EVENT_MASK_PROPERTY_CHANGE;
+
+    xcb_create_window(DisplayConnection, Depth, statusBar.getWindowID(), 
+        Screen->root, 0, 0, Screen->width_in_pixels, BAR_HEIGHT,
+        0, XCB_WINDOW_CLASS_INPUT_OUTPUT, Screen->root_visual,
+        XCB_CW_EVENT_MASK, Values);
+
+    // map
+    xcb_map_window(DisplayConnection, statusBar.getWindowID());
+
+    statusBar.setup(Vector2D(0, 0), Vector2D(Screen->width_in_pixels, BAR_HEIGHT));
+
+    // start its' update thread
+    Events::setThread();
 }
 
 bool CWindowManager::handleEvent() {
     if (xcb_connection_has_error(DisplayConnection))
         return false;
 
+    xcb_flush(DisplayConnection);
     const auto ev = xcb_wait_for_event(DisplayConnection);
     if (ev != NULL) {
         switch (ev->response_type & ~0x80) {
@@ -64,6 +107,10 @@ bool CWindowManager::handleEvent() {
             case XCB_BUTTON_PRESS:
                 Events::eventKeyPress(ev);
                 Debug::log(LOG, "Event dispatched KEYPRESS");
+                break;
+            case XCB_EXPOSE:
+                Events::eventExpose(ev);
+                Debug::log(LOG, "Event dispatched EXPOSE");
                 break;
 
             default:
@@ -228,9 +275,9 @@ void CWindowManager::setEffectiveSizePosUsingConfig(CWindow* pWindow) {
     pWindow->setEffectiveSize(pWindow->getSize() - (Vector2D(BORDERSIZE, BORDERSIZE) * 2));
 
     // do gaps, set top left
-    pWindow->setEffectivePosition(pWindow->getEffectivePosition() + Vector2D(DISPLAYLEFT ? GAPS_OUT : GAPS_IN, DISPLAYTOP ? GAPS_OUT : GAPS_IN));
+    pWindow->setEffectivePosition(pWindow->getEffectivePosition() + Vector2D(DISPLAYLEFT ? GAPS_OUT : GAPS_IN, DISPLAYTOP ? GAPS_OUT + BAR_HEIGHT : GAPS_IN));
     // fix to old size bottom right
-    pWindow->setEffectiveSize(pWindow->getEffectiveSize() - Vector2D(DISPLAYLEFT ? GAPS_OUT : GAPS_IN, DISPLAYTOP ? GAPS_OUT : GAPS_IN));
+    pWindow->setEffectiveSize(pWindow->getEffectiveSize() - Vector2D(DISPLAYLEFT ? GAPS_OUT : GAPS_IN, DISPLAYTOP ? GAPS_OUT + BAR_HEIGHT : GAPS_IN));
     // set bottom right
     pWindow->setEffectiveSize(pWindow->getEffectiveSize() - Vector2D(DISPLAYRIGHT ? GAPS_OUT : GAPS_IN, DISPLAYBOTTOM ? GAPS_OUT : GAPS_IN));
 }
@@ -499,4 +546,25 @@ void CWindowManager::setAllWorkspaceWindowsDirtyByID(int ID) {
         if (window.getWorkspaceID() == workspaceID)
             window.setDirty(true);
     }
+}
+
+int CWindowManager::getHighestWorkspaceID() {
+    int max = -1;
+    for (auto& workspace : workspaces) {
+        if (workspace.getID() > max) {
+            max = workspace.getID();
+        }
+    }
+
+    return max;
+}
+
+CWorkspace* CWindowManager::getWorkspaceByID(int ID) {
+    for (auto& workspace : workspaces) {
+        if (workspace.getID() == ID) {
+            return &workspace;
+        }
+    }
+
+    return nullptr;
 }

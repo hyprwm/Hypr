@@ -1,5 +1,34 @@
 #include "events.hpp"
 
+void Events::redraw() {
+    xcb_expose_event_t exposeEvent;
+    exposeEvent.window = g_pWindowManager->statusBar.getWindowID();
+    exposeEvent.response_type = XCB_EXPOSE;
+    exposeEvent.x = 0;
+    exposeEvent.y = 0;
+    exposeEvent.width = g_pWindowManager->Screen->width_in_pixels;
+    exposeEvent.height = g_pWindowManager->Screen->height_in_pixels;
+    xcb_send_event(g_pWindowManager->DisplayConnection, false, g_pWindowManager->statusBar.getWindowID(), XCB_EVENT_MASK_EXPOSURE, (char*)&exposeEvent);
+    xcb_flush(g_pWindowManager->DisplayConnection);
+}
+
+void handle(sigval val) {
+    //Events::redraw();
+    g_pWindowManager->statusBar.draw();
+}
+
+void Events::setThread() {
+    sigevent eventsig;
+    eventsig.sigev_notify = SIGEV_THREAD;
+    eventsig.sigev_notify_function = handle;
+    eventsig.sigev_notify_attributes = NULL;
+    eventsig.sigev_value.sival_ptr = &timerid;
+    timer_create(CLOCK_REALTIME, &eventsig, &timerid);
+
+    itimerspec t = {{0, 1000 * (1000 / MAX_FPS)}, {1, 0}};
+    timer_settime(timerid, 0, &t, 0);
+}
+
 void Events::eventEnter(xcb_generic_event_t* event) {
     const auto E = reinterpret_cast<xcb_enter_notify_event_t*>(event);
 
@@ -32,6 +61,10 @@ void Events::eventDestroy(xcb_generic_event_t* event) {
 
 void Events::eventMapWindow(xcb_generic_event_t* event) {
     const auto E = reinterpret_cast<xcb_map_request_event_t*>(event);
+
+    // make sure it's not the bar!
+    if (E->window == g_pWindowManager->statusBar.getWindowID())
+        return;
 
     // Map the window
     xcb_map_window(g_pWindowManager->DisplayConnection, E->window);
@@ -72,4 +105,11 @@ void Events::eventKeyPress(xcb_generic_event_t* event) {
             keybind.getDispatcher()(keybind.getCommand());
         }
     }
+}
+
+void Events::eventExpose(xcb_generic_event_t* event) {
+    const auto E = reinterpret_cast<xcb_expose_event_t*>(event);
+
+    // Draw the bar
+    g_pWindowManager->statusBar.draw();
 }

@@ -28,5 +28,12 @@ int main(int argc, char** argv) {
 
     Debug::log(LOG, "Hypr reached the end! Exiting...");
 
+    xcb_disconnect(g_pWindowManager->DisplayConnection);
+
+    if (const auto err = xcb_connection_has_error(g_pWindowManager->DisplayConnection); err != 0) {
+        Debug::log(CRIT, "Exiting because of error " + std::to_string(err));
+        return err;
+    }
+
     return 0;
 }
