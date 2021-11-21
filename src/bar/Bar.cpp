@@ -5,14 +5,18 @@
 
 #include "../windowManager.hpp"
 
-void CStatusBar::setup(Vector2D origin, Vector2D size) {
-    if (origin.x != -1 && origin.y != -1) {
-        m_vecPosition = origin;
-    }
+void CStatusBar::setup(int MonitorID) {
 
-    if (size.x != -1 && size.y != -1) {
-        m_vecSize = size;
+    if (MonitorID > g_pWindowManager->monitors.size()) {
+        MonitorID = 0;
+        Debug::log(ERR, "Incorrect value in MonitorID for the bar. Setting to 0.");
     }
+        
+    const auto MONITOR = g_pWindowManager->monitors[MonitorID];
+
+    m_iMonitorID = MonitorID;
+    m_vecPosition = MONITOR.vecPosition;
+    m_vecSize = Vector2D(MONITOR.vecSize.x, ConfigManager::getInt("bar_height"));
 
     uint32_t values[4];
 

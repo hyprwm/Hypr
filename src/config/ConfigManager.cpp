@@ -13,8 +13,11 @@ void ConfigManager::init() {
     configValues["border_size"].intValue = 1;
     configValues["gaps_in"].intValue = 5;
     configValues["gaps_out"].intValue = 20;
-    configValues["bar_height"].intValue = 15;
+
     configValues["max_fps"].intValue = 60;
+
+    configValues["bar_monitor"].intValue = 0;
+    configValues["bar_height"].intValue = 15;
 
     loadConfigLoadVars();
 }
@@ -142,7 +145,7 @@ void ConfigManager::loadConfigLoadVars() {
     // Reload the bar as well, don't load it before the default is loaded.
     if (loadBar) {
         g_pWindowManager->statusBar.destroy();
-        g_pWindowManager->statusBar.setup(Vector2D(-1, -1), Vector2D(g_pWindowManager->monitors[g_pWindowManager->statusBar.getMonitorID()].vecSize.x, configValues["bar_height"].intValue));
+        g_pWindowManager->statusBar.setup(configValues["bar_monitor"].intValue);
     }
 
     loadBar = true;

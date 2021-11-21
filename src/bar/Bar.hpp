@@ -16,7 +16,7 @@ public:
     EXPOSED_MEMBER(MonitorID, int, i);
 
     void                draw();
-    void                setup(Vector2D, Vector2D);
+    void                setup(int MonitorID);
     void                destroy();
 
 private:

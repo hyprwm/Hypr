@@ -143,9 +143,7 @@ void CWindowManager::setupManager() {
 
     for (auto& monitor : monitors) {
         if (monitor.primary) {
-            const Vector2D BARSIZE = Vector2D(monitor.vecSize.x, ConfigManager::getInt("bar_height"));
-            statusBar.setup(monitor.vecPosition, BARSIZE);
-            statusBar.setMonitorID(monitor.ID);
+            statusBar.setup(ConfigManager::configValues["bar_monitor"].intValue);
         }
     }
 
