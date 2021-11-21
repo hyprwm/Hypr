@@ -132,31 +132,33 @@ void CStatusBar::draw() {
     if (WORKSPACE->getHasFullscreenWindow())
         return; // Do not draw a bar on a fullscreen window.
 
-    xcb_rectangle_t rectangles[] = {{m_vecPosition.x, m_vecPosition.y, m_vecSize.x + m_vecPosition.x, m_vecPosition.y + m_vecSize.y}};
+    // TODO: CRIT! Status bar flashes, workspaces are wonky (wrong IDs?)
+
+    xcb_rectangle_t rectangles[] = {{(int)0, (int)0, (int)m_vecSize.x, (int)m_vecSize.y}};
     xcb_poly_fill_rectangle(g_pWindowManager->DisplayConnection, m_iPixmap, m_mContexts["BG"].GContext, 1, rectangles);
 
     // Draw workspaces
     int drawnWorkspaces = 0;
-    for (int i = 0; i <= g_pWindowManager->getHighestWorkspaceID(); ++i) {
+    for (int i = 0; i < openWorkspaces.size(); ++i) {
 
-        const auto WORKSPACE = g_pWindowManager->getWorkspaceByID(i);
+        const auto WORKSPACE = openWorkspaces[i];
 
         // The LastWindow may be on a different one. This is where the mouse is.
-        const auto MOUSEWORKSPACEID = g_pWindowManager->activeWorkspaces[g_pWindowManager->getMonitorFromCursor()->ID];
+        const auto MOUSEWORKSPACEID = m_iCurrentWorkspace;
 
         if (!WORKSPACE)
             continue;
 
-        std::string workspaceName = std::to_string(i);
+        std::string workspaceName = std::to_string(openWorkspaces[i]);
 
-        if (WORKSPACE->getID() == MOUSEWORKSPACEID) {
+        if (WORKSPACE == MOUSEWORKSPACEID) {
             xcb_rectangle_t rectangleActive[] = { { m_vecSize.y * drawnWorkspaces, 0, m_vecSize.y, m_vecSize.y } };
             xcb_poly_fill_rectangle(g_pWindowManager->DisplayConnection, m_iPixmap, m_mContexts["MEDBG"].GContext, 1, rectangleActive);
         }
 
         xcb_image_text_8(g_pWindowManager->DisplayConnection, workspaceName.length(), m_iPixmap,
-                         WORKSPACE->getID() == MOUSEWORKSPACEID ? m_mContexts["HITEXT"].GContext : m_mContexts["BASETEXT"].GContext,
-                         m_vecSize.y * drawnWorkspaces + m_vecSize.y / 2.f - 2, m_vecSize.y - (m_vecSize.y - 10) / 2, workspaceName.c_str());
+                         WORKSPACE == MOUSEWORKSPACEID ? m_mContexts["HITEXT"].GContext : m_mContexts["BASETEXT"].GContext,
+                         m_vecSize.y * drawnWorkspaces + m_vecSize.y / 2.f - (WORKSPACE > 9 ? 4 : 2), m_vecSize.y - (m_vecSize.y - 10) / 2, workspaceName.c_str());
 
         drawnWorkspaces++;
     }

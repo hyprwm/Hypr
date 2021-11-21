@@ -19,6 +19,9 @@ public:
     void                setup(int MonitorID);
     void                destroy();
 
+    std::vector<int>    openWorkspaces;
+    EXPOSED_MEMBER(CurrentWorkspace, int, i);
+
 private:
     Vector2D            m_vecSize;
     Vector2D            m_vecPosition;

@@ -81,6 +81,7 @@ public:
     void                        setEffectiveSizePosUsingConfig(CWindow* pWindow);
     void                        cleanupUnusedWorkspaces();
     xcb_visualtype_t*           setupColors();
+    void                        updateBarInfo();
 
 };
 

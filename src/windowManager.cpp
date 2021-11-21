@@ -147,6 +147,9 @@ void CWindowManager::setupManager() {
         }
     }
 
+    // Update bar info
+    updateBarInfo();
+
     // start its' update thread
     Events::setThread();
 
@@ -267,6 +270,9 @@ void CWindowManager::cleanupUnusedWorkspaces() {
             workspaces.push_back(work);
         }
     }
+
+    // Update bar info
+    updateBarInfo();
 }
 
 void CWindowManager::refreshDirtyWindows() {
@@ -303,12 +309,14 @@ void CWindowManager::refreshDirtyWindows() {
                 Values[0] = 0x555555;  // GRAY :)
                 xcb_change_window_attributes(DisplayConnection, window.getDrawable(), XCB_CW_BORDER_PIXEL, Values);
 
-                Values[0] = (int)Screen->width_in_pixels;
-                Values[1] = (int)Screen->height_in_pixels;
+                const auto MONITOR = getMonitorFromWindow(&window);
+
+                Values[0] = (int)MONITOR->vecSize.x;
+                Values[1] = (int)MONITOR->vecSize.y;
                 xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, Values);
 
-                Values[0] = (int)0;
-                Values[1] = (int)0;
+                Values[0] = (int)MONITOR->vecPosition.x;
+                Values[1] = (int)MONITOR->vecPosition.y;
                 xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, Values);
 
                 continue;
@@ -318,8 +326,10 @@ void CWindowManager::refreshDirtyWindows() {
             Values[1] = (int)window.getEffectiveSize().y;
             xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, Values);
 
-            Values[0] = (int)window.getEffectivePosition().x;
-            Values[1] = (int)window.getEffectivePosition().y;
+            // Update the position because the border makes the window jump
+            // I have added the bordersize vec2d before in the setEffectiveSizePosUsingConfig function.
+            Values[0] = (int)window.getEffectivePosition().x - ConfigManager::getInt("border_size");
+            Values[1] = (int)window.getEffectivePosition().y - ConfigManager::getInt("border_size");
             xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, Values);
 
             // Focused special border.
@@ -327,19 +337,11 @@ void CWindowManager::refreshDirtyWindows() {
                 Values[0] = (int)ConfigManager::getInt("border_size");
                 xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_BORDER_WIDTH, Values);
 
-                // Update the position because the border makes the window jump
-                // I have added the bordersize vec2d before in the setEffectiveSizePosUsingConfig function.
-                Values[0] = (int)window.getEffectivePosition().x - ConfigManager::getInt("border_size");
-                Values[1] = (int)window.getEffectivePosition().y - ConfigManager::getInt("border_size");
-                xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, Values);
-
                 Values[0] = 0xFF3333;  // RED :)
                 xcb_change_window_attributes(DisplayConnection, window.getDrawable(), XCB_CW_BORDER_PIXEL, Values);
             } else {
-                Values[0] = 0;
-                xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_BORDER_WIDTH, Values);
 
-                Values[0] = 0x555555;  // GRAY :)
+                Values[0] = 0x222222;  // GRAY :)
                 xcb_change_window_attributes(DisplayConnection, window.getDrawable(), XCB_CW_BORDER_PIXEL, Values);
             }
 
@@ -355,8 +357,11 @@ void CWindowManager::setFocusedWindow(xcb_drawable_t window) {
         xcb_set_input_focus(DisplayConnection, XCB_INPUT_FOCUS_POINTER_ROOT, window, XCB_CURRENT_TIME);
 
         // Fix border from the old window that was in focus.
-        if (const auto PLASTWINDOW = getWindowFromDrawable(LastWindow); PLASTWINDOW)
-            PLASTWINDOW->setDirty(true);
+        Values[0] = 0x555555;  // GRAY :)
+        xcb_change_window_attributes(DisplayConnection, LastWindow, XCB_CW_BORDER_PIXEL, Values);
+
+        Values[0] = 0xFF3333;  // RED :)
+        xcb_change_window_attributes(DisplayConnection, window, XCB_CW_BORDER_PIXEL, Values);
 
         LastWindow = window;
     }
@@ -412,10 +417,12 @@ void CWindowManager::setEffectiveSizePosUsingConfig(CWindow* pWindow) {
     pWindow->setEffectivePosition(pWindow->getPosition() + Vector2D(ConfigManager::getInt("border_size"), ConfigManager::getInt("border_size")));
     pWindow->setEffectiveSize(pWindow->getSize() - (Vector2D(ConfigManager::getInt("border_size"), ConfigManager::getInt("border_size")) * 2));
 
+    //TODO: make windows with no bar taller, this aint working chief
+
     // do gaps, set top left
-    pWindow->setEffectivePosition(pWindow->getEffectivePosition() + Vector2D(DISPLAYLEFT ? ConfigManager::getInt("gaps_out") : ConfigManager::getInt("gaps_in"), DISPLAYTOP ? ConfigManager::getInt("gaps_out") + ConfigManager::getInt("bar_height") : ConfigManager::getInt("gaps_in")));
+    pWindow->setEffectivePosition(pWindow->getEffectivePosition() + Vector2D(DISPLAYLEFT ? ConfigManager::getInt("gaps_out") : ConfigManager::getInt("gaps_in"), DISPLAYTOP ? ConfigManager::getInt("gaps_out") + (MONITOR->ID != statusBar.getMonitorID() ? ConfigManager::getInt("bar_height") : 0) : ConfigManager::getInt("gaps_in")));
     // fix to old size bottom right
-    pWindow->setEffectiveSize(pWindow->getEffectiveSize() - Vector2D(DISPLAYLEFT ? ConfigManager::getInt("gaps_out") : ConfigManager::getInt("gaps_in"), DISPLAYTOP ? ConfigManager::getInt("gaps_out") + ConfigManager::getInt("bar_height") : ConfigManager::getInt("gaps_in")));
+    pWindow->setEffectiveSize(pWindow->getEffectiveSize() - Vector2D(DISPLAYLEFT ? ConfigManager::getInt("gaps_out") : ConfigManager::getInt("gaps_in"), DISPLAYTOP ? ConfigManager::getInt("gaps_out") + (MONITOR->ID != statusBar.getMonitorID() ? ConfigManager::getInt("bar_height") : 0) : ConfigManager::getInt("gaps_in")));
     // set bottom right
     pWindow->setEffectiveSize(pWindow->getEffectiveSize() - Vector2D(DISPLAYRIGHT ? ConfigManager::getInt("gaps_out") : ConfigManager::getInt("gaps_in"), DISPLAYBOTTOM ? ConfigManager::getInt("gaps_out") : ConfigManager::getInt("gaps_in")));
 }
@@ -700,8 +707,10 @@ void CWindowManager::moveActiveWindowTo(char dir) {
 
 void CWindowManager::changeWorkspaceByID(int ID) {
 
-    const auto MONITOR = g_pWindowManager->getWindowFromDrawable(g_pWindowManager->LastWindow)
-            ? g_pWindowManager->getMonitorFromWindow(g_pWindowManager->getWindowFromDrawable(g_pWindowManager->LastWindow)) : getMonitorFromCursor();
+    const auto MONITOR = getMonitorFromCursor();
+
+    // mark old workspace dirty
+    setAllWorkspaceWindowsDirtyByID(activeWorkspaces[MONITOR->ID]);
 
     for (auto& workspace : workspaces) {
         if (workspace.getID() == ID) {
@@ -710,6 +719,12 @@ void CWindowManager::changeWorkspaceByID(int ID) {
 
             // Perform a sanity check for the new workspace
             performSanityCheckForWorkspace(ID);
+
+            // Update bar info
+            updateBarInfo();
+
+            // mark new as dirty
+            setAllWorkspaceWindowsDirtyByID(activeWorkspaces[MONITOR->ID]);
 
             return;
         }
@@ -725,6 +740,11 @@ void CWindowManager::changeWorkspaceByID(int ID) {
 
     // Perform a sanity check for the new workspace
     performSanityCheckForWorkspace(ID);
+
+    // Update bar info
+    updateBarInfo();
+
+    // no need for the new dirty, it's empty
 }
 
 void CWindowManager::setAllWindowsDirty() {
@@ -805,4 +825,15 @@ bool CWindowManager::isWorkspaceVisible(int workspaceID) {
     }
 
     return false;
+}
+
+void CWindowManager::updateBarInfo() {
+    statusBar.openWorkspaces.clear();
+    for (auto& workspace : workspaces) {
+        statusBar.openWorkspaces.push_back(workspace.getID());
+    }
+
+    std::sort(statusBar.openWorkspaces.begin(), statusBar.openWorkspaces.end());
+
+    statusBar.setCurrentWorkspace(activeWorkspaces[getMonitorFromCursor()->ID]);
 }

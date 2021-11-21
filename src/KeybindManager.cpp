@@ -116,10 +116,7 @@ void KeybindManager::changeworkspace(std::string arg) {
             MONITOR = g_pWindowManager->getMonitorFromCursor();
         }
 
-
-        g_pWindowManager->setAllWorkspaceWindowsDirtyByID(g_pWindowManager->activeWorkspaces[MONITOR->ID]);
         g_pWindowManager->changeWorkspaceByID(ID);
-        g_pWindowManager->setAllWorkspaceWindowsDirtyByID(ID);
     }
 }
 
