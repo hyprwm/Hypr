@@ -1,5 +1,6 @@
 #include "ConfigManager.hpp"
 #include "../windowManager.hpp"
+#include "../KeybindManager.hpp"
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -16,6 +17,40 @@ void ConfigManager::init() {
     configValues["max_fps"].intValue = 60;
 
     ConfigManager::loadConfigLoadVars();
+}
+
+void handleBind(const std::string& command, const std::string& value) {
+
+    // example:
+    // bind=SUPER,G,exec,dmenu_run <args>
+
+    auto valueCopy = value;
+
+    const auto MOD = valueCopy.substr(0, valueCopy.find_first_of(","));
+    valueCopy = valueCopy.substr(valueCopy.find_first_of(",") + 1);
+
+    const auto KEY = KeybindManager::getKeyCodeFromName(valueCopy.substr(0, valueCopy.find_first_of(",")));
+    valueCopy = valueCopy.substr(valueCopy.find_first_of(",") + 1);
+
+    const auto HANDLER = valueCopy.substr(0, valueCopy.find_first_of(","));
+    valueCopy = valueCopy.substr(valueCopy.find_first_of(",") + 1);
+
+    const auto COMMAND = valueCopy;
+
+    MODS mod = MOD_NONE;
+
+    if (MOD == "SUPER") mod = MOD_SUPER;
+    else if (MOD == "SHIFT") mod = MOD_SHIFT;
+
+    Dispatcher dispatcher = nullptr;
+    if (HANDLER == "exec") dispatcher = KeybindManager::call;
+    if (HANDLER == "killactive") dispatcher = KeybindManager::killactive;
+    if (HANDLER == "fullscreen") dispatcher = KeybindManager::toggleActiveWindowFullscreen;
+    if (HANDLER == "movewindow") dispatcher = KeybindManager::call;
+    if (HANDLER == "workspace") dispatcher = KeybindManager::changeworkspace;
+
+    if (dispatcher)
+        KeybindManager::keybinds.push_back(Keybind(mod, KEY, COMMAND, dispatcher));
 }
 
 void parseLine(std::string& line) {
@@ -38,7 +73,12 @@ void parseLine(std::string& line) {
     const auto COMMAND = line.substr(0, EQUALSPLACE);
     const auto VALUE = line.substr(EQUALSPLACE + 1);
 
-    if (ConfigManager::configValues.find(COMMAND) == ConfigManager::configValues.end())
+    if (COMMAND == "bind") {
+        handleBind(COMMAND, VALUE);
+        return;
+    }
+
+    if (ConfigManager::configValues.find(COMMAND) == ConfigManager::configValues.end()) 
         return;
 
     auto& CONFIGENTRY = ConfigManager::configValues.at(COMMAND);
@@ -66,6 +106,8 @@ void parseLine(std::string& line) {
 void ConfigManager::loadConfigLoadVars() {
     Debug::log(LOG, "Reloading the config!");
 
+    KeybindManager::keybinds.clear();
+
     const char* const ENVHOME = getenv("HOME");
 
     const std::string CONFIGPATH = ENVHOME + (std::string) "/.config/hypr/hypr.conf";
@@ -82,7 +124,13 @@ void ConfigManager::loadConfigLoadVars() {
     if (ifs.is_open()) {
         while (std::getline(ifs, line)) {
             // Read line by line.
-            parseLine(line);
+            try {
+                parseLine(line);
+            } catch(...) {
+                Debug::log(ERR, "Error reading line from config. Line:");
+                Debug::log(NONE, line);
+            }
+            
         }
     }
 

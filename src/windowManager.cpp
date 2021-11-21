@@ -15,7 +15,6 @@ xcb_visualtype_t* CWindowManager::setupColors() {
 }
 
 void CWindowManager::setupManager() {
-    KeybindManager::reloadAllKeybinds();
     ConfigManager::init();
 
     Values[0] = XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_STRUCTURE_NOTIFY | XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY | XCB_EVENT_MASK_PROPERTY_CHANGE;

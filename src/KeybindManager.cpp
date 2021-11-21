@@ -1,4 +1,5 @@
 #include "KeybindManager.hpp"
+#include "utilities/Util.hpp"
 
 #include <algorithm>
 
@@ -11,31 +12,38 @@ Keybind* KeybindManager::findKeybindByKey(int mod, xcb_keysym_t keysym) {
     return nullptr;
 }
 
-void KeybindManager::reloadAllKeybinds() {
-    KeybindManager::keybinds.clear();
+uint32_t KeybindManager::getKeyCodeFromName(std::string name) {
+    if (name == "")
+        return 0;
 
-    // todo: config
-    KeybindManager::keybinds.push_back(Keybind(MOD_SUPER, 0x72 /* R */, "dmenu_run", &KeybindManager::call));
-    KeybindManager::keybinds.push_back(Keybind(MOD_SUPER, 0x71 /* Q */, "kitty", &KeybindManager::call));
-    KeybindManager::keybinds.push_back(Keybind(MOD_SUPER, 0xff0d /* Enter */, "xterm", &KeybindManager::call));
-    KeybindManager::keybinds.push_back(Keybind(MOD_SUPER, 0x62 /* G */, "google-chrome-stable", &KeybindManager::call));
+    transform(name.begin(), name.end(), name.begin(), ::tolower);
 
-    KeybindManager::keybinds.push_back(Keybind(MOD_SUPER, 0x63 /* C */, "", &KeybindManager::killactive));
+    if (name.length() == 1) {
+        // key
+        std::string command = "xmodmap -pk | grep \"(" + name + ")\"";
+        std::string returnValue = exec(command.c_str());
 
-    // move window
-    KeybindManager::keybinds.push_back(Keybind(MOD_SUPER, 0xff51 /* < */, "l", &KeybindManager::movewindow));
-    KeybindManager::keybinds.push_back(Keybind(MOD_SUPER, 0xff53 /* > */, "r", &KeybindManager::movewindow));
-    KeybindManager::keybinds.push_back(Keybind(MOD_SUPER, 0xff52 /* ^ */, "t", &KeybindManager::movewindow));
-    KeybindManager::keybinds.push_back(Keybind(MOD_SUPER, 0xff54 /* v */, "b", &KeybindManager::movewindow));
+        try {
+            returnValue = returnValue.substr(returnValue.find_first_of('x') + 1);
+            returnValue = returnValue.substr(0, returnValue.find_first_of(' '));
 
-    // Fullscreen
-    KeybindManager::keybinds.push_back(Keybind(MOD_SUPER, 0x66 /* F */, "", &KeybindManager::toggleActiveWindowFullscreen));
-
-    // workspace binds
-    for (int i = 0; i < 10; ++i) {
-        // MOD + 1-9
-        KeybindManager::keybinds.push_back(Keybind(MOD_SUPER, 0x31 + i, std::to_string(i + 1), &KeybindManager::changeworkspace));
+            return std::stoi(returnValue, nullptr, 16); // return hex to int
+        } catch(...) { }
+    } else {
+        if (name == "return" || name == "enter") {
+            return 0xff0d;
+        } else if (name == "left") {
+            return 0xff51;
+        } else if (name == "right") {
+            return 0xff53;
+        } else if (name == "up") {
+            return 0xff52;
+        } else if (name == "down") {
+            return 0xff54;
+        }
     }
+
+    return 0;
 }
 
 unsigned int KeybindManager::modToMask(MODS mod) {
