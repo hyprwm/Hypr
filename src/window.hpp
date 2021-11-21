@@ -31,6 +31,10 @@ public:
 
     // Workspace pointer
     EXPOSED_MEMBER(WorkspaceID, int, i);
+
+    // For floating
+    EXPOSED_MEMBER(DefaultSize, Vector2D, vec);
+    EXPOSED_MEMBER(DefaultPosition, Vector2D, vec);
     
 
 private:

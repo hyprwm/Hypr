@@ -15,13 +15,13 @@ namespace KeybindManager {
     xcb_keysym_t        getKeysymFromKeycode(xcb_keycode_t keycode);
     xcb_keycode_t       getKeycodeFromKeysym(xcb_keysym_t keysym);
 
+    uint32_t            getKeyCodeFromName(std::string);
+
     // Dispatchers
     void                call(std::string args);
     void                killactive(std::string args);
     void                movewindow(std::string args);
     void                changeworkspace(std::string args);
     void                toggleActiveWindowFullscreen(std::string args);
-
-
-    uint32_t            getKeyCodeFromName(std::string);
+    void                toggleActiveWindowFloating(std::string args);
 };

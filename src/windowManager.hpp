@@ -62,6 +62,8 @@ private:
     bool                        canEatWindow(CWindow* a, CWindow* toEat);
     bool                        isNeighbor(CWindow* a, CWindow* b);
     void                        calculateNewTileSetOldTile(CWindow* pWindow);
+    void                        calculateNewFloatingWindow(CWindow* pWindow);
+    CWindow*                    findWindowAtCursor();
     void                        setEffectiveSizePosUsingConfig(CWindow* pWindow);
     void                        cleanupUnusedWorkspaces();
     xcb_visualtype_t*           setupColors();

@@ -40,6 +40,8 @@ uint32_t KeybindManager::getKeyCodeFromName(std::string name) {
             return 0xff52;
         } else if (name == "down") {
             return 0xff54;
+        } else if (name == "space") {
+            return 0x20;
         }
     }
 
@@ -146,5 +148,18 @@ void KeybindManager::toggleActiveWindowFullscreen(std::string unusedArg) {
     if (auto WINDOW = g_pWindowManager->getWindowFromDrawable(g_pWindowManager->LastWindow) ; WINDOW) {
         WINDOW->setFullscreen(!WINDOW->getFullscreen());
         g_pWindowManager->activeWorkspace->setHasFullscreenWindow(WINDOW->getFullscreen());
+    }
+}
+
+void KeybindManager::toggleActiveWindowFloating(std::string unusedArg) {
+    if (const auto PWINDOW = g_pWindowManager->getWindowFromDrawable(g_pWindowManager->LastWindow); PWINDOW) {
+        PWINDOW->setIsFloating(!PWINDOW->getIsFloating());
+        PWINDOW->setDirty(true);
+
+        // Fix window as if it's closed if we just made it floating
+        if (PWINDOW->getIsFloating())
+            g_pWindowManager->fixWindowOnClose(PWINDOW);
+
+        g_pWindowManager->calculateNewWindowParams(PWINDOW);
     }
 }

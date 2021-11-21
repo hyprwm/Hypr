@@ -66,6 +66,9 @@ void Events::eventMapWindow(xcb_generic_event_t* event) {
     window.setDirty(true);
     window.setWorkspaceID(g_pWindowManager->activeWorkspace->getID());
 
+    window.setDefaultPosition(Vector2D(0,0));
+    window.setDefaultSize(Vector2D(g_pWindowManager->Screen->width_in_pixels/2.f,g_pWindowManager->Screen->height_in_pixels/2.f));
+
     // Also sets the old one
     g_pWindowManager->calculateNewWindowParams(&window);
 

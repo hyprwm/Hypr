@@ -294,8 +294,41 @@ void CWindowManager::setEffectiveSizePosUsingConfig(CWindow* pWindow) {
     pWindow->setEffectiveSize(pWindow->getEffectiveSize() - Vector2D(DISPLAYRIGHT ? ConfigManager::getInt("gaps_out") : ConfigManager::getInt("gaps_in"), DISPLAYBOTTOM ? ConfigManager::getInt("gaps_out") : ConfigManager::getInt("gaps_in")));
 }
 
+CWindow* CWindowManager::findWindowAtCursor() {
+    const auto POINTERCOOKIE = xcb_query_pointer(DisplayConnection, Screen->root);
+
+    xcb_query_pointer_reply_t* pointerreply = xcb_query_pointer_reply(DisplayConnection, POINTERCOOKIE, NULL);
+    if (!pointerreply) {
+        Debug::log(ERR, "Couldn't query pointer.");
+        return nullptr;
+    }
+
+    Vector2D cursorPos = Vector2D(pointerreply->root_x, pointerreply->root_y);
+
+    free(pointerreply);
+
+    for (auto& window : windows) {
+        if (window.getWorkspaceID() == activeWorkspace->getID() && !window.getIsFloating()) {
+
+            if (cursorPos.x >= window.getPosition().x 
+                && cursorPos.x <= window.getPosition().x + window.getSize().x
+                && cursorPos.y >= window.getPosition().y
+                && cursorPos.y <= window.getPosition().y + window.getSize().y) {
+
+                return &window;
+            }
+        }
+    }
+}
+
 void CWindowManager::calculateNewTileSetOldTile(CWindow* pWindow) {
-    const auto PLASTWINDOW = getWindowFromDrawable(LastWindow);
+    auto PLASTWINDOW = getWindowFromDrawable(LastWindow);
+
+    if (PLASTWINDOW && PLASTWINDOW->getIsFloating()) {
+        // find a window manually
+        PLASTWINDOW = findWindowAtCursor();
+    }
+
     if (PLASTWINDOW) {
         const auto PLASTSIZE = PLASTWINDOW->getSize();
         const auto PLASTPOS = PLASTWINDOW->getPosition();
@@ -318,6 +351,14 @@ void CWindowManager::calculateNewTileSetOldTile(CWindow* pWindow) {
     }
 }
 
+void CWindowManager::calculateNewFloatingWindow(CWindow* pWindow) {
+    if (!pWindow)
+        return;
+
+    pWindow->setPosition(pWindow->getDefaultPosition());
+    pWindow->setSize(pWindow->getDefaultSize());
+}
+
 void CWindowManager::calculateNewWindowParams(CWindow* pWindow) {
     // And set old one's if needed.
     if (!pWindow)
@@ -325,6 +366,8 @@ void CWindowManager::calculateNewWindowParams(CWindow* pWindow) {
 
     if (!pWindow->getIsFloating()) {
         calculateNewTileSetOldTile(pWindow);
+    } else {
+        calculateNewFloatingWindow(pWindow);
     }
 
     pWindow->setDirty(true);
@@ -385,7 +428,7 @@ bool CWindowManager::canEatWindow(CWindow* a, CWindow* toEat) {
     };
 
     for (auto& w : windows) {
-        if (w.getDrawable() == a->getDrawable() || w.getDrawable() == toEat->getDrawable() || w.getWorkspaceID() != toEat->getWorkspaceID())
+        if (w.getDrawable() == a->getDrawable() || w.getDrawable() == toEat->getDrawable() || w.getWorkspaceID() != toEat->getWorkspaceID() || w.getIsFloating())
             continue;
 
         if (doOverlap(&w))

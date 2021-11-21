@@ -48,6 +48,7 @@ void handleBind(const std::string& command, const std::string& value) {
     if (HANDLER == "fullscreen") dispatcher = KeybindManager::toggleActiveWindowFullscreen;
     if (HANDLER == "movewindow") dispatcher = KeybindManager::call;
     if (HANDLER == "workspace") dispatcher = KeybindManager::changeworkspace;
+    if (HANDLER == "togglefloating") dispatcher = KeybindManager::toggleActiveWindowFloating;
 
     if (dispatcher)
         KeybindManager::keybinds.push_back(Keybind(mod, KEY, COMMAND, dispatcher));
