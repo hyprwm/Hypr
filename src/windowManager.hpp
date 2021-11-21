@@ -57,6 +57,7 @@ public:
     void                        setAllWorkspaceWindowsDirtyByID(int);
     int                         getHighestWorkspaceID();
     CWorkspace*                 getWorkspaceByID(int);
+    bool                        isWorkspaceVisible(int workspaceID);
 
     void                        setAllWindowsDirty();
 
@@ -79,7 +80,6 @@ public:
     void                        setEffectiveSizePosUsingConfig(CWindow* pWindow);
     void                        cleanupUnusedWorkspaces();
     xcb_visualtype_t*           setupColors();
-    bool                        isWorkspaceVisible(int workspaceID);
 
 };
 
