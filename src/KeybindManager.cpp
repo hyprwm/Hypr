@@ -2,6 +2,7 @@
 #include "utilities/Util.hpp"
 
 #include <algorithm>
+#include <string.h>
 
 Keybind* KeybindManager::findKeybindByKey(int mod, xcb_keysym_t keysym) {
     for(auto& key : KeybindManager::keybinds) {
@@ -83,40 +84,15 @@ void KeybindManager::killactive(std::string args) {
 }
 
 void KeybindManager::call(std::string args) {
+
     if (fork() == 0) {
         setsid();
         if (fork() != 0) {
             _exit(0);
         }
 
-        // fix the args
-        std::string command = args.substr(0, args.find_first_of(" "));
+        execl("/bin/sh", "/bin/sh", "-c", args.c_str(), nullptr);
 
-        int ARGNO = std::count(args.begin(), args.end(), ' ');
-        if(ARGNO > 0)
-            ARGNO -= 1;
-
-        if(ARGNO) {
-            char* argsarr[ARGNO];
-
-            for (int i = 0; i < ARGNO; ++i) {
-                args = args.substr(args.find_first_of(' ') + 1);
-                argsarr[i] = (char*)args.substr(0, args.find_first_of(' ')).c_str();
-            }
-
-            Debug::log(LOG, "Executing " + command + " with " + std::to_string(ARGNO) + " args:");
-            for (int i = 0; i < ARGNO; ++i) {
-                Debug::log(NONE, argsarr[i]);
-            }
-
-            execvp((char*)command.c_str(), (char**)argsarr);
-        } else {
-            Debug::log(LOG, "Executing " + command + " with 0 args.");
-
-            execvp((char*)command.c_str(), nullptr);
-        }
-
-        
         _exit(0);
     }
     wait(NULL);
