@@ -123,7 +123,7 @@ int getTextWidth(std::string text, xcb_font_t font) {
 
 void CStatusBar::draw() {
 
-    if (g_pWindowManager->activeWorkspace->getHasFullscreenWindow())
+    if (g_pWindowManager->activeWorkspaces[m_iMonitorID]->getHasFullscreenWindow())
         return; // Do not draw a bar on a fullscreen window.
 
     xcb_rectangle_t rectangles[] = {{m_vecPosition.x, m_vecPosition.y, m_vecSize.x + m_vecPosition.x, m_vecPosition.y + m_vecSize.y}};
@@ -140,13 +140,13 @@ void CStatusBar::draw() {
 
         std::string workspaceName = std::to_string(i);
 
-        if (WORKSPACE->getID() == g_pWindowManager->activeWorkspace->getID()) {
+        if (WORKSPACE->getID() == g_pWindowManager->activeWorkspaces[m_iMonitorID]->getID()) {
             xcb_rectangle_t rectangleActive[] = { { m_vecSize.y * drawnWorkspaces, 0, m_vecSize.y, m_vecSize.y } };
             xcb_poly_fill_rectangle(g_pWindowManager->DisplayConnection, m_iPixmap, m_mContexts["MEDBG"].GContext, 1, rectangleActive);
         }
 
         xcb_image_text_8(g_pWindowManager->DisplayConnection, workspaceName.length(), m_iPixmap,
-                         WORKSPACE->getID() == g_pWindowManager->activeWorkspace->getID() ? m_mContexts["HITEXT"].GContext : m_mContexts["BASETEXT"].GContext,
+                         WORKSPACE->getID() == g_pWindowManager->activeWorkspaces[m_iMonitorID]->getID() ? m_mContexts["HITEXT"].GContext : m_mContexts["BASETEXT"].GContext,
                          m_vecSize.y * drawnWorkspaces + m_vecSize.y / 2.f - 2, m_vecSize.y - (m_vecSize.y - 10) / 2, workspaceName.c_str());
 
         drawnWorkspaces++;

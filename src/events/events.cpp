@@ -62,7 +62,9 @@ void Events::eventMapWindow(xcb_generic_event_t* event) {
     window.setDrawable(E->window);
     window.setIsFloating(false);
     window.setDirty(true);
-    window.setWorkspaceID(g_pWindowManager->activeWorkspace->getID());
+    const auto CURRENTSCREEN = g_pWindowManager->getMonitorFromCursor()->ID;
+    window.setWorkspaceID(g_pWindowManager->activeWorkspaces[CURRENTSCREEN]->getID());
+    window.setMonitor(CURRENTSCREEN);
 
     window.setDefaultPosition(Vector2D(0,0));
     window.setDefaultSize(Vector2D(g_pWindowManager->Screen->width_in_pixels/2.f,g_pWindowManager->Screen->height_in_pixels/2.f));

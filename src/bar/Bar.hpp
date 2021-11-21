@@ -13,6 +13,7 @@ class CStatusBar {
 public:
 
     EXPOSED_MEMBER(WindowID, xcb_window_t, i);
+    EXPOSED_MEMBER(MonitorID, int, i);
 
     void                draw();
     void                setup(Vector2D, Vector2D);

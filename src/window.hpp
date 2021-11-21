@@ -35,6 +35,9 @@ public:
     // For floating
     EXPOSED_MEMBER(DefaultSize, Vector2D, vec);
     EXPOSED_MEMBER(DefaultPosition, Vector2D, vec);
+
+    // Monitors
+    EXPOSED_MEMBER(Monitor, int, i);
     
 
 private:

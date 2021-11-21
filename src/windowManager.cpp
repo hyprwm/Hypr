@@ -1,5 +1,6 @@
 #include "windowManager.hpp"
 #include "./events/events.hpp"
+#include <string.h>
 
 xcb_visualtype_t* CWindowManager::setupColors() {
     auto depthIter = xcb_screen_allowed_depths_iterator(Screen);
@@ -14,8 +15,77 @@ xcb_visualtype_t* CWindowManager::setupColors() {
     return nullptr;
 }
 
+void CWindowManager::setupRandrMonitors() {
+    auto ScreenResReply = xcb_randr_get_screen_resources_current_reply(DisplayConnection, xcb_randr_get_screen_resources_current(DisplayConnection, Screen->root), NULL);
+    if (!ScreenResReply) {
+        Debug::log(ERR, "ScreenResReply NULL!");
+        return;
+    }
+
+    const auto MONITORNUM = xcb_randr_get_screen_resources_current_outputs_length(ScreenResReply);
+    auto OUTPUTS = xcb_randr_get_screen_resources_current_outputs(ScreenResReply);
+
+    xcb_randr_get_output_info_reply_t* outputReply;
+    xcb_randr_get_crtc_info_reply_t* crtcReply;
+
+    
+
+    for (int i = 0; i < MONITORNUM; i++) {
+        outputReply = xcb_randr_get_output_info_reply(DisplayConnection, xcb_randr_get_output_info(DisplayConnection, OUTPUTS[i], XCB_CURRENT_TIME), NULL);
+        if (outputReply->crtc == XCB_NONE)
+            continue;
+        crtcReply = xcb_randr_get_crtc_info_reply(DisplayConnection, xcb_randr_get_crtc_info(DisplayConnection, outputReply->crtc, XCB_CURRENT_TIME), NULL);
+        if (!crtcReply)
+            continue;
+
+        monitors.push_back(SMonitor());
+
+        monitors[i].vecPosition = Vector2D(crtcReply->x, crtcReply->y);
+        monitors[i].vecSize = Vector2D(crtcReply->width, crtcReply->height);
+
+        monitors[i].ID = i;
+
+        char* name = (char*)xcb_randr_get_output_info_name(outputReply);
+        int nameLen = xcb_randr_get_output_info_name_length(outputReply);
+
+        for (int j = 0; j < nameLen; ++j) {
+            monitors[i].szName += name[j];
+        }
+    }
+
+    const auto EXTENSIONREPLY = xcb_get_extension_data(DisplayConnection, &xcb_randr_id);
+    if (!EXTENSIONREPLY->present)
+        Debug::log(ERR, "RandR extension missing");
+    else {
+        //listen for screen change events
+        xcb_randr_select_input(DisplayConnection, Screen->root, XCB_RANDR_NOTIFY_MASK_SCREEN_CHANGE);
+    }
+}
+
 void CWindowManager::setupManager() {
     ConfigManager::init();
+    setupRandrMonitors();
+
+    if (monitors.size() == 0) {
+        // RandR failed!
+        Debug::log(WARN, "RandR failed!");
+
+        monitors.push_back(SMonitor());
+        monitors[0].vecPosition = Vector2D(0,0);
+        monitors[0].vecSize = Vector2D(Screen->width_in_pixels, Screen->height_in_pixels);
+        monitors[0].ID = 0;
+        monitors[0].szName = "Screen";
+    }
+
+    // TODO: get it normally.
+    if (monitors.size() > 1) {
+        monitors[1].primary = true;
+        monitors[1].hasABar = true;
+    } else {
+        monitors[0].primary = true;
+        monitors[0].hasABar = true;
+    }
+    
 
     Values[0] = XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_STRUCTURE_NOTIFY | XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY | XCB_EVENT_MASK_PROPERTY_CHANGE;
     xcb_change_window_attributes_checked(DisplayConnection, Screen->root,
@@ -42,11 +112,14 @@ void CWindowManager::setupManager() {
     
     xcb_flush(DisplayConnection);   
 
-    // Add a workspace to the monitor
-    CWorkspace protoWorkspace;
-    protoWorkspace.setID(1);
-    workspaces.push_back(protoWorkspace);
-    activeWorkspace = &workspaces[0];
+    // Add workspaces to the monitors
+    for (int i = 0; i < monitors.size(); ++i) {
+        CWorkspace protoWorkspace;
+        protoWorkspace.setID(i + 1);
+        protoWorkspace.setMonitor(i);
+        workspaces.push_back(protoWorkspace);
+        activeWorkspaces.push_back(&workspaces[i]);
+    }
     //
 
     // init visual type, default 32 bit depth
@@ -60,7 +133,12 @@ void CWindowManager::setupManager() {
 
     // ---- INIT THE BAR ---- //
 
-    statusBar.setup(Vector2D(0, 0), Vector2D(Screen->width_in_pixels, ConfigManager::getInt("bar_height")));
+    for (auto& monitor : monitors) {
+        if (monitor.primary) {
+            statusBar.setup(Vector2D(monitor.vecPosition.x, monitor.vecPosition.y), Vector2D(monitor.vecSize.x, ConfigManager::getInt("bar_height")));
+            statusBar.setMonitorID(monitor.ID);
+        }
+    }
 
     // start its' update thread
     Events::setThread();
@@ -128,7 +206,7 @@ void CWindowManager::cleanupUnusedWorkspaces() {
     workspaces.clear();
 
     for (auto& work : temp) {
-        if (work.getID() != activeWorkspace->getID()) {
+        if (!isWorkspaceVisible(work.getID())) {
             // check if it has any children
             bool hasChildren = false;
             for (auto& window : windows) {
@@ -156,11 +234,12 @@ void CWindowManager::refreshDirtyWindows() {
             setEffectiveSizePosUsingConfig(&window);
 
             // Fullscreen flag
-            bool bHasFullscreenWindow = activeWorkspace->getHasFullscreenWindow();
+            bool bHasFullscreenWindow = getWorkspaceByID(window.getWorkspaceID())->getHasFullscreenWindow();
 
-            // first and foremost, let's check if the window isn't on a different workspace
+            // first and foremost, let's check if the window isn't on a hidden workspace
             // or that it is not a non-fullscreen window in a fullscreen workspace
-            if ((window.getWorkspaceID() != activeWorkspace->getID()) || (bHasFullscreenWindow && !window.getFullscreen())) {
+            if (!isWorkspaceVisible(window.getWorkspaceID())
+                || (bHasFullscreenWindow && !window.getFullscreen())) {
                 // Move it to hades
                 Values[0] = (int)1500000; // hmu when monitors actually have that many pixels
                 Values[1] = (int)1500000; // and we are still using xorg =)
@@ -310,8 +389,10 @@ CWindow* CWindowManager::findWindowAtCursor() {
 
     free(pointerreply);
 
+    const auto WORKSPACE = activeWorkspaces[getMonitorFromCursor()->ID];
+
     for (auto& window : windows) {
-        if (window.getWorkspaceID() == activeWorkspace->getID() && !window.getIsFloating()) {
+        if (window.getWorkspaceID() == WORKSPACE->getID() && !window.getIsFloating()) {
 
             if (cursorPos.x >= window.getPosition().x 
                 && cursorPos.x <= window.getPosition().x + window.getSize().x
@@ -322,6 +403,8 @@ CWindow* CWindowManager::findWindowAtCursor() {
             }
         }
     }
+
+    return nullptr;
 }
 
 void CWindowManager::calculateNewTileSetOldTile(CWindow* pWindow) {
@@ -349,8 +432,9 @@ void CWindowManager::calculateNewTileSetOldTile(CWindow* pWindow) {
         PLASTWINDOW->setDirty(true);
     } else {
         // Open a fullscreen window
-        pWindow->setSize(Vector2D(Screen->width_in_pixels, Screen->height_in_pixels));
-        pWindow->setPosition(Vector2D(0, 0));
+        const auto MONITOR = getMonitorFromCursor();
+        pWindow->setSize(Vector2D(MONITOR->vecSize.x, MONITOR->vecSize.y));
+        pWindow->setPosition(Vector2D(MONITOR->vecPosition.x, MONITOR->vecPosition.y));
     }
 }
 
@@ -378,7 +462,7 @@ void CWindowManager::calculateNewWindowParams(CWindow* pWindow) {
 
 bool CWindowManager::isNeighbor(CWindow* a, CWindow* b) {
 
-    if (a->getWorkspaceID() != b->getWorkspaceID())
+    if (a->getWorkspaceID() != b->getWorkspaceID() || getMonitorFromWindow(a) != getMonitorFromWindow(b))
         return false; // Different workspaces
 
     const auto POSA = a->getPosition();
@@ -431,7 +515,8 @@ bool CWindowManager::canEatWindow(CWindow* a, CWindow* toEat) {
     };
 
     for (auto& w : windows) {
-        if (w.getDrawable() == a->getDrawable() || w.getDrawable() == toEat->getDrawable() || w.getWorkspaceID() != toEat->getWorkspaceID() || w.getIsFloating())
+        if (w.getDrawable() == a->getDrawable() || w.getDrawable() == toEat->getDrawable() || w.getWorkspaceID() != toEat->getWorkspaceID()
+            || w.getIsFloating() || getMonitorFromWindow(&w) != getMonitorFromWindow(toEat))
             continue;
 
         if (doOverlap(&w))
@@ -457,14 +542,16 @@ void CWindowManager::fixWindowOnClose(CWindow* pClosedWindow) {
     if (!pClosedWindow)
         return;
 
+    const auto WORKSPACE = activeWorkspaces[getMonitorFromWindow(pClosedWindow)->ID];
+
     // Fix if was fullscreen
     if (pClosedWindow->getFullscreen())
-        activeWorkspace->setHasFullscreenWindow(false);
+        WORKSPACE->setHasFullscreenWindow(false);
 
     // get the first neighboring window
     CWindow* neighbor = nullptr;
     for(auto& w : windows) {
-        if (w.getDrawable() == pClosedWindow->getDrawable())
+        if (w.getDrawable() == pClosedWindow->getDrawable() || getMonitorFromWindow(&w) != getMonitorFromWindow(pClosedWindow))
             continue;
 
         if (isNeighbor(&w, pClosedWindow) && canEatWindow(&w, pClosedWindow)) {
@@ -568,19 +655,29 @@ void CWindowManager::moveActiveWindowTo(char dir) {
 }
 
 void CWindowManager::changeWorkspaceByID(int ID) {
+
+    const auto MONITOR = getMonitorFromCursor();
+
     for (auto& workspace : workspaces) {
         if (workspace.getID() == ID) {
-            activeWorkspace = &workspace;
-            LastWindow = -1;
-            return;
+            if (workspace.getMonitor() == MONITOR->ID) {
+                activeWorkspaces[MONITOR->ID] = &workspace;
+                LastWindow = -1;
+                return;
+            } else {
+                activeWorkspaces[workspace.getMonitor()] = &workspace;
+                LastWindow = -1;
+                return;
+            }
         }
     }
 
     // If we are here it means the workspace is new. Let's create it.
     CWorkspace newWorkspace;
     newWorkspace.setID(ID);
+    newWorkspace.setMonitor(MONITOR->ID);
     workspaces.push_back(newWorkspace);
-    activeWorkspace = &workspaces[workspaces.size() - 1];
+    activeWorkspaces[MONITOR->ID] = &workspaces[workspaces.size() - 1];
     LastWindow = -1;
 }
 
@@ -627,4 +724,39 @@ CWorkspace* CWindowManager::getWorkspaceByID(int ID) {
     }
 
     return nullptr;
+}
+
+SMonitor* CWindowManager::getMonitorFromWindow(CWindow* pWindow) {
+    return &monitors[pWindow->getMonitor()];
+}
+
+SMonitor* CWindowManager::getMonitorFromCursor() {
+    const auto POINTERCOOKIE = xcb_query_pointer(DisplayConnection, Screen->root);
+
+    xcb_query_pointer_reply_t* pointerreply = xcb_query_pointer_reply(DisplayConnection, POINTERCOOKIE, NULL);
+    if (!pointerreply) {
+        Debug::log(ERR, "Couldn't query pointer.");
+        return nullptr;
+    }
+
+    const auto CURSORPOS = Vector2D(pointerreply->root_x, pointerreply->root_y);
+    free(pointerreply);
+
+    for (auto& monitor : monitors) {
+        if (VECINRECT(CURSORPOS, monitor.vecPosition.x, monitor.vecPosition.y, monitor.vecPosition.x + monitor.vecSize.x, monitor.vecPosition.y + monitor.vecSize.y))
+            return &monitor;
+    }
+
+    // should never happen tho, I'm using >= and the cursor cant get outside the screens, i hope.
+    return nullptr;
+}
+
+bool CWindowManager::isWorkspaceVisible(int workspaceID) {
+
+    for (auto& workspace : activeWorkspaces) {
+        if (workspace->getID() == workspaceID)
+            return true;
+    }
+
+    return false;
 }

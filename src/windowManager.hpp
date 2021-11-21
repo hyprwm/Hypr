@@ -11,6 +11,7 @@
 #include "utilities/Workspace.hpp"
 #include "bar/Bar.hpp"
 #include "config/ConfigManager.hpp"
+#include "utilities/Monitor.hpp"
 
 class CWindowManager {
 public:
@@ -18,6 +19,8 @@ public:
     xcb_screen_t*               Screen;
     xcb_drawable_t              Drawable;
     uint32_t                    Values[3];
+
+    std::vector<SMonitor>       monitors;
 
     bool                        modKeyDown = false;
 
@@ -28,7 +31,7 @@ public:
     xcb_drawable_t              LastWindow = -1;
 
     std::vector<CWorkspace>     workspaces;
-    CWorkspace*                 activeWorkspace = nullptr;
+    std::vector<CWorkspace*>    activeWorkspaces;
 
     CStatusBar                  statusBar;
     std::thread*                barThread;
@@ -56,9 +59,14 @@ public:
 
     void                        setAllWindowsDirty();
 
-private:
+    SMonitor*                   getMonitorFromWindow(CWindow*);
+    SMonitor*                   getMonitorFromCursor();
+
+   private:
 
     // Internal WM functions that don't have to be exposed
+
+    void                        setupRandrMonitors();
 
     CWindow*                    getNeighborInDir(char dir);
     void                        eatWindow(CWindow* a, CWindow* toEat);
@@ -70,6 +78,7 @@ private:
     void                        setEffectiveSizePosUsingConfig(CWindow* pWindow);
     void                        cleanupUnusedWorkspaces();
     xcb_visualtype_t*           setupColors();
+    bool                        isWorkspaceVisible(int workspaceID);
 
 };
 
