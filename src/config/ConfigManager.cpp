@@ -17,14 +17,6 @@ void ConfigManager::init() {
     configValues["max_fps"].intValue = 60;
 
     ConfigManager::loadConfigLoadVars();
-
-    // Clear logs
-    std::ofstream logs;
-    const char* const ENVHOME = getenv("HOME");
-    const std::string DEBUGPATH = ENVHOME + (std::string) "/.hypr.log";
-    logs.open(DEBUGPATH, std::ios::out | std::ios::trunc);
-    logs << " ";
-    logs.close();
 }
 
 void handleBind(const std::string& command, const std::string& value) {

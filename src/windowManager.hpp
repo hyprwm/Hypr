@@ -12,6 +12,7 @@
 #include "bar/Bar.hpp"
 #include "config/ConfigManager.hpp"
 #include "utilities/Monitor.hpp"
+#include "utilities/Util.hpp"
 
 class CWindowManager {
 public:

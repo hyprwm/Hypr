@@ -5,9 +5,12 @@ Started by Vaxry on 2021 / 11 / 17
 
 */
 
+#include <fstream>
 #include "windowManager.hpp"
 
 int main(int argc, char** argv) {
+    clearLogs();
+
     Debug::log(LOG, "Hypr debug log. Built on " + std::string(__DATE__) + " at " + std::string(__TIME__));
 
     g_pWindowManager->DisplayConnection = xcb_connect(NULL, NULL);

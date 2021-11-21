@@ -14,3 +14,12 @@ std::string exec(const char* cmd) {
     }
     return result;
 }
+
+void clearLogs() {
+    std::ofstream logs;
+    const char* const ENVHOME = getenv("HOME");
+    const std::string DEBUGPATH = ENVHOME + (std::string) "/.hypr.log";
+    logs.open(DEBUGPATH, std::ios::out | std::ios::trunc);
+    logs << " ";
+    logs.close();
+}
