@@ -213,6 +213,35 @@ bool CWindowManager::handleEvent() {
     return true;
 }
 
+// TODO: add an empty space check
+void CWindowManager::performSanityCheckForWorkspace(int WorkspaceID) {
+    for (auto& windowA : windows) {
+        if (windowA.getWorkspaceID() != WorkspaceID)
+            continue;
+
+        for (auto& windowB : windows) {
+            if (windowB.getWorkspaceID() != WorkspaceID)
+                continue;
+
+            if (windowB.getDrawable() == windowA.getDrawable())
+                continue;
+
+            // Check if A and B overlap, if don't, continue
+            if ((windowA.getPosition().x >= (windowB.getPosition() + windowB.getSize()).x || windowB.getPosition().x >= (windowA.getPosition() + windowA.getSize()).x
+                || windowA.getPosition().y >= (windowB.getPosition() + windowB.getSize()).y || windowB.getPosition().y >= (windowA.getPosition() + windowA.getSize()).y)) {
+                    continue;
+            }
+
+            // Overlap detected! Fix window B
+            if (windowB.getIsFloating()) {
+                calculateNewTileSetOldTile(&windowB);
+            } else {
+                calculateNewFloatingWindow(&windowB);
+            }
+        }
+    }
+}
+
 void CWindowManager::cleanupUnusedWorkspaces() {
     std::vector<CWorkspace> temp = workspaces;
 
@@ -678,6 +707,10 @@ void CWindowManager::changeWorkspaceByID(int ID) {
         if (workspace.getID() == ID) {
             activeWorkspaces[workspace.getMonitor()] = workspace.getID();
             LastWindow = -1;
+
+            // Perform a sanity check for the new workspace
+            performSanityCheckForWorkspace(ID);
+
             return;
         }
     }
@@ -689,6 +722,9 @@ void CWindowManager::changeWorkspaceByID(int ID) {
     workspaces.push_back(newWorkspace);
     activeWorkspaces[MONITOR->ID] = workspaces[workspaces.size() - 1].getID();
     LastWindow = -1;
+
+    // Perform a sanity check for the new workspace
+    performSanityCheckForWorkspace(ID);
 }
 
 void CWindowManager::setAllWindowsDirty() {

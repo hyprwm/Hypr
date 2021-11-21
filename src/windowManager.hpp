@@ -44,6 +44,7 @@ public:
     void                        setupManager();
     bool                        handleEvent();
     void                        refreshDirtyWindows();
+    void                        performSanityCheckForWorkspace(int);
 
     void                        setFocusedWindow(xcb_drawable_t);
 
