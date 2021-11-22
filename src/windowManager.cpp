@@ -149,7 +149,7 @@ void CWindowManager::setupManager() {
     updateBarInfo();
 
     // start its' update thread
-    Events::setThread();
+    //Events::setThread();
 
     Debug::log(LOG, "Bar done.");
 
@@ -312,11 +312,10 @@ void CWindowManager::refreshDirtyWindows() {
                 Values[0] = (int)ConfigManager::getInt("border_size");
                 xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_BORDER_WIDTH, Values);
 
-                Values[0] = 0xFF3333;  // RED :)
+                Values[0] = ConfigManager::getInt("col.active_border");
                 xcb_change_window_attributes(DisplayConnection, window.getDrawable(), XCB_CW_BORDER_PIXEL, Values);
             } else {
-
-                Values[0] = 0x222222;  // GRAY :)
+                Values[0] = ConfigManager::getInt("col.inactive_border");
                 xcb_change_window_attributes(DisplayConnection, window.getDrawable(), XCB_CW_BORDER_PIXEL, Values);
             }
 
@@ -332,10 +331,10 @@ void CWindowManager::setFocusedWindow(xcb_drawable_t window) {
         xcb_set_input_focus(DisplayConnection, XCB_INPUT_FOCUS_POINTER_ROOT, window, XCB_CURRENT_TIME);
 
         // Fix border from the old window that was in focus.
-        Values[0] = 0x555555;  // GRAY :)
+        Values[0] = ConfigManager::getInt("col.inactive_border");
         xcb_change_window_attributes(DisplayConnection, LastWindow, XCB_CW_BORDER_PIXEL, Values);
 
-        Values[0] = 0xFF3333;  // RED :)
+        Values[0] = ConfigManager::getInt("col.active_border");
         xcb_change_window_attributes(DisplayConnection, window, XCB_CW_BORDER_PIXEL, Values);
 
         LastWindow = window;

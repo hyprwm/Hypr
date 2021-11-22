@@ -19,6 +19,11 @@ void ConfigManager::init() {
     configValues["bar_monitor"].intValue = 0;
     configValues["bar_height"].intValue = 15;
 
+
+    // Set Colors ARGB
+    configValues["col.active_border"].intValue = 0x77FF3333;
+    configValues["col.inactive_border"].intValue = 0x77222222;
+
     loadConfigLoadVars();
 }
 
@@ -88,7 +93,12 @@ void parseLine(std::string& line) {
     auto& CONFIGENTRY = ConfigManager::configValues.at(COMMAND);
     if (CONFIGENTRY.intValue != -1) {
         try {
-            CONFIGENTRY.intValue = stoi(VALUE);
+            if (VALUE.find("0x") == 0) {
+                // Values with 0x are hex
+                const auto VALUEWITHOUTHEX = VALUE.substr(2);
+                CONFIGENTRY.intValue = stoi(VALUEWITHOUTHEX, nullptr, 16);
+            } else
+                CONFIGENTRY.intValue = stoi(VALUE);
         } catch (...) {
             Debug::log(WARN, "Error reading value of " + COMMAND);
         }
