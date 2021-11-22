@@ -21,6 +21,11 @@ int main(int argc, char** argv) {
 
     g_pWindowManager->Screen = xcb_setup_roots_iterator(xcb_get_setup(g_pWindowManager->DisplayConnection)).data;
 
+    if (!g_pWindowManager->Screen) {
+        Debug::log(CRIT, "Screen was null!");
+        return 1;
+    }
+
     g_pWindowManager->setupManager();
 
     Debug::log(LOG, "Hypr Started!");

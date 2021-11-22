@@ -16,6 +16,18 @@ xcb_visualtype_t* CWindowManager::setupColors() {
 }
 
 void CWindowManager::setupRandrMonitors() {
+
+    // TODO: this stopped working on my machine for some reason.
+    // i3 works though...?
+
+    // finds 0 monitors
+
+    XCBQUERYCHECK(RANDRVER, xcb_randr_query_version_reply(
+        DisplayConnection, xcb_randr_query_version(DisplayConnection, XCB_RANDR_MAJOR_VERSION, XCB_RANDR_MINOR_VERSION), &error), "RandR query failed!" );
+
+        
+    free(RANDRVER);
+
     auto ScreenResReply = xcb_randr_get_screen_resources_current_reply(DisplayConnection, xcb_randr_get_screen_resources_current(DisplayConnection, Screen->root), NULL);
     if (!ScreenResReply) {
         Debug::log(ERR, "ScreenResReply NULL!");
@@ -65,6 +77,8 @@ void CWindowManager::setupRandrMonitors() {
         //listen for screen change events
         xcb_randr_select_input(DisplayConnection, Screen->root, XCB_RANDR_NOTIFY_MASK_SCREEN_CHANGE);
     }
+
+    xcb_flush(DisplayConnection);
 }
 
 void CWindowManager::setupManager() {
@@ -74,7 +88,7 @@ void CWindowManager::setupManager() {
         // RandR failed!
         Debug::log(WARN, "RandR failed!");
 
-        #define TESTING_MON_AMOUNT 3
+        #define TESTING_MON_AMOUNT 1
         for (int i = 0; i < TESTING_MON_AMOUNT /* Testing on 3 monitors, RandR shouldnt fail on a real desktop */; ++i) {
             monitors.push_back(SMonitor());
             monitors[i].vecPosition = Vector2D(i * Screen->width_in_pixels / TESTING_MON_AMOUNT, 0);
@@ -445,6 +459,11 @@ void CWindowManager::calculateNewTileSetOldTile(CWindow* pWindow) {
         // New window on this workspace.
         // Open a fullscreen window.
         const auto MONITOR = getMonitorFromCursor();
+        if (!MONITOR) {
+            Debug::log(ERR, "Monitor was nullptr! (calculateNewTileSetOldTile)");
+            return;
+        }
+            
         pWindow->setSize(Vector2D(MONITOR->vecSize.x, MONITOR->vecSize.y));
         pWindow->setPosition(Vector2D(MONITOR->vecPosition.x, MONITOR->vecPosition.y));
 
@@ -678,6 +697,7 @@ void CWindowManager::warpCursorTo(Vector2D to) {
     xcb_query_pointer_reply_t* pointerreply = xcb_query_pointer_reply(DisplayConnection, POINTERCOOKIE, NULL);
     if (!pointerreply) {
         Debug::log(ERR, "Couldn't query pointer.");
+        free(pointerreply);
         return;
     }
 
@@ -716,6 +736,11 @@ void CWindowManager::moveActiveWindowTo(char dir) {
 void CWindowManager::changeWorkspaceByID(int ID) {
 
     const auto MONITOR = getMonitorFromCursor();
+
+    if (!MONITOR) {
+        Debug::log(ERR, "Monitor was nullptr! (changeWorkspaceByID)");
+        return;
+    }
 
     // mark old workspace dirty
     setAllWorkspaceWindowsDirtyByID(activeWorkspaces[MONITOR->ID]);
@@ -816,6 +841,7 @@ Vector2D CWindowManager::getCursorPos() {
     xcb_query_pointer_reply_t* pointerreply = xcb_query_pointer_reply(DisplayConnection, POINTERCOOKIE, NULL);
     if (!pointerreply) {
         Debug::log(ERR, "Couldn't query pointer.");
+        free(pointerreply);
         return Vector2D(0,0);
     }
 
@@ -842,6 +868,11 @@ void CWindowManager::updateBarInfo() {
     }
 
     std::sort(statusBar.openWorkspaces.begin(), statusBar.openWorkspaces.end());
+
+    if (!getMonitorFromCursor()) {
+        Debug::log(ERR, "Monitor was null! (updateBarInfo)");
+        return;
+    }
 
     statusBar.setCurrentWorkspace(activeWorkspaces[getMonitorFromCursor()->ID]);
 }

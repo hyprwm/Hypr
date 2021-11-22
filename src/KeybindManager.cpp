@@ -112,12 +112,6 @@ void KeybindManager::changeworkspace(std::string arg) {
         Debug::log(LOG, "Changing the current workspace to " + std::to_string(ID));
 
         const auto PLASTWINDOW = g_pWindowManager->getWindowFromDrawable(g_pWindowManager->LastWindow);
-        SMonitor* MONITOR = nullptr;
-        if (PLASTWINDOW) {
-            MONITOR = g_pWindowManager->getMonitorFromWindow(PLASTWINDOW);
-        } else {
-            MONITOR = g_pWindowManager->getMonitorFromCursor();
-        }
 
         g_pWindowManager->changeWorkspaceByID(ID);
     }

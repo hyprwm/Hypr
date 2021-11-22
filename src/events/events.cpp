@@ -53,6 +53,10 @@ CWindow* Events::remapWindow(int windowID, bool wasfloating) {
     window.setDrawable(windowID);
     window.setIsFloating(false);
     window.setDirty(true);
+    if (!g_pWindowManager->getMonitorFromCursor()) {
+        Debug::log(ERR, "Monitor was null! (remapWindow)");
+        // rip! we cannot continue.
+    }
     const auto CURRENTSCREEN = g_pWindowManager->getMonitorFromCursor()->ID;
     window.setWorkspaceID(g_pWindowManager->activeWorkspaces[CURRENTSCREEN]);
     window.setMonitor(CURRENTSCREEN);

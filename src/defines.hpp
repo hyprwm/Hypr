@@ -28,3 +28,15 @@
 #define STICKS(a, b) abs((a) - (b)) < 2
 
 #define VECINRECT(vec, x1, y1, x2, y2) (vec.x >= (x1) && vec.x <= (x2) && vec.y >= (y1) && vec.y <= (y2))
+
+#define XCBQUERYCHECK(name, query, errormsg) \
+    xcb_generic_error_t* error;              \
+    const auto name = query;                 \
+                                             \
+    if (error != NULL) {                     \
+        Debug::log(ERR, errormsg);           \
+        free(error);                         \
+        free(name);                          \
+        return;                              \
+    }                                        \
+    free(error);
