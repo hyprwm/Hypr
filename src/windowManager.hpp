@@ -24,6 +24,9 @@ public:
     std::vector<SMonitor>       monitors;
 
     bool                        modKeyDown = false;
+    int                         mouseKeyDown = 0;
+    Vector2D                    mouseLastPos = Vector2D(0, 0);
+    int64_t                     actingOnWindowFloating = 0;
 
     uint8_t                     Depth = 32;
     xcb_visualtype_t*           VisualType;
@@ -63,6 +66,8 @@ public:
 
     SMonitor*                   getMonitorFromWindow(CWindow*);
     SMonitor*                   getMonitorFromCursor();
+
+    Vector2D                    getCursorPos();
 
     // finds a window that's tiled at cursor.
     CWindow*                    findWindowAtCursor();

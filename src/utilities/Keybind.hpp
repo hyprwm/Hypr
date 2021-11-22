@@ -6,7 +6,8 @@ typedef void (*Dispatcher)(std::string);
 enum MODS {
     MOD_NONE = 0,
     MOD_SUPER,
-    MOD_SHIFT
+    MOD_SHIFT,
+    MOD_SHIFTSUPER
 };
 
 class Keybind {

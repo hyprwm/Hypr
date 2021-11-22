@@ -101,6 +101,7 @@ void CWindowManager::setupManager() {
 
     xcb_flush(DisplayConnection);
 
+    // MOD + mouse
     xcb_grab_button(DisplayConnection, 0,
         Screen->root, XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE,
         XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, Screen->root, XCB_NONE,
@@ -149,7 +150,7 @@ void CWindowManager::setupManager() {
     updateBarInfo();
 
     // start its' update thread
-    //Events::setThread();
+    Events::setThread();
 
     Debug::log(LOG, "Bar done.");
 
@@ -183,15 +184,23 @@ bool CWindowManager::handleEvent() {
                 Debug::log(LOG, "Event dispatched MAP");
                 break;
             case XCB_BUTTON_PRESS:
-                Events::eventKeyPress(ev);
+                Events::eventButtonPress(ev);
                 Debug::log(LOG, "Event dispatched BUTTON_PRESS");
+                break;
+            case XCB_BUTTON_RELEASE:
+                Events::eventButtonRelease(ev);
+                Debug::log(LOG, "Event dispatched BUTTON_RELEASE");
+                break;
+            case XCB_MOTION_NOTIFY:
+                Events::eventMotionNotify(ev);
+                //Debug::log(LOG, "Event dispatched MOTION_NOTIFY"); // Spam!!
                 break;
             case XCB_EXPOSE:
                 Events::eventExpose(ev);
                 Debug::log(LOG, "Event dispatched EXPOSE");
                 break;
             case XCB_KEY_PRESS:
-                Events::eventButtonPress(ev);
+                Events::eventKeyPress(ev);
                 Debug::log(LOG, "Event dispatched KEY_PRESS");
                 break;
 
@@ -247,13 +256,12 @@ void CWindowManager::cleanupUnusedWorkspaces() {
 void CWindowManager::refreshDirtyWindows() {
     for(auto& window : windows) {
         if (window.getDirty()) {
+            window.setDirty(false);
 
             // Check if the window isn't a node
-            if (window.getChildNodeAID() != 0) {
-                window.setDirty(false);
+            if (window.getChildNodeAID() != 0) 
                 continue;
-            }
-
+                
             setEffectiveSizePosUsingConfig(&window);
 
             // Fullscreen flag
@@ -319,8 +327,6 @@ void CWindowManager::refreshDirtyWindows() {
                 xcb_change_window_attributes(DisplayConnection, window.getDrawable(), XCB_CW_BORDER_PIXEL, Values);
             }
 
-            window.setDirty(false);
-
             Debug::log(LOG, "Refreshed dirty window, with an ID of " + std::to_string(window.getDrawable()));
         }
     }
@@ -336,6 +342,12 @@ void CWindowManager::setFocusedWindow(xcb_drawable_t window) {
 
         Values[0] = ConfigManager::getInt("col.active_border");
         xcb_change_window_attributes(DisplayConnection, window, XCB_CW_BORDER_PIXEL, Values);
+
+        float values[1];
+        if (g_pWindowManager->getWindowFromDrawable(window) && g_pWindowManager->getWindowFromDrawable(window)->getIsFloating()) {
+            values[0] = XCB_STACK_MODE_ABOVE;
+            xcb_configure_window(g_pWindowManager->DisplayConnection, window, XCB_CONFIG_WINDOW_STACK_MODE, values);
+        }
 
         LastWindow = window;
     }
@@ -404,15 +416,7 @@ void CWindowManager::setEffectiveSizePosUsingConfig(CWindow* pWindow) {
 CWindow* CWindowManager::findWindowAtCursor() {
     const auto POINTERCOOKIE = xcb_query_pointer(DisplayConnection, Screen->root);
 
-    xcb_query_pointer_reply_t* pointerreply = xcb_query_pointer_reply(DisplayConnection, POINTERCOOKIE, NULL);
-    if (!pointerreply) {
-        Debug::log(ERR, "Couldn't query pointer.");
-        return nullptr;
-    }
-
-    Vector2D cursorPos = Vector2D(pointerreply->root_x, pointerreply->root_y);
-
-    free(pointerreply);
+    Vector2D cursorPos = getCursorPos();
 
     const auto WORKSPACE = activeWorkspaces[getMonitorFromCursor()->ID];
 
@@ -473,6 +477,9 @@ void CWindowManager::calculateNewTileSetOldTile(CWindow* pWindow) {
                             + std::to_string(pWindow->getPosition().y) + " " + std::to_string(pWindow->getSize().x) + " "
                             + std::to_string(pWindow->getSize().y));
     }
+
+    Values[0] = XCB_STACK_MODE_BELOW;
+    xcb_configure_window(DisplayConnection, pWindow->getDrawable(), XCB_CONFIG_WINDOW_STACK_MODE, Values);
 }
 
 void CWindowManager::calculateNewFloatingWindow(CWindow* pWindow) {
@@ -481,6 +488,9 @@ void CWindowManager::calculateNewFloatingWindow(CWindow* pWindow) {
 
     pWindow->setPosition(pWindow->getDefaultPosition());
     pWindow->setSize(pWindow->getDefaultSize());
+
+    Values[0] = XCB_STACK_MODE_ABOVE;
+    xcb_configure_window(DisplayConnection, pWindow->getDrawable(), XCB_CONFIG_WINDOW_STACK_MODE, Values);
 }
 
 void CWindowManager::calculateNewWindowParams(CWindow* pWindow) {
@@ -587,6 +597,11 @@ void CWindowManager::fixWindowOnClose(CWindow* pClosedWindow) {
 
     // Get the sibling
     const auto PSIBLING = getWindowFromDrawable(PPARENT->getChildNodeAID() == pClosedWindow->getDrawable() ? PPARENT->getChildNodeBID() : PPARENT->getChildNodeAID());
+
+    if (!PSIBLING) {
+        Debug::log(ERR, "No sibling found in fixOnClose! (Corrupted tree...?)");
+        return;
+    }
 
     PSIBLING->setPosition(PPARENT->getPosition());
     PSIBLING->setSize(PPARENT->getSize());
@@ -784,16 +799,7 @@ SMonitor* CWindowManager::getMonitorFromWindow(CWindow* pWindow) {
 }
 
 SMonitor* CWindowManager::getMonitorFromCursor() {
-    const auto POINTERCOOKIE = xcb_query_pointer(DisplayConnection, Screen->root);
-
-    xcb_query_pointer_reply_t* pointerreply = xcb_query_pointer_reply(DisplayConnection, POINTERCOOKIE, NULL);
-    if (!pointerreply) {
-        Debug::log(ERR, "Couldn't query pointer.");
-        return nullptr;
-    }
-
-    const auto CURSORPOS = Vector2D(pointerreply->root_x, pointerreply->root_y);
-    free(pointerreply);
+    const auto CURSORPOS = getCursorPos();
 
     for (auto& monitor : monitors) {
         if (VECINRECT(CURSORPOS, monitor.vecPosition.x, monitor.vecPosition.y, monitor.vecPosition.x + monitor.vecSize.x, monitor.vecPosition.y + monitor.vecSize.y))
@@ -802,6 +808,21 @@ SMonitor* CWindowManager::getMonitorFromCursor() {
 
     // should never happen tho, I'm using >= and the cursor cant get outside the screens, i hope.
     return nullptr;
+}
+
+Vector2D CWindowManager::getCursorPos() {
+    const auto POINTERCOOKIE = xcb_query_pointer(DisplayConnection, Screen->root);
+
+    xcb_query_pointer_reply_t* pointerreply = xcb_query_pointer_reply(DisplayConnection, POINTERCOOKIE, NULL);
+    if (!pointerreply) {
+        Debug::log(ERR, "Couldn't query pointer.");
+        return Vector2D(0,0);
+    }
+
+    const auto CURSORPOS = Vector2D(pointerreply->root_x, pointerreply->root_y);
+    free(pointerreply);
+
+    return CURSORPOS;
 }
 
 bool CWindowManager::isWorkspaceVisible(int workspaceID) {

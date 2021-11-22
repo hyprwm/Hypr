@@ -84,6 +84,11 @@ void CStatusBar::setup(int MonitorID) {
 
     // don't, i use it later
     //xcb_close_font(g_pWindowManager->DisplayConnection, contextBASETEXT->Font);
+
+
+    // Set the bar to be top
+    values[0] = XCB_STACK_MODE_ABOVE;
+    xcb_configure_window(g_pWindowManager->DisplayConnection, m_iWindowID, XCB_CONFIG_WINDOW_STACK_MODE, values);
 }
 
 void CStatusBar::destroy() {

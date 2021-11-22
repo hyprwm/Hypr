@@ -37,9 +37,9 @@ void Events::eventDestroy(xcb_generic_event_t* event) {
     const auto E = reinterpret_cast<xcb_destroy_notify_event_t*>(event);
     xcb_kill_client(g_pWindowManager->DisplayConnection, E->window);
 
-    // fix last window
+    // fix last window if tile
     const auto CLOSEDWINDOW = g_pWindowManager->getWindowFromDrawable(E->window);
-    if (CLOSEDWINDOW) {
+    if (CLOSEDWINDOW && !CLOSEDWINDOW->getIsFloating()) {
         g_pWindowManager->fixWindowOnClose(CLOSEDWINDOW);
 
         // delete off of the arr
@@ -47,45 +47,36 @@ void Events::eventDestroy(xcb_generic_event_t* event) {
     }
 }
 
-void Events::eventMapWindow(xcb_generic_event_t* event) {
-    const auto E = reinterpret_cast<xcb_map_request_event_t*>(event);
-
-    // make sure it's not the bar!
-    if (E->window == g_pWindowManager->statusBar.getWindowID())
-        return;
-
-    // Map the window
-    xcb_map_window(g_pWindowManager->DisplayConnection, E->window);
-
+CWindow* Events::remapWindow(int windowID, bool wasfloating) {
     // Do the setup of the window's params and stuf
     CWindow window;
-    window.setDrawable(E->window);
+    window.setDrawable(windowID);
     window.setIsFloating(false);
     window.setDirty(true);
     const auto CURRENTSCREEN = g_pWindowManager->getMonitorFromCursor()->ID;
     window.setWorkspaceID(g_pWindowManager->activeWorkspaces[CURRENTSCREEN]);
     window.setMonitor(CURRENTSCREEN);
 
-    window.setDefaultPosition(Vector2D(0,0));
-    window.setDefaultSize(Vector2D(g_pWindowManager->Screen->width_in_pixels/2.f,g_pWindowManager->Screen->height_in_pixels/2.f));
+    window.setDefaultPosition(Vector2D(0, 0));
+    window.setDefaultSize(Vector2D(g_pWindowManager->Screen->width_in_pixels / 2.f, g_pWindowManager->Screen->height_in_pixels / 2.f));
 
     // Set the parent
     // check if lastwindow is on our workspace
-    if (auto PLASTWINDOW = g_pWindowManager->getWindowFromDrawable(g_pWindowManager->LastWindow); PLASTWINDOW
-        && PLASTWINDOW->getWorkspaceID() == g_pWindowManager->activeWorkspaces[CURRENTSCREEN]) {
-            // LastWindow is on our workspace, let's make a new split node
+    if (auto PLASTWINDOW = g_pWindowManager->getWindowFromDrawable(g_pWindowManager->LastWindow); (PLASTWINDOW && PLASTWINDOW->getWorkspaceID() == g_pWindowManager->activeWorkspaces[CURRENTSCREEN]) || wasfloating) {
+        // LastWindow is on our workspace, let's make a new split node
 
-            if (PLASTWINDOW->getIsFloating()) {
-                // find a window manually
-                PLASTWINDOW = g_pWindowManager->findWindowAtCursor();
-            }
+        if (wasfloating || PLASTWINDOW->getIsFloating()) {
+            // find a window manually
+            PLASTWINDOW = g_pWindowManager->findWindowAtCursor();
+        }
 
+        if (PLASTWINDOW) {
             CWindow newWindowSplitNode;
             newWindowSplitNode.setPosition(PLASTWINDOW->getPosition());
             newWindowSplitNode.setSize(PLASTWINDOW->getSize());
 
             newWindowSplitNode.setChildNodeAID(PLASTWINDOW->getDrawable());
-            newWindowSplitNode.setChildNodeBID(E->window);
+            newWindowSplitNode.setChildNodeBID(windowID);
 
             newWindowSplitNode.setParentNodeID(PLASTWINDOW->getParentNodeID());
 
@@ -108,6 +99,9 @@ void Events::eventMapWindow(xcb_generic_event_t* event) {
             PLASTWINDOW->setParentNodeID(newWindowSplitNode.getDrawable());
 
             g_pWindowManager->addWindowToVectorSafe(newWindowSplitNode);
+        } else {
+            window.setParentNodeID(0);
+        }
     } else {
         // LastWindow is not on our workspace, so set the parent to 0.
         window.setParentNodeID(0);
@@ -117,22 +111,69 @@ void Events::eventMapWindow(xcb_generic_event_t* event) {
     g_pWindowManager->calculateNewWindowParams(&window);
 
     // Focus
-    g_pWindowManager->setFocusedWindow(E->window);
+    g_pWindowManager->setFocusedWindow(windowID);
 
     // Add to arr
     g_pWindowManager->addWindowToVectorSafe(window);
 
-    Debug::log(LOG, "Created a new window! X: " + std::to_string(window.getPosition().x) + ", Y: " + std::to_string(window.getPosition().y) + ", W: "
-        + std::to_string(window.getSize().x) + ", H:" + std::to_string(window.getSize().y) + " ID: " + std::to_string(E->window));
+    Debug::log(LOG, "Created a new window! X: " + std::to_string(window.getPosition().x) + ", Y: " + std::to_string(window.getPosition().y) + ", W: " + std::to_string(window.getSize().x) + ", H:" + std::to_string(window.getSize().y) + " ID: " + std::to_string(windowID));
 
     // Set map values
     g_pWindowManager->Values[0] = XCB_EVENT_MASK_ENTER_WINDOW | XCB_EVENT_MASK_FOCUS_CHANGE;
-    xcb_change_window_attributes_checked(g_pWindowManager->DisplayConnection, E->window, XCB_CW_EVENT_MASK, g_pWindowManager->Values);
- 
-    g_pWindowManager->setFocusedWindow(E->window);
+    xcb_change_window_attributes_checked(g_pWindowManager->DisplayConnection, windowID, XCB_CW_EVENT_MASK, g_pWindowManager->Values);
+
+    g_pWindowManager->setFocusedWindow(windowID);
+
+    float values[1];
+    values[0] = XCB_STACK_MODE_BELOW;
+    xcb_configure_window(g_pWindowManager->DisplayConnection, windowID, XCB_CONFIG_WINDOW_STACK_MODE, values);
+
+    return g_pWindowManager->getWindowFromDrawable(windowID);
+}
+
+void Events::eventMapWindow(xcb_generic_event_t* event) {
+    const auto E = reinterpret_cast<xcb_map_request_event_t*>(event);
+
+    // make sure it's not the bar!
+    if (E->window == g_pWindowManager->statusBar.getWindowID())
+        return;
+
+    // Map the window
+    xcb_map_window(g_pWindowManager->DisplayConnection, E->window);
+
+    remapWindow(E->window);
 }
 
 void Events::eventButtonPress(xcb_generic_event_t* event) {
+    const auto E = reinterpret_cast<xcb_button_press_event_t*>(event);
+
+    // mouse down!
+    g_pWindowManager->mouseKeyDown = E->detail;
+    xcb_grab_pointer(g_pWindowManager->DisplayConnection, 0, g_pWindowManager->Screen->root, XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_BUTTON_MOTION | XCB_EVENT_MASK_POINTER_MOTION_HINT,
+                     XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC,
+                     g_pWindowManager->Screen->root, XCB_NONE, XCB_CURRENT_TIME);
+
+    if (const auto PLASTWINDOW = g_pWindowManager->getWindowFromDrawable(g_pWindowManager->LastWindow); PLASTWINDOW) {
+        if (PLASTWINDOW->getIsFloating()) {
+            g_pWindowManager->actingOnWindowFloating = PLASTWINDOW->getDrawable();
+            g_pWindowManager->mouseLastPos = g_pWindowManager->getCursorPos();
+        }
+    }
+}
+
+void Events::eventButtonRelease(xcb_generic_event_t* event) {
+    const auto E = reinterpret_cast<xcb_button_release_event_t*>(event);
+
+    // ungrab the mouse ptr
+    xcb_ungrab_pointer(g_pWindowManager->DisplayConnection, XCB_CURRENT_TIME);
+    const auto PACTINGWINDOW = g_pWindowManager->getWindowFromDrawable(g_pWindowManager->actingOnWindowFloating);
+    if (PACTINGWINDOW)
+        PACTINGWINDOW->setDirty(true);
+    g_pWindowManager->actingOnWindowFloating = 0;
+    g_pWindowManager->mouseKeyDown = 0;
+}
+
+void Events::eventKeyPress(xcb_generic_event_t* event) {
     const auto E = reinterpret_cast<xcb_key_press_event_t*>(event);
 
     const auto KEYSYM = KeybindManager::getKeysymFromKeycode(E->detail);
@@ -146,10 +187,61 @@ void Events::eventButtonPress(xcb_generic_event_t* event) {
     }
 }
 
-void Events::eventKeyPress(xcb_generic_event_t* event) {
-    const auto E = reinterpret_cast<xcb_key_press_event_t*>(event);
+void Events::eventMotionNotify(xcb_generic_event_t* event) {
+    const auto E = reinterpret_cast<xcb_motion_notify_event_t*>(event);
 
-    // todo: super resize and move floating
+    if (!g_pWindowManager->mouseKeyDown)
+        return; // mouse up.
+
+    if (!g_pWindowManager->actingOnWindowFloating)
+        return; // not acting, return.
+
+    // means we are holding super
+    const auto POINTERPOS = g_pWindowManager->getCursorPos();
+    const auto POINTERDELTA = Vector2D(POINTERPOS) - g_pWindowManager->mouseLastPos;
+
+    const auto PACTINGWINDOW = g_pWindowManager->getWindowFromDrawable(g_pWindowManager->actingOnWindowFloating);
+
+    if (!PACTINGWINDOW) {
+        Debug::log(ERR, "ActingWindow not null but doesn't exist?? (Died?)");
+        g_pWindowManager->actingOnWindowFloating = 0;
+        return;
+    }
+
+    float Values[2];
+
+    if (abs(POINTERDELTA.x) < 1 && abs(POINTERDELTA.y) < 1)
+        return; // micromovements
+
+    if (g_pWindowManager->mouseKeyDown == 1) {
+        // moving
+        PACTINGWINDOW->setPosition(PACTINGWINDOW->getPosition() + POINTERDELTA);
+        PACTINGWINDOW->setEffectivePosition(PACTINGWINDOW->getPosition());
+        PACTINGWINDOW->setDefaultPosition(PACTINGWINDOW->getPosition());
+
+        // update workspace if needed
+        if (g_pWindowManager->getMonitorFromCursor()) {
+            const auto WORKSPACE = g_pWindowManager->activeWorkspaces[g_pWindowManager->getMonitorFromCursor()->ID];
+            PACTINGWINDOW->setWorkspaceID(WORKSPACE);
+        } else {
+            PACTINGWINDOW->setWorkspaceID(-1);
+        } 
+
+        PACTINGWINDOW->setDirty(true);
+    } else if (g_pWindowManager->mouseKeyDown == 3) {
+        // resizing
+        PACTINGWINDOW->setSize(PACTINGWINDOW->getSize() + POINTERDELTA);
+        // clamp
+        PACTINGWINDOW->setSize(Vector2D(std::clamp(PACTINGWINDOW->getSize().x, (double)30, (double)999999), std::clamp(PACTINGWINDOW->getSize().y, (double)30, (double)999999)));
+
+        // apply to other
+        PACTINGWINDOW->setDefaultSize(PACTINGWINDOW->getSize());
+        PACTINGWINDOW->setEffectiveSize(PACTINGWINDOW->getSize());
+
+        PACTINGWINDOW->setDirty(true);
+    }
+
+    g_pWindowManager->mouseLastPos = POINTERPOS;
 }
 
 void Events::eventExpose(xcb_generic_event_t* event) {

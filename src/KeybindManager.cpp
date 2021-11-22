@@ -1,5 +1,6 @@
 #include "KeybindManager.hpp"
 #include "utilities/Util.hpp"
+#include "events/events.hpp"
 
 #include <algorithm>
 #include <string.h>
@@ -57,6 +58,8 @@ unsigned int KeybindManager::modToMask(MODS mod) {
             return XCB_MOD_MASK_4;
         case MOD_SHIFT:
             return XCB_MOD_MASK_SHIFT;
+        case MOD_SHIFTSUPER:
+            return XCB_MOD_MASK_4 | XCB_MOD_MASK_SHIFT;
     }
 
     return 0;
@@ -137,9 +140,24 @@ void KeybindManager::toggleActiveWindowFloating(std::string unusedArg) {
         PWINDOW->setDirty(true);
 
         // Fix window as if it's closed if we just made it floating
-        if (PWINDOW->getIsFloating())
+        if (PWINDOW->getIsFloating()) {
             g_pWindowManager->fixWindowOnClose(PWINDOW);
+            g_pWindowManager->calculateNewWindowParams(PWINDOW);
+        }
+        else {
+            // It's remapped again
 
-        g_pWindowManager->calculateNewWindowParams(PWINDOW);
+            // SAVE ALL INFO NOW, THE POINTER WILL BE DEAD
+            const auto RESTOREACSIZE = PWINDOW->getDefaultSize();
+            const auto RESTOREACPOS = PWINDOW->getDefaultPosition();
+            const auto RESTOREWINID = PWINDOW->getDrawable();
+
+            g_pWindowManager->removeWindowFromVectorSafe(PWINDOW->getDrawable());
+            const auto PNEWWINDOW = Events::remapWindow(RESTOREWINID, true);
+
+            PNEWWINDOW->setDefaultPosition(RESTOREACPOS);
+            PNEWWINDOW->setDefaultSize(RESTOREACSIZE);
+        }
+        
     }
 }
