@@ -69,6 +69,50 @@ void Events::eventMapWindow(xcb_generic_event_t* event) {
     window.setDefaultPosition(Vector2D(0,0));
     window.setDefaultSize(Vector2D(g_pWindowManager->Screen->width_in_pixels/2.f,g_pWindowManager->Screen->height_in_pixels/2.f));
 
+    // Set the parent
+    // check if lastwindow is on our workspace
+    if (auto PLASTWINDOW = g_pWindowManager->getWindowFromDrawable(g_pWindowManager->LastWindow); PLASTWINDOW
+        && PLASTWINDOW->getWorkspaceID() == g_pWindowManager->activeWorkspaces[CURRENTSCREEN]) {
+            // LastWindow is on our workspace, let's make a new split node
+
+            if (PLASTWINDOW->getIsFloating()) {
+                // find a window manually
+                PLASTWINDOW = g_pWindowManager->findWindowAtCursor();
+            }
+
+            CWindow newWindowSplitNode;
+            newWindowSplitNode.setPosition(PLASTWINDOW->getPosition());
+            newWindowSplitNode.setSize(PLASTWINDOW->getSize());
+
+            newWindowSplitNode.setChildNodeAID(PLASTWINDOW->getDrawable());
+            newWindowSplitNode.setChildNodeBID(E->window);
+
+            newWindowSplitNode.setParentNodeID(PLASTWINDOW->getParentNodeID());
+
+            newWindowSplitNode.setWorkspaceID(window.getWorkspaceID());
+            newWindowSplitNode.setMonitor(window.getMonitor());
+
+            // generates a negative node ID
+            newWindowSplitNode.generateNodeID();
+
+            // update the parent if exists
+            if (const auto PREVPARENT = g_pWindowManager->getWindowFromDrawable(PLASTWINDOW->getParentNodeID()); PREVPARENT) {
+                if (PREVPARENT->getChildNodeAID() == PLASTWINDOW->getDrawable()) {
+                    PREVPARENT->setChildNodeAID(newWindowSplitNode.getDrawable());
+                } else {
+                    PREVPARENT->setChildNodeBID(newWindowSplitNode.getDrawable());
+                }
+            }
+
+            window.setParentNodeID(newWindowSplitNode.getDrawable());
+            PLASTWINDOW->setParentNodeID(newWindowSplitNode.getDrawable());
+
+            g_pWindowManager->addWindowToVectorSafe(newWindowSplitNode);
+    } else {
+        // LastWindow is not on our workspace, so set the parent to 0.
+        window.setParentNodeID(0);
+    }
+
     // Also sets the old one
     g_pWindowManager->calculateNewWindowParams(&window);
 

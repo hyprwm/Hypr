@@ -37,14 +37,13 @@ public:
     CStatusBar                  statusBar;
     std::thread*                barThread;
 
-    CWindow*                    getWindowFromDrawable(xcb_drawable_t);
+    CWindow*                    getWindowFromDrawable(int64_t);
     void                        addWindowToVectorSafe(CWindow);
     void                        removeWindowFromVectorSafe(xcb_drawable_t);
 
     void                        setupManager();
     bool                        handleEvent();
     void                        refreshDirtyWindows();
-    void                        performSanityCheckForWorkspace(int);
 
     void                        setFocusedWindow(xcb_drawable_t);
 
@@ -65,6 +64,9 @@ public:
     SMonitor*                   getMonitorFromWindow(CWindow*);
     SMonitor*                   getMonitorFromCursor();
 
+    // finds a window that's tiled at cursor.
+    CWindow*                    findWindowAtCursor();
+
    private:
 
     // Internal WM functions that don't have to be exposed
@@ -77,7 +79,6 @@ public:
     bool                        isNeighbor(CWindow* a, CWindow* b);
     void                        calculateNewTileSetOldTile(CWindow* pWindow);
     void                        calculateNewFloatingWindow(CWindow* pWindow);
-    CWindow*                    findWindowAtCursor();
     void                        setEffectiveSizePosUsingConfig(CWindow* pWindow);
     void                        cleanupUnusedWorkspaces();
     xcb_visualtype_t*           setupColors();

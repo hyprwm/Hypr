@@ -5,6 +5,7 @@ project(Hypr
 )
 
 add_compile_options(-std=c++17)
+add_compile_options(-Wall -Wextra)
 find_package(Threads REQUIRED)
 
 file(GLOB_RECURSE SRCFILES "src/*.cpp")

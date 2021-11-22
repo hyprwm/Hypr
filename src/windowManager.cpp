@@ -55,7 +55,7 @@ void CWindowManager::setupRandrMonitors() {
         }
 
         Debug::log(NONE, "Monitor " + monitors[monitors.size() - 1].szName + ": " + std::to_string(monitors[i].vecSize.x) + "x" + std::to_string(monitors[monitors.size() - 1].vecSize.y) +
-            ", at " + std::to_string(monitors[monitors.size() - 1].vecPosition.x) + "," + std::to_string(monitors[monitors.size() - 1].vecSize.y));
+                             ", at " + std::to_string(monitors[monitors.size() - 1].vecPosition.x) + "," + std::to_string(monitors[monitors.size() - 1].vecPosition.y) + ", ID: " + std::to_string(monitors[monitors.size() - 1].ID));
     }
 
     const auto EXTENSIONREPLY = xcb_get_extension_data(DisplayConnection, &xcb_randr_id);
@@ -65,30 +65,28 @@ void CWindowManager::setupRandrMonitors() {
         //listen for screen change events
         xcb_randr_select_input(DisplayConnection, Screen->root, XCB_RANDR_NOTIFY_MASK_SCREEN_CHANGE);
     }
-
-    // Sort monitors for my convenience thanks
-    std::sort(monitors.begin(), monitors.end(), [](SMonitor& a, SMonitor& b) {
-        return a.vecPosition.x < b.vecPosition.x;
-    });
 }
 
 void CWindowManager::setupManager() {
     setupRandrMonitors();
 
-    ConfigManager::init();
-
     if (monitors.size() == 0) {
         // RandR failed!
         Debug::log(WARN, "RandR failed!");
 
-        monitors.push_back(SMonitor());
-        monitors[0].vecPosition = Vector2D(0, 0);
-        monitors[0].vecSize = Vector2D(Screen->width_in_pixels, Screen->height_in_pixels);
-        monitors[0].ID = 0;
-        monitors[0].szName = "Screen";
+        #define TESTING_MON_AMOUNT 3
+        for (int i = 0; i < TESTING_MON_AMOUNT /* Testing on 3 monitors, RandR shouldnt fail on a real desktop */; ++i) {
+            monitors.push_back(SMonitor());
+            monitors[i].vecPosition = Vector2D(i * Screen->width_in_pixels / TESTING_MON_AMOUNT, 0);
+            monitors[i].vecSize = Vector2D(Screen->width_in_pixels / TESTING_MON_AMOUNT, Screen->height_in_pixels);
+            monitors[i].ID = i;
+            monitors[i].szName = "Screen" + std::to_string(i);
+        }
     }
 
     Debug::log(LOG, "RandR done.");
+
+    ConfigManager::init();
 
     Values[0] = XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_STRUCTURE_NOTIFY | XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY | XCB_EVENT_MASK_PROPERTY_CHANGE;
     xcb_change_window_attributes_checked(DisplayConnection, Screen->root,
@@ -118,7 +116,7 @@ void CWindowManager::setupManager() {
     Debug::log(LOG, "Keys done.");
 
     // Add workspaces to the monitors
-    for (int i = 0; i < monitors.size(); ++i) {
+    for (long unsigned int i = 0; i < monitors.size(); ++i) {
         CWorkspace protoWorkspace;
         protoWorkspace.setID(i + 1);
         protoWorkspace.setMonitor(i);
@@ -216,35 +214,6 @@ bool CWindowManager::handleEvent() {
     return true;
 }
 
-// TODO: add an empty space check
-void CWindowManager::performSanityCheckForWorkspace(int WorkspaceID) {
-    for (auto& windowA : windows) {
-        if (windowA.getWorkspaceID() != WorkspaceID)
-            continue;
-
-        for (auto& windowB : windows) {
-            if (windowB.getWorkspaceID() != WorkspaceID)
-                continue;
-
-            if (windowB.getDrawable() == windowA.getDrawable())
-                continue;
-
-            // Check if A and B overlap, if don't, continue
-            if ((windowA.getPosition().x >= (windowB.getPosition() + windowB.getSize()).x || windowB.getPosition().x >= (windowA.getPosition() + windowA.getSize()).x
-                || windowA.getPosition().y >= (windowB.getPosition() + windowB.getSize()).y || windowB.getPosition().y >= (windowA.getPosition() + windowA.getSize()).y)) {
-                    continue;
-            }
-
-            // Overlap detected! Fix window B
-            if (windowB.getIsFloating()) {
-                calculateNewTileSetOldTile(&windowB);
-            } else {
-                calculateNewFloatingWindow(&windowB);
-            }
-        }
-    }
-}
-
 void CWindowManager::cleanupUnusedWorkspaces() {
     std::vector<CWorkspace> temp = workspaces;
 
@@ -278,6 +247,12 @@ void CWindowManager::cleanupUnusedWorkspaces() {
 void CWindowManager::refreshDirtyWindows() {
     for(auto& window : windows) {
         if (window.getDirty()) {
+
+            // Check if the window isn't a node
+            if (window.getChildNodeAID() != 0) {
+                window.setDirty(false);
+                continue;
+            }
 
             setEffectiveSizePosUsingConfig(&window);
 
@@ -367,7 +342,7 @@ void CWindowManager::setFocusedWindow(xcb_drawable_t window) {
     }
 }
 
-CWindow* CWindowManager::getWindowFromDrawable(xcb_drawable_t window) {
+CWindow* CWindowManager::getWindowFromDrawable(int64_t window) {
     for(auto& w : windows) {
         if (w.getDrawable() == window) {
             return &w;
@@ -420,9 +395,9 @@ void CWindowManager::setEffectiveSizePosUsingConfig(CWindow* pWindow) {
     //TODO: make windows with no bar taller, this aint working chief
 
     // do gaps, set top left
-    pWindow->setEffectivePosition(pWindow->getEffectivePosition() + Vector2D(DISPLAYLEFT ? ConfigManager::getInt("gaps_out") : ConfigManager::getInt("gaps_in"), DISPLAYTOP ? ConfigManager::getInt("gaps_out") + (MONITOR->ID != statusBar.getMonitorID() ? ConfigManager::getInt("bar_height") : 0) : ConfigManager::getInt("gaps_in")));
+    pWindow->setEffectivePosition(pWindow->getEffectivePosition() + Vector2D(DISPLAYLEFT ? ConfigManager::getInt("gaps_out") : ConfigManager::getInt("gaps_in"), DISPLAYTOP ? ConfigManager::getInt("gaps_out") + (MONITOR->ID == statusBar.getMonitorID() ? ConfigManager::getInt("bar_height") : 0) : ConfigManager::getInt("gaps_in")));
     // fix to old size bottom right
-    pWindow->setEffectiveSize(pWindow->getEffectiveSize() - Vector2D(DISPLAYLEFT ? ConfigManager::getInt("gaps_out") : ConfigManager::getInt("gaps_in"), DISPLAYTOP ? ConfigManager::getInt("gaps_out") + (MONITOR->ID != statusBar.getMonitorID() ? ConfigManager::getInt("bar_height") : 0) : ConfigManager::getInt("gaps_in")));
+    pWindow->setEffectiveSize(pWindow->getEffectiveSize() - Vector2D(DISPLAYLEFT ? ConfigManager::getInt("gaps_out") : ConfigManager::getInt("gaps_in"), DISPLAYTOP ? ConfigManager::getInt("gaps_out") + (MONITOR->ID == statusBar.getMonitorID() ? ConfigManager::getInt("bar_height") : 0) : ConfigManager::getInt("gaps_in")));
     // set bottom right
     pWindow->setEffectiveSize(pWindow->getEffectiveSize() - Vector2D(DISPLAYRIGHT ? ConfigManager::getInt("gaps_out") : ConfigManager::getInt("gaps_in"), DISPLAYBOTTOM ? ConfigManager::getInt("gaps_out") : ConfigManager::getInt("gaps_in")));
 }
@@ -459,33 +434,45 @@ CWindow* CWindowManager::findWindowAtCursor() {
 }
 
 void CWindowManager::calculateNewTileSetOldTile(CWindow* pWindow) {
-    auto PLASTWINDOW = getWindowFromDrawable(LastWindow);
+    
+    // Get the parent and both children, one of which will be pWindow
+    const auto PPARENT = getWindowFromDrawable(pWindow->getParentNodeID());
 
-    if (PLASTWINDOW && (PLASTWINDOW->getIsFloating() || PLASTWINDOW->getWorkspaceID() != pWindow->getWorkspaceID())) {
-        // find a window manually
-        PLASTWINDOW = findWindowAtCursor();
+    if (!PPARENT) {
+        // New window on this workspace.
+        // Open a fullscreen window.
+        const auto MONITOR = getMonitorFromCursor();
+        pWindow->setSize(Vector2D(MONITOR->vecSize.x, MONITOR->vecSize.y));
+        pWindow->setPosition(Vector2D(MONITOR->vecPosition.x, MONITOR->vecPosition.y));
+
+        return;
     }
 
-    if (PLASTWINDOW) {
-        const auto PLASTSIZE = PLASTWINDOW->getSize();
-        const auto PLASTPOS = PLASTWINDOW->getPosition();
+    // Get the sibling
+    const auto PSIBLING = getWindowFromDrawable(PPARENT->getChildNodeAID() == pWindow->getDrawable() ? PPARENT->getChildNodeBID() : PPARENT->getChildNodeAID());
+
+    // Should NEVER be null
+    if (PSIBLING) {
+        const auto PLASTSIZE = PPARENT->getSize();
+        const auto PLASTPOS = PPARENT->getPosition();
 
         if (PLASTSIZE.x > PLASTSIZE.y) {
-            PLASTWINDOW->setSize(Vector2D(PLASTSIZE.x / 2.f, PLASTSIZE.y));
+            PSIBLING->setPosition(Vector2D(PLASTPOS.x, PLASTPOS.y));
+            PSIBLING->setSize(Vector2D(PLASTSIZE.x / 2.f, PLASTSIZE.y));
             pWindow->setSize(Vector2D(PLASTSIZE.x / 2.f, PLASTSIZE.y));
             pWindow->setPosition(Vector2D(PLASTPOS.x + PLASTSIZE.x / 2.f, PLASTPOS.y));
         } else {
-            PLASTWINDOW->setSize(Vector2D(PLASTSIZE.x, PLASTSIZE.y / 2.f));
+            PSIBLING->setPosition(Vector2D(PLASTPOS.x, PLASTPOS.y));
+            PSIBLING->setSize(Vector2D(PLASTSIZE.x, PLASTSIZE.y / 2.f));
             pWindow->setSize(Vector2D(PLASTSIZE.x, PLASTSIZE.y / 2.f));
             pWindow->setPosition(Vector2D(PLASTPOS.x, PLASTPOS.y + PLASTSIZE.y / 2.f));
         }
 
-        PLASTWINDOW->setDirty(true);
+        PSIBLING->setDirty(true);
     } else {
-        // Open a fullscreen window
-        const auto MONITOR = getMonitorFromCursor();
-        pWindow->setSize(Vector2D(MONITOR->vecSize.x, MONITOR->vecSize.y));
-        pWindow->setPosition(Vector2D(MONITOR->vecPosition.x, MONITOR->vecPosition.y));
+        Debug::log(ERR, "Sibling node was null?? pWindow x,y,w,h: " + std::to_string(pWindow->getPosition().x) + " "
+                            + std::to_string(pWindow->getPosition().y) + " " + std::to_string(pWindow->getSize().x) + " "
+                            + std::to_string(pWindow->getSize().y));
     }
 }
 
@@ -593,32 +580,39 @@ void CWindowManager::fixWindowOnClose(CWindow* pClosedWindow) {
     if (!pClosedWindow)
         return;
 
-    const auto WORKSPACE = activeWorkspaces[getMonitorFromWindow(pClosedWindow)->ID];
+    // Get the parent and both children, one of which will be pWindow
+    const auto PPARENT = getWindowFromDrawable(pClosedWindow->getParentNodeID());
 
-    // Fix if was fullscreen
-    if (pClosedWindow->getFullscreen())
-        g_pWindowManager->getWorkspaceByID(WORKSPACE)->setHasFullscreenWindow(false);
+    if (!PPARENT) 
+        return; // if there was no parent, we do not need to update anything. it was a fullscreen window, the only one on a given workspace.
 
-    // get the first neighboring window
-    CWindow* neighbor = nullptr;
-    for(auto& w : windows) {
-        if (w.getDrawable() == pClosedWindow->getDrawable())
-            continue;
+    // Get the sibling
+    const auto PSIBLING = getWindowFromDrawable(PPARENT->getChildNodeAID() == pClosedWindow->getDrawable() ? PPARENT->getChildNodeBID() : PPARENT->getChildNodeAID());
 
-        if (isNeighbor(&w, pClosedWindow) && canEatWindow(&w, pClosedWindow)) {
-            neighbor = &w;
-            break;
-        }
+    PSIBLING->setPosition(PPARENT->getPosition());
+    PSIBLING->setSize(PPARENT->getSize());
+
+    // make the sibling replace the parent
+    PSIBLING->setParentNodeID(PPARENT->getParentNodeID());
+
+    if (PPARENT->getParentNodeID() != 0 
+        && getWindowFromDrawable(PPARENT->getParentNodeID())) {
+            if (getWindowFromDrawable(PPARENT->getParentNodeID())->getChildNodeAID() == PPARENT->getDrawable()) {
+                getWindowFromDrawable(PPARENT->getParentNodeID())->setChildNodeAID(PSIBLING->getDrawable());
+            } else {
+                getWindowFromDrawable(PPARENT->getParentNodeID())->setChildNodeBID(PSIBLING->getDrawable());
+            }
     }
 
-    if (!neighbor)
-        return; // No neighbor. Don't update, easy.
+    // Make the sibling eat the closed window
+    PSIBLING->setDirtyRecursive(true);
+    PSIBLING->recalcSizePosRecursive();
 
-    // update neighbor to "eat" closed.
-    eatWindow(neighbor, pClosedWindow);
+    // Remove the parent
+    removeWindowFromVectorSafe(PPARENT->getDrawable());
 
-    neighbor->setDirty(true);
-    setFocusedWindow(neighbor->getDrawable()); // Set focus. :)
+    if (findWindowAtCursor())
+        setFocusedWindow(findWindowAtCursor()->getDrawable());  // Set focus. :)
 }
 
 CWindow* CWindowManager::getNeighborInDir(char dir) {
@@ -717,9 +711,6 @@ void CWindowManager::changeWorkspaceByID(int ID) {
             activeWorkspaces[workspace.getMonitor()] = workspace.getID();
             LastWindow = -1;
 
-            // Perform a sanity check for the new workspace
-            performSanityCheckForWorkspace(ID);
-
             // Update bar info
             updateBarInfo();
 
@@ -737,9 +728,6 @@ void CWindowManager::changeWorkspaceByID(int ID) {
     workspaces.push_back(newWorkspace);
     activeWorkspaces[MONITOR->ID] = workspaces[workspaces.size() - 1].getID();
     LastWindow = -1;
-
-    // Perform a sanity check for the new workspace
-    performSanityCheckForWorkspace(ID);
 
     // Update bar info
     updateBarInfo();
