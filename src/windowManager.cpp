@@ -785,15 +785,24 @@ void CWindowManager::changeWorkspaceByID(int ID) {
 
     for (auto& workspace : workspaces) {
         if (workspace.getID() == ID) {
+            // set workspaces dirty
+            setAllWorkspaceWindowsDirtyByID(activeWorkspaces[workspace.getMonitor()]);
+            setAllWorkspaceWindowsDirtyByID(ID);
+
             activeWorkspaces[workspace.getMonitor()] = workspace.getID();
             LastWindow = -1;
 
+            // set the focus to any window on that workspace
+            for (auto& window : windows) {
+                if (window.getWorkspaceID() == ID && window.getDrawable() > 0) {
+                    g_pWindowManager->setFocusedWindow(window.getDrawable());
+                    break;
+                }
+            }
+
             // Update bar info
             updateBarInfo();
-
-            // mark new as dirty
-            setAllWorkspaceWindowsDirtyByID(activeWorkspaces[MONITOR->ID]);
-
+            
             return;
         }
     }
