@@ -188,7 +188,7 @@ void CWindowManager::setupManager() {
     updateBarInfo();
 
     // start its' update thread
-    Events::setThread();
+    //Events::setThread();
 
     Debug::log(LOG, "Bar done.");
 
@@ -408,7 +408,7 @@ void CWindowManager::addWindowToVectorSafe(CWindow window) {
     windows.push_back(window);
 }
 
-void CWindowManager::removeWindowFromVectorSafe(xcb_drawable_t window) {
+void CWindowManager::removeWindowFromVectorSafe(int64_t window) {
 
     if (!window)
         return;

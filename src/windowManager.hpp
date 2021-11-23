@@ -42,7 +42,7 @@ public:
 
     CWindow*                    getWindowFromDrawable(int64_t);
     void                        addWindowToVectorSafe(CWindow);
-    void                        removeWindowFromVectorSafe(xcb_drawable_t);
+    void                        removeWindowFromVectorSafe(int64_t);
 
     void                        setupManager();
     bool                        handleEvent();
