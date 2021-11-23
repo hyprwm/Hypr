@@ -23,18 +23,64 @@ void CWindowManager::setupRandrMonitors() {
     // finds 0 monitors
 
     XCBQUERYCHECK(RANDRVER, xcb_randr_query_version_reply(
-        DisplayConnection, xcb_randr_query_version(DisplayConnection, XCB_RANDR_MAJOR_VERSION, XCB_RANDR_MINOR_VERSION), &error), "RandR query failed!" );
+        DisplayConnection, xcb_randr_query_version(DisplayConnection, XCB_RANDR_MAJOR_VERSION, XCB_RANDR_MINOR_VERSION), &errorRANDRVER), "RandR query failed!" );
 
         
     free(RANDRVER);
 
-    auto ScreenResReply = xcb_randr_get_screen_resources_current_reply(DisplayConnection, xcb_randr_get_screen_resources_current(DisplayConnection, Screen->root), NULL);
-    if (!ScreenResReply) {
-        Debug::log(ERR, "ScreenResReply NULL!");
+    Debug::log(LOG, "Setting up RandR! Query: v1.5.");
+
+    XCBQUERYCHECK(MONITORS, xcb_randr_get_monitors_reply(DisplayConnection, xcb_randr_get_monitors(DisplayConnection, Screen->root, true), &errorMONITORS), "Couldn't get monitors. " + std::to_string(errorMONITORS->error_code));
+
+    const auto MONITORNUM = xcb_randr_get_monitors_monitors_length(MONITORS);
+
+    Debug::log(LOG, "Found " + std::to_string(MONITORNUM) + " Monitors!");
+
+    if (MONITORNUM < 1) {
+        // TODO: RandR 1.4 maybe for people with ancient hardware?
+        Debug::log(ERR, "RandR returned an invalid amount of monitors. Falling back to 1 monitor.");
         return;
     }
 
-    Debug::log(LOG, "Setting up RandR!");
+    for (xcb_randr_monitor_info_iterator_t iterator = xcb_randr_get_monitors_monitors_iterator(MONITORS); iterator.rem; xcb_randr_monitor_info_next(&iterator)) {
+        const auto MONITORINFO = iterator.data;
+
+        // basically an XCBQUERYCHECK but with continue; as its not fatal
+        xcb_generic_error_t* error;
+        const auto ATOMNAME = xcb_get_atom_name_reply(DisplayConnection, xcb_get_atom_name(DisplayConnection, MONITORINFO->name), &error);
+        if (error != NULL) {
+            Debug::log(ERR, "Failed to get monitor info...");
+            free(error);
+            free(ATOMNAME);
+            continue;
+        }
+        free(error);
+
+        monitors.push_back(SMonitor());
+
+        const auto NAMELEN = xcb_get_atom_name_name_length(ATOMNAME);
+        const auto NAME = xcb_get_atom_name_name(ATOMNAME);
+
+        free(ATOMNAME);
+
+        for (int j = 0; j < NAMELEN; ++j) {
+            monitors[monitors.size() - 1].szName += NAME[j];
+        }
+
+        monitors[monitors.size() - 1].vecPosition = Vector2D(MONITORINFO->x, MONITORINFO->y);
+        monitors[monitors.size() - 1].vecSize = Vector2D(MONITORINFO->width, MONITORINFO->height);
+
+        monitors[monitors.size() - 1].primary = MONITORINFO->primary;
+
+        monitors[monitors.size() - 1].ID = monitors.size() - 1;
+
+        Debug::log(NONE, "Monitor " + monitors[monitors.size() - 1].szName + ": " + std::to_string(monitors[monitors.size() - 1].vecSize.x) + "x" + std::to_string(monitors[monitors.size() - 1].vecSize.y) +
+                             ", at " + std::to_string(monitors[monitors.size() - 1].vecPosition.x) + "," + std::to_string(monitors[monitors.size() - 1].vecPosition.y) + ", ID: " + std::to_string(monitors[monitors.size() - 1].ID));
+    }
+
+    free(MONITORS);
+
+    /*
 
     const auto MONITORNUM = xcb_randr_get_screen_resources_current_outputs_length(ScreenResReply);
     auto OUTPUTS = xcb_randr_get_screen_resources_current_outputs(ScreenResReply);
@@ -68,7 +114,7 @@ void CWindowManager::setupRandrMonitors() {
 
         Debug::log(NONE, "Monitor " + monitors[monitors.size() - 1].szName + ": " + std::to_string(monitors[i].vecSize.x) + "x" + std::to_string(monitors[monitors.size() - 1].vecSize.y) +
                              ", at " + std::to_string(monitors[monitors.size() - 1].vecPosition.x) + "," + std::to_string(monitors[monitors.size() - 1].vecPosition.y) + ", ID: " + std::to_string(monitors[monitors.size() - 1].ID));
-    }
+    } */
 
     const auto EXTENSIONREPLY = xcb_get_extension_data(DisplayConnection, &xcb_randr_id);
     if (!EXTENSIONREPLY->present)
@@ -79,6 +125,15 @@ void CWindowManager::setupRandrMonitors() {
     }
 
     xcb_flush(DisplayConnection);
+
+    // sort monitors so that the primary is first and the rest are left to right
+    std::sort(monitors.begin(), monitors.end(), [](SMonitor& a, SMonitor& b) { return a.primary || a.vecPosition.x < b.vecPosition.x; });
+
+    Debug::log(LOG, "Sorted monitors. List: ");
+    for (long unsigned int i = 0; i < monitors.size(); ++i) {
+        Debug::log(NONE, "Name: " + monitors[i].szName + ", " + std::to_string(monitors[monitors.size() - 1].vecSize.x) + "x" + std::to_string(monitors[monitors.size() - 1].vecSize.y) +
+                             ", at " + std::to_string(monitors[monitors.size() - 1].vecPosition.x) + "," + std::to_string(monitors[monitors.size() - 1].vecPosition.y));
+    }
 }
 
 void CWindowManager::setupManager() {

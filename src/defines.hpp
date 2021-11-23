@@ -30,13 +30,13 @@
 #define VECINRECT(vec, x1, y1, x2, y2) (vec.x >= (x1) && vec.x <= (x2) && vec.y >= (y1) && vec.y <= (y2))
 
 #define XCBQUERYCHECK(name, query, errormsg) \
-    xcb_generic_error_t* error;              \
+    xcb_generic_error_t* error##name;        \
     const auto name = query;                 \
                                              \
-    if (error != NULL) {                     \
+    if (error##name != NULL) {               \
         Debug::log(ERR, errormsg);           \
-        free(error);                         \
+        free(error##name);                   \
         free(name);                          \
         return;                              \
     }                                        \
-    free(error);
+    free(error##name);
