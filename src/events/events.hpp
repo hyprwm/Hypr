@@ -17,6 +17,7 @@ namespace Events {
 
     // Bypass some events for floating windows
     CWindow*        remapWindow(int, bool floating = false);
+    CWindow*        remapFloatingWindow(int);
 
     // A thread to notify xcb to redraw our shiz
     void            redraw();

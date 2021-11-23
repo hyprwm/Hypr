@@ -195,6 +195,8 @@ void CWindowManager::setupManager() {
     ConfigManager::loadConfigLoadVars();
 
     Debug::log(LOG, "Finished setup!");
+
+    // TODO: EWMH
 }
 
 bool CWindowManager::handleEvent() {
@@ -256,6 +258,8 @@ bool CWindowManager::handleEvent() {
 
         free(ev);
     }
+
+    // TODO: sanity check on open/closed window.
 
     // refresh and apply the parameters of all dirty windows.
     refreshDirtyWindows();
@@ -918,4 +922,48 @@ void CWindowManager::setAllFloatingWindowsTop() {
             xcb_configure_window(g_pWindowManager->DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_STACK_MODE, Values);
         }
     }
+}
+
+bool CWindowManager::shouldBeFloatedOnInit(int64_t window) {
+    // Should be floated also sets some properties
+    const auto GEOMETRY = xcb_get_geometry(DisplayConnection, window);
+    xcb_get_geometry_reply_t* geom;
+    const auto WINDOWATTRCOOKIE = xcb_get_window_attributes(DisplayConnection, window);
+    const auto ATTRIBUTES = xcb_get_window_attributes_reply(DisplayConnection, WINDOWATTRCOOKIE, 0);
+
+
+    PROP(transient_cookie, XCB_ATOM_WM_TRANSIENT_FOR, UINT32_MAX);
+    PROP(title_cookie, XCB_ATOM_WM_NAME, 128);
+    PROP(class_cookie, XCB_ATOM_WM_CLASS, 128);
+    PROP(wm_machine_cookie, XCB_ATOM_WM_CLIENT_MACHINE, UINT32_MAX);
+
+    // get stuffza
+
+    // floating for krunner
+    // TODO: config this
+    const size_t PROPLEN = xcb_get_property_value_length(class_cookiereply);
+    char* NEWCLASS = (char*)xcb_get_property_value(class_cookiereply);
+    const size_t CLASSNAMEINDEX = strnlen(NEWCLASS, PROPLEN) + 1;
+
+    const char* CLASSINSTANCE = strndup(NEWCLASS, PROPLEN);
+    const char* CLASSNAME;
+    if (CLASSNAMEINDEX < PROPLEN) {
+        CLASSNAME = strndup(NEWCLASS + CLASSNAMEINDEX, PROPLEN - CLASSNAMEINDEX);
+    } else {
+        CLASSNAME = "";
+    }
+
+    Debug::log(LOG, "New window got class " + (std::string)CLASSINSTANCE + " -> " + CLASSNAME);
+
+    free(class_cookiereply);
+
+    xcb_change_property(DisplayConnection, XCB_PROP_MODE_REPLACE, window, XCB_ATOM_WM_NAME, XCB_ATOM_STRING, 8, strlen("hypr"), "hypr");
+
+    // TODO: add a role cookie, somehow.
+
+    if (((std::string)CLASSNAME).find("krunner") != std::string::npos) {
+        return true;
+    }
+
+    return false;
 }

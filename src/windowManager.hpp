@@ -77,6 +77,8 @@ public:
     // finds a window that's tiled at cursor.
     CWindow*                    findWindowAtCursor();
 
+    bool                        shouldBeFloatedOnInit(int64_t);
+
    private:
 
     // Internal WM functions that don't have to be exposed

@@ -32,7 +32,7 @@ public:
 
     // ------------------------------------- //
 
-    std::string getName();
+    EXPOSED_MEMBER(Name, std::string, sz);
 
     // Tells the window manager to reload the window's params
     EXPOSED_MEMBER(Dirty, bool, b);

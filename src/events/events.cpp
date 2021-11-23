@@ -47,6 +47,46 @@ void Events::eventDestroy(xcb_generic_event_t* event) {
     }
 }
 
+CWindow* Events::remapFloatingWindow(int windowID) {
+    CWindow window;
+    window.setDrawable(windowID);
+    window.setIsFloating(true);
+    window.setDirty(true);
+    if (!g_pWindowManager->getMonitorFromCursor()) {
+        Debug::log(ERR, "Monitor was null! (remapWindow)");
+        // rip! we cannot continue.
+    }
+    const auto CURRENTSCREEN = g_pWindowManager->getMonitorFromCursor()->ID;
+    window.setWorkspaceID(g_pWindowManager->activeWorkspaces[CURRENTSCREEN]);
+    window.setMonitor(CURRENTSCREEN);
+
+    window.setDefaultPosition(Vector2D(0, 0));
+    window.setDefaultSize(Vector2D(g_pWindowManager->Screen->width_in_pixels / 2.f, g_pWindowManager->Screen->height_in_pixels / 2.f));
+
+    // Also sets the old one
+    g_pWindowManager->calculateNewWindowParams(&window);
+
+    // Set real size. No animations in the beginning. Maybe later. TODO?
+    window.setRealPosition(window.getEffectivePosition());
+    window.setRealSize(window.getEffectiveSize());
+
+    // Add to arr
+    g_pWindowManager->addWindowToVectorSafe(window);
+
+    Debug::log(LOG, "Created a new window! X: " + std::to_string(window.getPosition().x) + ", Y: " + std::to_string(window.getPosition().y) + ", W: " + std::to_string(window.getSize().x) + ", H:" + std::to_string(window.getSize().y) + " ID: " + std::to_string(windowID));
+
+    // Set map values
+    g_pWindowManager->Values[0] = XCB_EVENT_MASK_ENTER_WINDOW | XCB_EVENT_MASK_FOCUS_CHANGE;
+    xcb_change_window_attributes_checked(g_pWindowManager->DisplayConnection, windowID, XCB_CW_EVENT_MASK, g_pWindowManager->Values);
+
+    g_pWindowManager->setFocusedWindow(windowID);
+
+    // Make all floating windows above
+    g_pWindowManager->setAllFloatingWindowsTop();
+
+    return g_pWindowManager->getWindowFromDrawable(windowID);
+}
+
 CWindow* Events::remapWindow(int windowID, bool wasfloating) {
     // Do the setup of the window's params and stuf
     CWindow window;
@@ -145,7 +185,13 @@ void Events::eventMapWindow(xcb_generic_event_t* event) {
     // Map the window
     xcb_map_window(g_pWindowManager->DisplayConnection, E->window);
 
-    remapWindow(E->window);
+    // We check if the window is not on our tile-blacklist and if it is, we have a special treatment procedure for it.
+    // this func also sets some stuff
+    if (g_pWindowManager->shouldBeFloatedOnInit(E->window)) {
+        remapFloatingWindow(E->window);
+    } else {
+        remapWindow(E->window);
+    }
 }
 
 void Events::eventButtonPress(xcb_generic_event_t* event) {

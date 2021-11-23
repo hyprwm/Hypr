@@ -6,6 +6,11 @@
 #include <xcb/xcb_ewmh.h>
 #include <xcb/xcb_icccm.h>
 #include <xcb/xcb_keysyms.h>
+#include <xcb/xcb_atom.h>
+#include <xcb/xcb_aux.h>
+#include <xcb/xinerama.h>
+#include <xcb/xcb_event.h>
+#include <xcb/xcb_util.h>
 
 #include <memory>
 #include <string>
@@ -43,3 +48,6 @@
 
 
 #define VECTORDELTANONZERO(veca, vecb) ((int)abs(veca.x - vecb.x) > 0 || (int)abs(veca.y - vecb.y) > 0)
+
+#define PROP(cookie, name, len) const auto cookie = xcb_get_property(DisplayConnection, false, window, name, XCB_GET_PROPERTY_TYPE_ANY, 0, len); \
+        const auto cookie##reply = xcb_get_property_reply(DisplayConnection, cookie, NULL)
