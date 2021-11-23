@@ -130,11 +130,11 @@ void CWindowManager::setupRandrMonitors() {
 void CWindowManager::setupManager() {
     setupRandrMonitors();
 
-    if (monitors.size() == 0) {
+    if (1 || monitors.size() == 0) {
         // RandR failed!
         Debug::log(WARN, "RandR failed!");
 
-        #define TESTING_MON_AMOUNT 1
+        #define TESTING_MON_AMOUNT 3
         for (int i = 0; i < TESTING_MON_AMOUNT /* Testing on 3 monitors, RandR shouldnt fail on a real desktop */; ++i) {
             monitors.push_back(SMonitor());
             monitors[i].vecPosition = Vector2D(i * Screen->width_in_pixels / TESTING_MON_AMOUNT, 0);

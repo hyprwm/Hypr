@@ -134,7 +134,7 @@ void CStatusBar::draw() {
 
     const auto WORKSPACE = g_pWindowManager->getWorkspaceByID(g_pWindowManager->activeWorkspaces[m_iMonitorID]);
 
-    if (WORKSPACE->getHasFullscreenWindow()) // TODO: fix this
+    if (!WORKSPACE || WORKSPACE->getHasFullscreenWindow()) // TODO: fix this
         return; // Do not draw a bar on a fullscreen window.
 
     xcb_rectangle_t rectangles[] = {{(int)0, (int)0, (int)m_vecSize.x, (int)m_vecSize.y}};
