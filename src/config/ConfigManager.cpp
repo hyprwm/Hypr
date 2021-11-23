@@ -51,6 +51,9 @@ void handleBind(const std::string& command, const std::string& value) {
     if (MOD == "SUPER") mod = MOD_SUPER;
     else if (MOD == "SHIFT") mod = MOD_SHIFT;
     else if (MOD == "SUPERSHIFT" || MOD == "SHIFTSUPER") mod = MOD_SHIFTSUPER;
+    else if (MOD == "SUPERCTRL" || MOD == "CTRLSUPER") mod = MOD_CTRLSUPER;
+    else if (MOD == "CTRL") mod = MOD_CTRL;
+    else if (MOD == "CTRLSHIFT" || MOD == "SHIFTCTRL") mod = MOD_SHIFTCTRL;
 
     Dispatcher dispatcher = nullptr;
     if (HANDLER == "exec") dispatcher = KeybindManager::call;

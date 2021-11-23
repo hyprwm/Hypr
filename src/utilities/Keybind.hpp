@@ -7,7 +7,10 @@ enum MODS {
     MOD_NONE = 0,
     MOD_SUPER,
     MOD_SHIFT,
-    MOD_SHIFTSUPER
+    MOD_SHIFTSUPER,
+    MOD_SHIFTCTRL,
+    MOD_CTRL,
+    MOD_CTRLSUPER
 };
 
 class Keybind {

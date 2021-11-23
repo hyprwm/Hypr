@@ -60,6 +60,12 @@ unsigned int KeybindManager::modToMask(MODS mod) {
             return XCB_MOD_MASK_SHIFT;
         case MOD_SHIFTSUPER:
             return XCB_MOD_MASK_4 | XCB_MOD_MASK_SHIFT;
+        case MOD_SHIFTCTRL:
+            return XCB_MOD_MASK_SHIFT | XCB_MOD_MASK_CONTROL;
+        case MOD_CTRL:
+            return XCB_MOD_MASK_CONTROL;
+        case MOD_CTRLSUPER:
+            return XCB_MOD_MASK_CONTROL | XCB_MOD_MASK_4;
     }
 
     return 0;
