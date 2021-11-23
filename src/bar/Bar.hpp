@@ -3,6 +3,7 @@
 #include <unordered_map>
 
 #include "../defines.hpp"
+#include "../utilities/AnimationUtil.hpp"
 
 struct SDrawingContext {
     xcb_gcontext_t      GContext;

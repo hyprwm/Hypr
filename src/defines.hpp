@@ -40,3 +40,6 @@
         return;                              \
     }                                        \
     free(error##name);
+
+
+#define VECTORDELTANONZERO(veca, vecb) ((int)abs(veca.x - vecb.x) > 0 || (int)abs(veca.y - vecb.y) > 0)

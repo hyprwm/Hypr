@@ -188,7 +188,7 @@ void CWindowManager::setupManager() {
     updateBarInfo();
 
     // start its' update thread
-    //Events::setThread();
+    Events::setThread();
 
     Debug::log(LOG, "Bar done.");
 
@@ -204,6 +204,13 @@ bool CWindowManager::handleEvent() {
     xcb_flush(DisplayConnection);
     const auto ev = xcb_wait_for_event(DisplayConnection);
     if (ev != NULL) {
+        while (animationUtilBusy) {
+            ; // wait for it to finish
+        }
+
+        // Set thread state, halt animations until done.
+        mainThreadBusy = true;
+
         switch (ev->response_type & ~0x80) {
             case XCB_ENTER_NOTIFY:
                 Events::eventEnter(ev);
@@ -257,6 +264,9 @@ bool CWindowManager::handleEvent() {
     cleanupUnusedWorkspaces();
 
     xcb_flush(DisplayConnection);
+
+    // Restore thread state
+    mainThreadBusy = false;
 
     return true;
 }
@@ -343,14 +353,14 @@ void CWindowManager::refreshDirtyWindows() {
                 continue;
             }
 
-            Values[0] = (int)window.getEffectiveSize().x;
-            Values[1] = (int)window.getEffectiveSize().y;
+            Values[0] = (int)window.getRealSize().x;
+            Values[1] = (int)window.getRealSize().y;
             xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, Values);
 
             // Update the position because the border makes the window jump
             // I have added the bordersize vec2d before in the setEffectiveSizePosUsingConfig function.
-            Values[0] = (int)window.getEffectivePosition().x - ConfigManager::getInt("border_size");
-            Values[1] = (int)window.getEffectivePosition().y - ConfigManager::getInt("border_size");
+            Values[0] = (int)window.getRealPosition().x - ConfigManager::getInt("border_size");
+            Values[1] = (int)window.getRealPosition().y - ConfigManager::getInt("border_size");
             xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, Values);
 
             // Focused special border.
@@ -440,8 +450,6 @@ void CWindowManager::setEffectiveSizePosUsingConfig(CWindow* pWindow) {
 
     pWindow->setEffectivePosition(pWindow->getPosition() + Vector2D(ConfigManager::getInt("border_size"), ConfigManager::getInt("border_size")));
     pWindow->setEffectiveSize(pWindow->getSize() - (Vector2D(ConfigManager::getInt("border_size"), ConfigManager::getInt("border_size")) * 2));
-
-    //TODO: make windows with no bar taller, this aint working chief
 
     // do gaps, set top left
     pWindow->setEffectivePosition(pWindow->getEffectivePosition() + Vector2D(DISPLAYLEFT ? ConfigManager::getInt("gaps_out") : ConfigManager::getInt("gaps_in"), DISPLAYTOP ? ConfigManager::getInt("gaps_out") + (MONITOR->ID == statusBar.getMonitorID() ? ConfigManager::getInt("bar_height") : 0) : ConfigManager::getInt("gaps_in")));
@@ -546,6 +554,8 @@ void CWindowManager::calculateNewWindowParams(CWindow* pWindow) {
     } else {
         calculateNewFloatingWindow(pWindow);
     }
+
+    setEffectiveSizePosUsingConfig(pWindow);
 
     pWindow->setDirty(true);
 }

@@ -114,8 +114,9 @@ CWindow* Events::remapWindow(int windowID, bool wasfloating) {
     // Also sets the old one
     g_pWindowManager->calculateNewWindowParams(&window);
 
-    // Focus
-    g_pWindowManager->setFocusedWindow(windowID);
+    // Set real size. No animations in the beginning. Maybe later. TODO?
+    window.setRealPosition(window.getEffectivePosition());
+    window.setRealSize(window.getEffectiveSize());
 
     // Add to arr
     g_pWindowManager->addWindowToVectorSafe(window);
@@ -211,8 +212,6 @@ void Events::eventMotionNotify(xcb_generic_event_t* event) {
         return;
     }
 
-    float Values[2];
-
     if (abs(POINTERDELTA.x) < 1 && abs(POINTERDELTA.y) < 1)
         return; // micromovements
 
@@ -221,6 +220,7 @@ void Events::eventMotionNotify(xcb_generic_event_t* event) {
         PACTINGWINDOW->setPosition(PACTINGWINDOW->getPosition() + POINTERDELTA);
         PACTINGWINDOW->setEffectivePosition(PACTINGWINDOW->getPosition());
         PACTINGWINDOW->setDefaultPosition(PACTINGWINDOW->getPosition());
+        PACTINGWINDOW->setRealPosition(PACTINGWINDOW->getPosition());
 
         // update workspace if needed
         if (g_pWindowManager->getMonitorFromCursor()) {
@@ -240,6 +240,7 @@ void Events::eventMotionNotify(xcb_generic_event_t* event) {
         // apply to other
         PACTINGWINDOW->setDefaultSize(PACTINGWINDOW->getSize());
         PACTINGWINDOW->setEffectiveSize(PACTINGWINDOW->getSize());
+        PACTINGWINDOW->setRealSize(PACTINGWINDOW->getSize());
 
         PACTINGWINDOW->setDirty(true);
     }
@@ -250,6 +251,8 @@ void Events::eventMotionNotify(xcb_generic_event_t* event) {
 void Events::eventExpose(xcb_generic_event_t* event) {
     const auto E = reinterpret_cast<xcb_expose_event_t*>(event);
 
-    // Draw the bar
+    // Draw the bar, disable thread warn
+    g_pWindowManager->mainThreadBusy = false;
     g_pWindowManager->statusBar.draw();
+    g_pWindowManager->mainThreadBusy = true;
 }

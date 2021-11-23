@@ -13,6 +13,7 @@
 #include "config/ConfigManager.hpp"
 #include "utilities/Monitor.hpp"
 #include "utilities/Util.hpp"
+#include "utilities/AnimationUtil.hpp"
 
 class CWindowManager {
 public:
@@ -39,6 +40,9 @@ public:
 
     CStatusBar                  statusBar;
     std::thread*                barThread;
+
+    std::atomic<bool>           mainThreadBusy = false;
+    std::atomic<bool>           animationUtilBusy = false;
 
     CWindow*                    getWindowFromDrawable(int64_t);
     void                        addWindowToVectorSafe(CWindow);

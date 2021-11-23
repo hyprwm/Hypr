@@ -132,6 +132,9 @@ int getTextWidth(std::string text, xcb_font_t font) {
 
 void CStatusBar::draw() {
 
+    // update animations.
+    AnimationUtil::move();
+
     const auto WORKSPACE = g_pWindowManager->getWorkspaceByID(g_pWindowManager->activeWorkspaces[m_iMonitorID]);
 
     if (!WORKSPACE || WORKSPACE->getHasFullscreenWindow()) // TODO: fix this

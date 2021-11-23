@@ -24,6 +24,11 @@ void ConfigManager::init() {
     configValues["col.active_border"].intValue = 0x77FF3333;
     configValues["col.inactive_border"].intValue = 0x77222222;
 
+
+    // animations
+    configValues["anim.speed"].floatValue = 1;
+    configValues["anim.enabled"].intValue = 1;
+
     loadConfigLoadVars();
     applyKeybindsToX();
 }
@@ -164,18 +169,6 @@ void ConfigManager::loadConfigLoadVars() {
     }
 
     loadBar = true;
-}
-
-void emptyEvent() {
-    xcb_expose_event_t exposeEvent;
-    exposeEvent.window = g_pWindowManager->statusBar.getWindowID();
-    exposeEvent.response_type = 0;
-    exposeEvent.x = 0;
-    exposeEvent.y = 0;
-    exposeEvent.width = g_pWindowManager->Screen->width_in_pixels;
-    exposeEvent.height = g_pWindowManager->Screen->height_in_pixels;
-    xcb_send_event(g_pWindowManager->DisplayConnection, false, g_pWindowManager->Screen->root, XCB_EVENT_MASK_EXPOSURE, (char*)&exposeEvent);
-    xcb_flush(g_pWindowManager->DisplayConnection);
 }
 
 void ConfigManager::applyKeybindsToX() {

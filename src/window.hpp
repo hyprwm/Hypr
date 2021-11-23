@@ -44,6 +44,8 @@ public:
     EXPOSED_MEMBER(EffectiveSize, Vector2D, vec);
     EXPOSED_MEMBER(EffectivePosition, Vector2D, vec);
     EXPOSED_MEMBER(Position, Vector2D, vec);
+    EXPOSED_MEMBER(RealSize, Vector2D, vec);
+    EXPOSED_MEMBER(RealPosition, Vector2D, vec);
     EXPOSED_MEMBER(IsFloating, bool, b);
     EXPOSED_MEMBER(Drawable, int64_t, i);  // int64_t because it's my internal ID system too.
 
