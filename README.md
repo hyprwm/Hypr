@@ -1,5 +1,7 @@
 # Hypr
 
+! WARNING: Hypr is still in early development, expect bugs! Make sure to open an issue if you encounter one though! =)
+
 Hypr is a Linux tiling window manager for Xorg. It's written in XCB with modern C++ and aims to provide easily readable and expandable code.
 
 (Readme is more-or-less wip, I know it's ugly.)
