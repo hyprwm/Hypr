@@ -63,6 +63,7 @@ public:
     bool                        isWorkspaceVisible(int workspaceID);
 
     void                        setAllWindowsDirty();
+    void                        setAllFloatingWindowsTop();
 
     SMonitor*                   getMonitorFromWindow(CWindow*);
     SMonitor*                   getMonitorFromCursor();

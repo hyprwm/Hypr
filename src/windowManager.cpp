@@ -900,3 +900,12 @@ void CWindowManager::updateBarInfo() {
 
     statusBar.setCurrentWorkspace(activeWorkspaces[getMonitorFromCursor()->ID]);
 }
+
+void CWindowManager::setAllFloatingWindowsTop() {
+    for (auto& window : windows) {
+        if (window.getIsFloating()) {
+            Values[0] = XCB_STACK_MODE_ABOVE;
+            xcb_configure_window(g_pWindowManager->DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_STACK_MODE, Values);
+        }
+    }
+}

@@ -128,9 +128,8 @@ CWindow* Events::remapWindow(int windowID, bool wasfloating) {
 
     g_pWindowManager->setFocusedWindow(windowID);
 
-    float values[1];
-    values[0] = XCB_STACK_MODE_BELOW;
-    xcb_configure_window(g_pWindowManager->DisplayConnection, windowID, XCB_CONFIG_WINDOW_STACK_MODE, values);
+    // Make all floating windows above
+    g_pWindowManager->setAllFloatingWindowsTop();
 
     return g_pWindowManager->getWindowFromDrawable(windowID);
 }
