@@ -125,15 +125,6 @@ void CWindowManager::setupRandrMonitors() {
     }
 
     xcb_flush(DisplayConnection);
-
-    // sort monitors so that the primary is first and the rest are left to right
-    std::sort(monitors.begin(), monitors.end(), [](SMonitor& a, SMonitor& b) { return a.primary || a.vecPosition.x < b.vecPosition.x; });
-
-    Debug::log(LOG, "Sorted monitors. List: ");
-    for (long unsigned int i = 0; i < monitors.size(); ++i) {
-        Debug::log(NONE, "Name: " + monitors[i].szName + ", " + std::to_string(monitors[monitors.size() - 1].vecSize.x) + "x" + std::to_string(monitors[monitors.size() - 1].vecSize.y) +
-                             ", at " + std::to_string(monitors[monitors.size() - 1].vecPosition.x) + "," + std::to_string(monitors[monitors.size() - 1].vecPosition.y));
-    }
 }
 
 void CWindowManager::setupManager() {
