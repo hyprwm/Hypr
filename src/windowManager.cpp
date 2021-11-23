@@ -130,7 +130,7 @@ void CWindowManager::setupRandrMonitors() {
 void CWindowManager::setupManager() {
     setupRandrMonitors();
 
-    if (1 || monitors.size() == 0) {
+    if (monitors.size() == 0) {
         // RandR failed!
         Debug::log(WARN, "RandR failed!");
 
