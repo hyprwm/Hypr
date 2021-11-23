@@ -134,10 +134,8 @@ void CStatusBar::draw() {
 
     const auto WORKSPACE = g_pWindowManager->getWorkspaceByID(g_pWindowManager->activeWorkspaces[m_iMonitorID]);
 
-    if (WORKSPACE->getHasFullscreenWindow())
+    if (WORKSPACE->getHasFullscreenWindow()) // TODO: fix this
         return; // Do not draw a bar on a fullscreen window.
-
-    // TODO: CRIT! Status bar flashes, workspaces are wonky (wrong IDs?)
 
     xcb_rectangle_t rectangles[] = {{(int)0, (int)0, (int)m_vecSize.x, (int)m_vecSize.y}};
     xcb_poly_fill_rectangle(g_pWindowManager->DisplayConnection, m_iPixmap, m_mContexts["BG"].GContext, 1, rectangles);

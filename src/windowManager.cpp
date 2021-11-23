@@ -146,33 +146,11 @@ void CWindowManager::setupManager() {
 
     Debug::log(LOG, "RandR done.");
 
-    ConfigManager::init();
-
     Values[0] = XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_STRUCTURE_NOTIFY | XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY | XCB_EVENT_MASK_PROPERTY_CHANGE;
     xcb_change_window_attributes_checked(DisplayConnection, Screen->root,
                                          XCB_CW_EVENT_MASK, Values);
-    xcb_ungrab_key(DisplayConnection, XCB_GRAB_ANY, Screen->root, XCB_MOD_MASK_ANY);
 
-    for (auto& keybind : KeybindManager::keybinds) {
-        xcb_grab_key(DisplayConnection, 1, Screen->root,
-            KeybindManager::modToMask(keybind.getMod()), KeybindManager::getKeycodeFromKeysym(keybind.getKeysym()),
-            XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
-    }
-
-    xcb_flush(DisplayConnection);
-
-    // MOD + mouse
-    xcb_grab_button(DisplayConnection, 0,
-        Screen->root, XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE,
-        XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, Screen->root, XCB_NONE,
-        1, KeybindManager::modToMask(MOD_SUPER));
-    
-    xcb_grab_button(DisplayConnection, 0,
-        Screen->root, XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE,
-        XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, Screen->root, XCB_NONE,
-        3, KeybindManager::modToMask(MOD_SUPER));
-    
-    xcb_flush(DisplayConnection);
+    ConfigManager::init();
 
     Debug::log(LOG, "Keys done.");
 

@@ -25,6 +25,7 @@ void ConfigManager::init() {
     configValues["col.inactive_border"].intValue = 0x77222222;
 
     loadConfigLoadVars();
+    applyKeybindsToX();
 }
 
 void handleBind(const std::string& command, const std::string& value) {
@@ -174,6 +175,31 @@ void emptyEvent() {
     xcb_flush(g_pWindowManager->DisplayConnection);
 }
 
+void ConfigManager::applyKeybindsToX() {
+    xcb_ungrab_key(g_pWindowManager->DisplayConnection, XCB_GRAB_ANY, g_pWindowManager->Screen->root, XCB_MOD_MASK_ANY);
+
+    for (auto& keybind : KeybindManager::keybinds) {
+        xcb_grab_key(g_pWindowManager->DisplayConnection, 1, g_pWindowManager->Screen->root,
+                     KeybindManager::modToMask(keybind.getMod()), KeybindManager::getKeycodeFromKeysym(keybind.getKeysym()),
+                     XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+    }
+
+    xcb_flush(g_pWindowManager->DisplayConnection);
+
+    // MOD + mouse
+    xcb_grab_button(g_pWindowManager->DisplayConnection, 0,
+                    g_pWindowManager->Screen->root, XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE,
+                    XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, g_pWindowManager->Screen->root, XCB_NONE,
+                    1, KeybindManager::modToMask(MOD_SUPER));
+
+    xcb_grab_button(g_pWindowManager->DisplayConnection, 0,
+                    g_pWindowManager->Screen->root, XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE,
+                    XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, g_pWindowManager->Screen->root, XCB_NONE,
+                    3, KeybindManager::modToMask(MOD_SUPER));
+
+    xcb_flush(g_pWindowManager->DisplayConnection);
+}
+
 void ConfigManager::tick() {
     const char* const ENVHOME = getenv("HOME");
 
@@ -190,6 +216,9 @@ void ConfigManager::tick() {
         lastModifyTime = fileStat.st_mtime;
 
         ConfigManager::loadConfigLoadVars();
+
+        // So that X updates our grabbed keys.
+        ConfigManager::applyKeybindsToX();
 
         // so that the WM reloads the windows.
         emptyEvent();

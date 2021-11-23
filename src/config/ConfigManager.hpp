@@ -19,6 +19,8 @@ namespace ConfigManager {
     void                loadConfigLoadVars();
     void                tick();
 
+    void                applyKeybindsToX();
+
     int                 getInt(std::string_view);
     float               getFloat(std::string_view);
     std::string         getString(std::string_view);
