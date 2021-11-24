@@ -15,6 +15,7 @@
 #include "utilities/Util.hpp"
 #include "utilities/AnimationUtil.hpp"
 #include "utilities/XCBProps.hpp"
+#include "ewmh/ewmh.hpp"
 
 class CWindowManager {
 public:

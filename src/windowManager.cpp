@@ -80,42 +80,6 @@ void CWindowManager::setupRandrMonitors() {
 
     free(MONITORS);
 
-    /*
-
-    const auto MONITORNUM = xcb_randr_get_screen_resources_current_outputs_length(ScreenResReply);
-    auto OUTPUTS = xcb_randr_get_screen_resources_current_outputs(ScreenResReply);
-
-    xcb_randr_get_output_info_reply_t* outputReply;
-    xcb_randr_get_crtc_info_reply_t* crtcReply;
-
-    Debug::log(LOG, "Monitors found: " + std::to_string(MONITORNUM));
-
-    for (int i = 0; i < MONITORNUM; i++) {
-        outputReply = xcb_randr_get_output_info_reply(DisplayConnection, xcb_randr_get_output_info(DisplayConnection, OUTPUTS[i], XCB_CURRENT_TIME), NULL);
-        if (!outputReply || outputReply->crtc == XCB_NONE)
-            continue;
-        crtcReply = xcb_randr_get_crtc_info_reply(DisplayConnection, xcb_randr_get_crtc_info(DisplayConnection, outputReply->crtc, XCB_CURRENT_TIME), NULL);
-        if (!crtcReply)
-            continue;
-
-        monitors.push_back(SMonitor());
-
-        monitors[monitors.size() - 1].vecPosition = Vector2D(crtcReply->x, crtcReply->y);
-        monitors[monitors.size() - 1].vecSize = Vector2D(crtcReply->width == 0 ? 1920 : crtcReply->width, crtcReply->height);
-
-        monitors[monitors.size() - 1].ID = monitors.size() - 1;
-
-        char* name = (char*)xcb_randr_get_output_info_name(outputReply);
-        int nameLen = xcb_randr_get_output_info_name_length(outputReply);
-
-        for (int j = 0; j < nameLen; ++j) {
-            monitors[monitors.size() - 1].szName += name[j];
-        }
-
-        Debug::log(NONE, "Monitor " + monitors[monitors.size() - 1].szName + ": " + std::to_string(monitors[i].vecSize.x) + "x" + std::to_string(monitors[monitors.size() - 1].vecSize.y) +
-                             ", at " + std::to_string(monitors[monitors.size() - 1].vecPosition.x) + "," + std::to_string(monitors[monitors.size() - 1].vecPosition.y) + ", ID: " + std::to_string(monitors[monitors.size() - 1].ID));
-    } */
-
     const auto EXTENSIONREPLY = xcb_get_extension_data(DisplayConnection, &xcb_randr_id);
     if (!EXTENSIONREPLY->present)
         Debug::log(ERR, "RandR extension missing");
@@ -128,6 +92,7 @@ void CWindowManager::setupRandrMonitors() {
 }
 
 void CWindowManager::setupManager() {
+    EWMH::setupInitEWMH();
     setupRandrMonitors();
 
     if (monitors.size() == 0) {
