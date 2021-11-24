@@ -117,8 +117,6 @@ void KeybindManager::changeworkspace(std::string arg) {
     if (ID != -1) {
         Debug::log(LOG, "Changing the current workspace to " + std::to_string(ID));
 
-        const auto PLASTWINDOW = g_pWindowManager->getWindowFromDrawable(g_pWindowManager->LastWindow);
-
         g_pWindowManager->changeWorkspaceByID(ID);
     }
 }

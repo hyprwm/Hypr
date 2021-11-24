@@ -865,7 +865,6 @@ void CWindowManager::changeWorkspaceByID(int ID) {
             setAllWorkspaceWindowsDirtyByID(ID);
 
             activeWorkspaces[workspace.getMonitor()] = workspace.getID();
-            LastWindow = -1;
 
             // set the focus to any window on that workspace
             for (auto& window : windows) {
