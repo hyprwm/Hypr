@@ -935,44 +935,57 @@ void CWindowManager::setAllFloatingWindowsTop() {
 
 bool CWindowManager::shouldBeFloatedOnInit(int64_t window) {
     // Should be floated also sets some properties
-    const auto GEOMETRY = xcb_get_geometry(DisplayConnection, window);
-    xcb_get_geometry_reply_t* geom;
-    const auto WINDOWATTRCOOKIE = xcb_get_window_attributes(DisplayConnection, window);
-    const auto ATTRIBUTES = xcb_get_window_attributes_reply(DisplayConnection, WINDOWATTRCOOKIE, 0);
-
-
-    PROP(transient_cookie, XCB_ATOM_WM_TRANSIENT_FOR, UINT32_MAX);
-    PROP(title_cookie, XCB_ATOM_WM_NAME, 128);
-    PROP(class_cookie, XCB_ATOM_WM_CLASS, 128);
-    PROP(wm_machine_cookie, XCB_ATOM_WM_CLIENT_MACHINE, UINT32_MAX);
-
+    
     // get stuffza
 
     // floating for krunner
     // TODO: config this
-    const size_t PROPLEN = xcb_get_property_value_length(class_cookiereply);
-    char* NEWCLASS = (char*)xcb_get_property_value(class_cookiereply);
-    const size_t CLASSNAMEINDEX = strnlen(NEWCLASS, PROPLEN) + 1;
-
-    const char* CLASSINSTANCE = strndup(NEWCLASS, PROPLEN);
-    const char* CLASSNAME;
-    if (CLASSNAMEINDEX < PROPLEN) {
-        CLASSNAME = strndup(NEWCLASS + CLASSNAMEINDEX, PROPLEN - CLASSNAMEINDEX);
-    } else {
-        CLASSNAME = "";
-    }
+    
+    const auto WINCLASS = getClassName(window);
+    const auto CLASSNAME = WINCLASS.second;
+    const auto CLASSINSTANCE = WINCLASS.first;
 
     Debug::log(LOG, "New window got class " + (std::string)CLASSINSTANCE + " -> " + CLASSNAME);
 
-    free(class_cookiereply);
-
     xcb_change_property(DisplayConnection, XCB_PROP_MODE_REPLACE, window, XCB_ATOM_WM_NAME, XCB_ATOM_STRING, 8, strlen("hypr"), "hypr");
-
-    // TODO: add a role cookie, somehow.
 
     if (((std::string)CLASSNAME).find("krunner") != std::string::npos) {
         return true;
     }
+
+
+    // Role stuff
+    const auto WINROLE = getRoleName(window);
+
+    Debug::log(LOG, "Window opened with a role of " + WINROLE);
+
+    if (WINROLE.find("pop-up") != std::string::npos || WINROLE.find("task_dialog") != std::string::npos) {
+        return true;
+    }
+
+    //
+    // Type stuff
+    //
+    PROP(wm_type_cookie, HYPRATOMS["_NET_WM_WINDOW_TYPE"], UINT32_MAX);
+    xcb_atom_t TYPEATOM = NULL;
+
+    if (wm_type_cookiereply == NULL || xcb_get_property_value_length(wm_type_cookiereply) < 1) {
+        Debug::log(LOG, "No preferred type found.");
+    } else {
+        const auto ATOMS = (xcb_atom_t*)xcb_get_property_value(wm_type_cookiereply);
+        if (!ATOMS) {
+            Debug::log(ERR, "Atoms not found in preferred type!");
+        } else {
+            if (xcbContainsAtom(wm_type_cookiereply, HYPRATOMS["_NET_WM_WINDOW_TYPE_NOTIFICATION"])) {
+                free(wm_type_cookiereply);
+                return true;
+            }
+        }
+    }
+    free(wm_type_cookiereply);
+    //
+    //
+    //
 
     return false;
 }

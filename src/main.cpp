@@ -26,6 +26,19 @@ int main(int argc, char** argv) {
         return 1;
     }
 
+    // get atoms
+    for (auto& ATOM : HYPRATOMS) {
+        xcb_intern_atom_cookie_t cookie = xcb_intern_atom(g_pWindowManager->DisplayConnection, 0, ATOM.first.length(), ATOM.first.c_str());
+        xcb_intern_atom_reply_t* reply = xcb_intern_atom_reply(g_pWindowManager->DisplayConnection, cookie, NULL);
+
+        if (!reply) {
+            Debug::log(ERR, "Atom failed: " + ATOM.first);
+            continue;
+        }
+
+        ATOM.second = reply->atom;
+    }
+
     g_pWindowManager->setupManager();
 
     Debug::log(LOG, "Hypr Started!");

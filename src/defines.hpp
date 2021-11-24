@@ -15,6 +15,7 @@
 #include <memory>
 #include <string>
 #include <algorithm>
+#include <map>
 
 #include "./helpers/Vector.hpp"
 #include "./utilities/Debug.hpp"
@@ -51,3 +52,7 @@
 
 #define PROP(cookie, name, len) const auto cookie = xcb_get_property(DisplayConnection, false, window, name, XCB_GET_PROPERTY_TYPE_ANY, 0, len); \
         const auto cookie##reply = xcb_get_property_reply(DisplayConnection, cookie, NULL)
+
+
+
+#define HYPRATOM(name) {name, 0}

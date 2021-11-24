@@ -60,8 +60,19 @@ CWindow* Events::remapFloatingWindow(int windowID) {
     window.setWorkspaceID(g_pWindowManager->activeWorkspaces[CURRENTSCREEN]);
     window.setMonitor(CURRENTSCREEN);
 
-    window.setDefaultPosition(Vector2D(0, 0));
-    window.setDefaultSize(Vector2D(g_pWindowManager->Screen->width_in_pixels / 2.f, g_pWindowManager->Screen->height_in_pixels / 2.f));
+    // For all floating windows, get their default size
+    const auto GEOMETRYCOOKIE   = xcb_get_geometry(g_pWindowManager->DisplayConnection, windowID);
+    const auto GEOMETRY         = xcb_get_geometry_reply(g_pWindowManager->DisplayConnection, GEOMETRYCOOKIE, 0);
+
+    if (GEOMETRY) {
+        window.setDefaultPosition(Vector2D(GEOMETRY->x, GEOMETRY->y));
+        window.setDefaultSize(Vector2D(GEOMETRY->width, GEOMETRY->height));
+    } else {
+        Debug::log(ERR, "Geometry failed in remap.");
+
+        window.setDefaultPosition(Vector2D(0, 0));
+        window.setDefaultSize(Vector2D(g_pWindowManager->Screen->width_in_pixels / 2.f, g_pWindowManager->Screen->height_in_pixels / 2.f));
+    }
 
     // Also sets the old one
     g_pWindowManager->calculateNewWindowParams(&window);
@@ -101,8 +112,19 @@ CWindow* Events::remapWindow(int windowID, bool wasfloating) {
     window.setWorkspaceID(g_pWindowManager->activeWorkspaces[CURRENTSCREEN]);
     window.setMonitor(CURRENTSCREEN);
 
-    window.setDefaultPosition(Vector2D(0, 0));
-    window.setDefaultSize(Vector2D(g_pWindowManager->Screen->width_in_pixels / 2.f, g_pWindowManager->Screen->height_in_pixels / 2.f));
+    // For all floating windows, get their default size
+    const auto GEOMETRYCOOKIE = xcb_get_geometry(g_pWindowManager->DisplayConnection, windowID);
+    const auto GEOMETRY = xcb_get_geometry_reply(g_pWindowManager->DisplayConnection, GEOMETRYCOOKIE, 0);
+
+    if (GEOMETRY) {
+        window.setDefaultPosition(Vector2D(GEOMETRY->x, GEOMETRY->y));
+        window.setDefaultSize(Vector2D(GEOMETRY->width, GEOMETRY->height));
+    } else {
+        Debug::log(ERR, "Geometry failed in remap.");
+
+        window.setDefaultPosition(Vector2D(0, 0));
+        window.setDefaultSize(Vector2D(g_pWindowManager->Screen->width_in_pixels / 2.f, g_pWindowManager->Screen->height_in_pixels / 2.f));
+    }
 
     // Set the parent
     // check if lastwindow is on our workspace
@@ -188,8 +210,10 @@ void Events::eventMapWindow(xcb_generic_event_t* event) {
     // We check if the window is not on our tile-blacklist and if it is, we have a special treatment procedure for it.
     // this func also sets some stuff
     if (g_pWindowManager->shouldBeFloatedOnInit(E->window)) {
+        Debug::log(LOG, "Window SHOULD be floating on start.");
         remapFloatingWindow(E->window);
     } else {
+        Debug::log(LOG, "Window should NOT be floating on start.");
         remapWindow(E->window);
     }
 }

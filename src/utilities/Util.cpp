@@ -40,3 +40,18 @@ void emptyEvent() {
     xcb_send_event(g_pWindowManager->DisplayConnection, false, g_pWindowManager->Screen->root, XCB_EVENT_MASK_EXPOSURE, (char*)&exposeEvent);
     xcb_flush(g_pWindowManager->DisplayConnection);
 }
+
+bool xcbContainsAtom(xcb_get_property_reply_t* PROP, xcb_atom_t ATOM) {
+    if (PROP == NULL || xcb_get_property_value_length(PROP) == 0)
+        return false;
+
+    const auto ATOMS = (xcb_atom_t*)xcb_get_property_value(PROP);
+    if (!ATOMS)
+        return false;
+
+    for (int i = 0; i < xcb_get_property_value_length(PROP) / (PROP->format / 8); ++i)
+        if (ATOMS[i] == ATOM)
+            return true;
+
+    return false;
+}
