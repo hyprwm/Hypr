@@ -84,7 +84,7 @@ CWindow* Events::remapFloatingWindow(int windowID) {
     // Add to arr
     g_pWindowManager->addWindowToVectorSafe(window);
 
-    Debug::log(LOG, "Created a new window! X: " + std::to_string(window.getPosition().x) + ", Y: " + std::to_string(window.getPosition().y) + ", W: " + std::to_string(window.getSize().x) + ", H:" + std::to_string(window.getSize().y) + " ID: " + std::to_string(windowID));
+    Debug::log(LOG, "Created a new floating window! X: " + std::to_string(window.getPosition().x) + ", Y: " + std::to_string(window.getPosition().y) + ", W: " + std::to_string(window.getSize().x) + ", H:" + std::to_string(window.getSize().y) + " ID: " + std::to_string(windowID));
 
     // Set map values
     g_pWindowManager->Values[0] = XCB_EVENT_MASK_ENTER_WINDOW | XCB_EVENT_MASK_FOCUS_CHANGE;
@@ -183,7 +183,7 @@ CWindow* Events::remapWindow(int windowID, bool wasfloating) {
     // Add to arr
     g_pWindowManager->addWindowToVectorSafe(window);
 
-    Debug::log(LOG, "Created a new window! X: " + std::to_string(window.getPosition().x) + ", Y: " + std::to_string(window.getPosition().y) + ", W: " + std::to_string(window.getSize().x) + ", H:" + std::to_string(window.getSize().y) + " ID: " + std::to_string(windowID));
+    Debug::log(LOG, "Created a new tiled window! X: " + std::to_string(window.getPosition().x) + ", Y: " + std::to_string(window.getPosition().y) + ", W: " + std::to_string(window.getSize().x) + ", H:" + std::to_string(window.getSize().y) + " ID: " + std::to_string(windowID));
 
     // Set map values
     g_pWindowManager->Values[0] = XCB_EVENT_MASK_ENTER_WINDOW | XCB_EVENT_MASK_FOCUS_CHANGE;
