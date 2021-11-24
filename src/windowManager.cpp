@@ -259,10 +259,13 @@ bool CWindowManager::handleEvent() {
         free(ev);
     }
 
-    // TODO: sanity check on open/closed window.
-
     // refresh and apply the parameters of all dirty windows.
     refreshDirtyWindows();
+
+    // Sanity checks
+    for (const auto active : activeWorkspaces) {
+        sanityCheckOnWorkspace(active);
+    }
 
     // remove unused workspaces
     cleanupUnusedWorkspaces();
@@ -402,6 +405,55 @@ void CWindowManager::setFocusedWindow(xcb_drawable_t window) {
         }
 
         LastWindow = window;
+    }
+}
+
+void CWindowManager::sanityCheckOnWorkspace(int workspaceID) {
+    for (auto& w : windows) {
+        if (w.getWorkspaceID() == workspaceID) {
+            
+            // Check #1: Parent has 2 identical children (happens!)
+            if (w.getDrawable() < 0) {
+                const auto CHILDA = w.getChildNodeAID();
+                const auto CHILDB = w.getChildNodeBID();
+
+                if (CHILDA == CHILDB) {
+                    // Fix. Remove this parent, replace with child.
+                    Debug::log(LOG, "Sanity check A triggered for window ID " + std::to_string(w.getDrawable()));
+
+                    const auto PCHILD = getWindowFromDrawable(CHILDA);
+
+                    if (!PCHILD)
+                        continue; // Should be cleaned later.
+
+                    PCHILD->setPosition(w.getPosition());
+                    PCHILD->setSize(w.getSize());
+
+                    // make the sibling replace the parent
+                    PCHILD->setParentNodeID(w.getParentNodeID());
+
+                    if (w.getParentNodeID() != 0 && getWindowFromDrawable(w.getParentNodeID())) {
+                        if (getWindowFromDrawable(w.getParentNodeID())->getChildNodeAID() == w.getDrawable()) {
+                            getWindowFromDrawable(w.getParentNodeID())->setChildNodeAID(w.getDrawable());
+                        } else {
+                            getWindowFromDrawable(w.getParentNodeID())->setChildNodeBID(w.getDrawable());
+                        }
+                    }
+
+                    // Make the sibling eat the closed window
+                    PCHILD->setDirtyRecursive(true);
+                    PCHILD->recalcSizePosRecursive();
+
+                    // Remove the parent
+                    removeWindowFromVectorSafe(w.getDrawable());
+
+                    if (findWindowAtCursor())
+                        setFocusedWindow(findWindowAtCursor()->getDrawable());  // Set focus. :)
+
+                    Debug::log(LOG, "Sanity check A finished successfully.");
+                }
+            }
+        }
     }
 }
 

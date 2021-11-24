@@ -100,6 +100,19 @@ CWindow* Events::remapFloatingWindow(int windowID) {
 
 CWindow* Events::remapWindow(int windowID, bool wasfloating) {
     // Do the setup of the window's params and stuf
+
+    // For all floating windows, get their default size
+    const auto GEOMETRYCOOKIE = xcb_get_geometry(g_pWindowManager->DisplayConnection, windowID);
+    const auto GEOMETRY = xcb_get_geometry_reply(g_pWindowManager->DisplayConnection, GEOMETRYCOOKIE, 0);
+
+    if (GEOMETRY) {
+        // Check if the window isn't bullshit.
+        if (GEOMETRY->width < 2 || GEOMETRY->height < 2) {
+            // Bullshit window. set to floating.
+            return Events::remapFloatingWindow(windowID);
+        }
+    }
+
     CWindow window;
     window.setDrawable(windowID);
     window.setIsFloating(false);
@@ -111,10 +124,6 @@ CWindow* Events::remapWindow(int windowID, bool wasfloating) {
     const auto CURRENTSCREEN = g_pWindowManager->getMonitorFromCursor()->ID;
     window.setWorkspaceID(g_pWindowManager->activeWorkspaces[CURRENTSCREEN]);
     window.setMonitor(CURRENTSCREEN);
-
-    // For all floating windows, get their default size
-    const auto GEOMETRYCOOKIE = xcb_get_geometry(g_pWindowManager->DisplayConnection, windowID);
-    const auto GEOMETRY = xcb_get_geometry_reply(g_pWindowManager->DisplayConnection, GEOMETRYCOOKIE, 0);
 
     if (GEOMETRY) {
         window.setDefaultPosition(Vector2D(GEOMETRY->x, GEOMETRY->y));

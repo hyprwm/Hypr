@@ -86,6 +86,7 @@ public:
 
     void                        setupRandrMonitors();
 
+    void                        sanityCheckOnWorkspace(int);
     CWindow*                    getNeighborInDir(char dir);
     void                        eatWindow(CWindow* a, CWindow* toEat);
     bool                        canEatWindow(CWindow* a, CWindow* toEat);
