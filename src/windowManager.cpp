@@ -453,6 +453,29 @@ void CWindowManager::sanityCheckOnWorkspace(int workspaceID) {
                     Debug::log(LOG, "Sanity check A finished successfully.");
                 }
             }
+
+            // Hypothetical check #2: Check if children are present and tiled. (for nodes)
+            // I have not found this occurring but I have had some issues with... stuff.
+            if (w.getDrawable() < 0) {
+                const auto CHILDA = getWindowFromDrawable(w.getChildNodeAID());
+                const auto CHILDB = getWindowFromDrawable(w.getChildNodeBID());
+
+                if (CHILDA && CHILDB) {
+                    
+                    if (CHILDA->getIsFloating()) {
+                        g_pWindowManager->fixWindowOnClose(CHILDA);
+                        g_pWindowManager->calculateNewWindowParams(CHILDA);
+                    }
+
+                    if (CHILDB->getIsFloating()) {
+                        g_pWindowManager->fixWindowOnClose(CHILDB);
+                        g_pWindowManager->calculateNewWindowParams(CHILDB);
+                    }
+
+                } else {
+                    Debug::log(ERR, "Malformed node ID " + std::to_string(w.getDrawable()) + " with 2 children but one or both are nullptr.");
+                }
+            }
         }
     }
 }
