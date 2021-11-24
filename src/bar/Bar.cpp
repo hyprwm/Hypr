@@ -169,12 +169,15 @@ void CStatusBar::draw() {
         drawnWorkspaces++;
     }
 
-    // Draw time to the right
-    std::string TIME = exec("date +%I:%M\\ %p");
-    TIME = TIME.substr(0, TIME.length() - 1);
-    xcb_image_text_8(g_pWindowManager->DisplayConnection, TIME.length(), m_iPixmap,
-                     m_mContexts["BASETEXT"].GContext, m_vecSize.x - getTextWidth(TIME, m_mContexts["BASETEXT"].Font), (m_vecSize.y - (m_vecSize.y - 10) / 2),
-                     TIME.c_str());
+    // Draw STATUS to the right
+    std::string STATUS = exec(m_szStatusCommand.c_str());
+    STATUS = STATUS.substr(0, (STATUS.length() > 0 ? STATUS.length() - 1 : 9999999));
+    if (STATUS != "") {
+        xcb_image_text_8(g_pWindowManager->DisplayConnection, STATUS.length(), m_iPixmap,
+                         m_mContexts["BASETEXT"].GContext, m_vecSize.x - getTextWidth(STATUS, m_mContexts["BASETEXT"].Font), (m_vecSize.y - (m_vecSize.y - 10) / 2),
+                         STATUS.c_str());
+    }
+    
 
     xcb_flush(g_pWindowManager->DisplayConnection);
 

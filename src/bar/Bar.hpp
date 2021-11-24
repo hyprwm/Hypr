@@ -15,6 +15,7 @@ public:
 
     EXPOSED_MEMBER(WindowID, xcb_window_t, i);
     EXPOSED_MEMBER(MonitorID, int, i);
+    EXPOSED_MEMBER(StatusCommand, std::string, sz); // TODO: make the bar better
 
     void                draw();
     void                setup(int MonitorID);

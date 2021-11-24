@@ -19,6 +19,8 @@ void ConfigManager::init() {
     configValues["bar_monitor"].intValue = 0;
     configValues["bar_height"].intValue = 15;
 
+    configValues["status_command"].strValue = "date +%I:%M\\ %p"; // Time
+
 
     // Set Colors ARGB
     configValues["col.active_border"].intValue = 0x77FF3333;
@@ -72,6 +74,14 @@ void handleBind(const std::string& command, const std::string& value) {
         KeybindManager::keybinds.push_back(Keybind(mod, KEY, COMMAND, dispatcher));
 }
 
+void handleRawExec(const std::string& command, const std::string& args) {
+    exec(args.c_str());
+}
+
+void handleStatusCommand(const std::string& command, const std::string& args) {
+    g_pWindowManager->statusBar.setStatusCommand(args);
+}
+
 void parseLine(std::string& line) {
     // first check if its not a comment
     const auto COMMENTSTART = line.find_first_of('#');
@@ -94,6 +104,12 @@ void parseLine(std::string& line) {
 
     if (COMMAND == "bind") {
         handleBind(COMMAND, VALUE);
+        return;
+    } else if (COMMAND == "exec") {
+        handleRawExec(COMMAND, VALUE);
+        return;
+    } else if (COMMAND == "status_command") {
+        handleStatusCommand(COMMAND, VALUE);
         return;
     }
 
