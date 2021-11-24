@@ -22,7 +22,7 @@ void AnimationUtil::move() {
     for (auto& window : g_pWindowManager->windows) {
         // check if window needs an animation.
 
-        if (ConfigManager::getInt("anim.enabled") == 0) {
+        if (ConfigManager::getInt("anim.enabled") == 0 || window.getIsFloating()) {
             // Disabled animations. instant warps.
             window.setRealPosition(window.getEffectivePosition());
             window.setRealSize(window.getEffectiveSize());
