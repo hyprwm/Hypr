@@ -1,5 +1,12 @@
 ![Hypr](https://i.imgur.com/LtC153m.png)
 
+![Issues](https://img.shields.io/github/issues/vaxerski/Hypr)
+![PRs](https://img.shields.io/github/issues-pr/vaxerski/Hypr)
+![Lang](https://img.shields.io/github/languages/top/vaxerski/Hypr)
+![License](https://img.shields.io/github/license/vaxerski/Hypr)
+![Best](https://img.shields.io/badge/Standard-C%2B%2B20-success)
+![HiMom](https://img.shields.io/badge/Hi-mom!-ff69b4)
+<br/><br/>
 Hypr is a Linux tiling window manager for Xorg. It's written in XCB with modern C++ and aims to provide easily readable and expandable code.
 
 !WARNING: Hypr is still in early development. Please report all bugs in Github issues, or open a PR!
