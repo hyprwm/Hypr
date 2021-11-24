@@ -58,6 +58,7 @@ public:
 
     void                        calculateNewWindowParams(CWindow*);
     void                        fixWindowOnClose(CWindow*);
+    void                        closeWindowAllChecks(int64_t);
 
     void                        moveActiveWindowTo(char);
     void                        warpCursorTo(Vector2D);

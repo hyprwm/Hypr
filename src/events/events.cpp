@@ -37,14 +37,7 @@ void Events::eventDestroy(xcb_generic_event_t* event) {
     const auto E = reinterpret_cast<xcb_destroy_notify_event_t*>(event);
     xcb_kill_client(g_pWindowManager->DisplayConnection, E->window);
 
-    // fix last window if tile
-    const auto CLOSEDWINDOW = g_pWindowManager->getWindowFromDrawable(E->window);
-    if (CLOSEDWINDOW && !CLOSEDWINDOW->getIsFloating()) {
-        g_pWindowManager->fixWindowOnClose(CLOSEDWINDOW);
-
-        // delete off of the arr
-        g_pWindowManager->removeWindowFromVectorSafe(E->window);
-    }
+    g_pWindowManager->closeWindowAllChecks(E->window);
 }
 
 CWindow* Events::remapFloatingWindow(int windowID) {

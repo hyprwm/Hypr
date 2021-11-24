@@ -373,6 +373,7 @@ void CWindowManager::setFocusedWindow(xcb_drawable_t window) {
     }
 }
 
+// TODO: make this executed less. It's too often imo.
 void CWindowManager::sanityCheckOnWorkspace(int workspaceID) {
     for (auto& w : windows) {
         if (w.getWorkspaceID() == workspaceID) {
@@ -388,8 +389,11 @@ void CWindowManager::sanityCheckOnWorkspace(int workspaceID) {
 
                     const auto PCHILD = getWindowFromDrawable(CHILDA);
 
-                    if (!PCHILD)
-                        continue; // Should be cleaned later.
+                    if (!PCHILD){
+                        // Means both children are 0 (dead)
+                        removeWindowFromVectorSafe(w.getDrawable());
+                        continue;
+                    }
 
                     PCHILD->setPosition(w.getPosition());
                     PCHILD->setSize(w.getSize());
@@ -430,15 +434,33 @@ void CWindowManager::sanityCheckOnWorkspace(int workspaceID) {
                     if (CHILDA->getIsFloating()) {
                         g_pWindowManager->fixWindowOnClose(CHILDA);
                         g_pWindowManager->calculateNewWindowParams(CHILDA);
+
+                        Debug::log(LOG, "Found an invalid tiled window, ID: " + std::to_string(CHILDA->getDrawable()) + ", untiling it.");
                     }
 
                     if (CHILDB->getIsFloating()) {
                         g_pWindowManager->fixWindowOnClose(CHILDB);
                         g_pWindowManager->calculateNewWindowParams(CHILDB);
+
+                        Debug::log(LOG, "Found an invalid tiled window, ID: " + std::to_string(CHILDB->getDrawable()) + ", untiling it.");
                     }
 
                 } else {
                     Debug::log(ERR, "Malformed node ID " + std::to_string(w.getDrawable()) + " with 2 children but one or both are nullptr.");
+                }
+            }
+
+            // Check #3: Check if the window exists with xcb
+            // Some windows do not report they are dead for w/e reason
+            if (w.getDrawable() > 0) {
+                const auto GEOMETRYCOOKIE = xcb_get_geometry(g_pWindowManager->DisplayConnection, w.getDrawable());
+                const auto GEOMETRY = xcb_get_geometry_reply(g_pWindowManager->DisplayConnection, GEOMETRYCOOKIE, 0);
+
+                if (!GEOMETRY || (GEOMETRY->width < 1 || GEOMETRY->height < 1)) {
+                    Debug::log(LOG, "Found a dead window, ID: " + std::to_string(w.getDrawable()) + ", removing it.");
+                    
+                    closeWindowAllChecks(w.getDrawable());
+                    continue;
                 }
             }
         }
@@ -446,6 +468,9 @@ void CWindowManager::sanityCheckOnWorkspace(int workspaceID) {
 }
 
 CWindow* CWindowManager::getWindowFromDrawable(int64_t window) {
+    if (!window)
+        return nullptr;
+
     for(auto& w : windows) {
         if (w.getDrawable() == window) {
             return &w;
@@ -683,6 +708,17 @@ void CWindowManager::eatWindow(CWindow* a, CWindow* toEat) {
     a->setPosition(Vector2D(std::min(a->getPosition().x, toEat->getPosition().x), std::min(a->getPosition().y, toEat->getPosition().y)));
 
     a->setSize(Vector2D(std::max(OPPCORNERA.x, OPPCORNERB.x), std::max(OPPCORNERA.y, OPPCORNERB.y)) - a->getPosition());
+}
+
+void CWindowManager::closeWindowAllChecks(int64_t id) {
+    // fix last window if tile
+    const auto CLOSEDWINDOW = g_pWindowManager->getWindowFromDrawable(id);
+    if (CLOSEDWINDOW && !CLOSEDWINDOW->getIsFloating()) {
+        g_pWindowManager->fixWindowOnClose(CLOSEDWINDOW);
+
+        // delete off of the arr
+        g_pWindowManager->removeWindowFromVectorSafe(id);
+    }
 }
 
 void CWindowManager::fixWindowOnClose(CWindow* pClosedWindow) {
