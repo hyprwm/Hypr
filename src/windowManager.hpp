@@ -61,6 +61,7 @@ public:
     void                        closeWindowAllChecks(int64_t);
 
     void                        moveActiveWindowTo(char);
+    void                        moveActiveWindowToWorkspace(int);
     void                        warpCursorTo(Vector2D);
 
     void                        changeWorkspaceByID(int);

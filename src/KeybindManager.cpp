@@ -108,6 +108,15 @@ void KeybindManager::movewindow(std::string arg) {
     g_pWindowManager->moveActiveWindowTo(arg[0]);
 }
 
+void KeybindManager::movetoworkspace(std::string arg) {
+    try {
+        g_pWindowManager->moveActiveWindowToWorkspace(stoi(arg));
+    } catch (...) {
+        Debug::log(ERR, "Invalid arg in movetoworkspace, arg: " + arg);
+    }
+    
+}
+
 void KeybindManager::changeworkspace(std::string arg) {
     int ID = -1;
     try {

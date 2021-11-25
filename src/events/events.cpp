@@ -40,7 +40,7 @@ void Events::eventDestroy(xcb_generic_event_t* event) {
     g_pWindowManager->closeWindowAllChecks(E->window);
 }
 
-CWindow* Events::remapFloatingWindow(int windowID) {
+CWindow* Events::remapFloatingWindow(int windowID, int forcemonitor) {
     CWindow window;
     window.setDrawable(windowID);
     window.setIsFloating(true);
@@ -49,7 +49,7 @@ CWindow* Events::remapFloatingWindow(int windowID) {
         Debug::log(ERR, "Monitor was null! (remapWindow)");
         // rip! we cannot continue.
     }
-    const auto CURRENTSCREEN = g_pWindowManager->getMonitorFromCursor()->ID;
+    const auto CURRENTSCREEN = forcemonitor != -1 ? forcemonitor : g_pWindowManager->getMonitorFromCursor()->ID;
     window.setWorkspaceID(g_pWindowManager->activeWorkspaces[CURRENTSCREEN]);
     window.setMonitor(CURRENTSCREEN);
 
@@ -58,12 +58,12 @@ CWindow* Events::remapFloatingWindow(int windowID) {
     const auto GEOMETRY         = xcb_get_geometry_reply(g_pWindowManager->DisplayConnection, GEOMETRYCOOKIE, 0);
 
     if (GEOMETRY) {
-        window.setDefaultPosition(Vector2D(GEOMETRY->x, GEOMETRY->y));
+        window.setDefaultPosition(g_pWindowManager->monitors[CURRENTSCREEN].vecPosition);
         window.setDefaultSize(Vector2D(GEOMETRY->width, GEOMETRY->height));
     } else {
         Debug::log(ERR, "Geometry failed in remap.");
 
-        window.setDefaultPosition(Vector2D(0, 0));
+        window.setDefaultPosition(g_pWindowManager->monitors[CURRENTSCREEN].vecPosition);
         window.setDefaultSize(Vector2D(g_pWindowManager->Screen->width_in_pixels / 2.f, g_pWindowManager->Screen->height_in_pixels / 2.f));
     }
 
@@ -91,7 +91,7 @@ CWindow* Events::remapFloatingWindow(int windowID) {
     return g_pWindowManager->getWindowFromDrawable(windowID);
 }
 
-CWindow* Events::remapWindow(int windowID, bool wasfloating) {
+CWindow* Events::remapWindow(int windowID, bool wasfloating, int forcemonitor) {
     // Do the setup of the window's params and stuf
     CWindow window;
     window.setDrawable(windowID);
@@ -101,7 +101,7 @@ CWindow* Events::remapWindow(int windowID, bool wasfloating) {
         Debug::log(ERR, "Monitor was null! (remapWindow)");
         // rip! we cannot continue.
     }
-    const auto CURRENTSCREEN = g_pWindowManager->getMonitorFromCursor()->ID;
+    const auto CURRENTSCREEN = forcemonitor != -1 ? forcemonitor : g_pWindowManager->getMonitorFromCursor()->ID;
     window.setWorkspaceID(g_pWindowManager->activeWorkspaces[CURRENTSCREEN]);
     window.setMonitor(CURRENTSCREEN);
 

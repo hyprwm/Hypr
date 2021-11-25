@@ -95,9 +95,10 @@ void CWindowManager::setupManager() {
     EWMH::setupInitEWMH();
     setupRandrMonitors();
 
-    if (monitors.size() == 0) {
+    if (monitors.size() == 0 || true) {
         // RandR failed!
         Debug::log(WARN, "RandR failed!");
+        monitors.clear();
 
         #define TESTING_MON_AMOUNT 3
         for (int i = 0; i < TESTING_MON_AMOUNT /* Testing on 3 monitors, RandR shouldnt fail on a real desktop */; ++i) {
@@ -507,7 +508,7 @@ void CWindowManager::removeWindowFromVectorSafe(int64_t window) {
 
 void CWindowManager::setEffectiveSizePosUsingConfig(CWindow* pWindow) {
 
-    if (!pWindow)
+    if (!pWindow || pWindow->getIsFloating())
         return;
 
     const auto MONITOR = getMonitorFromWindow(pWindow);
@@ -560,7 +561,7 @@ void CWindowManager::calculateNewTileSetOldTile(CWindow* pWindow) {
     if (!PPARENT) {
         // New window on this workspace.
         // Open a fullscreen window.
-        const auto MONITOR = getMonitorFromCursor();
+        const auto MONITOR = getMonitorFromWindow(pWindow);
         if (!MONITOR) {
             Debug::log(ERR, "Monitor was nullptr! (calculateNewTileSetOldTile)");
             return;
@@ -607,7 +608,7 @@ void CWindowManager::calculateNewFloatingWindow(CWindow* pWindow) {
     if (!pWindow)
         return;
 
-    //pWindow->setPosition(pWindow->getDefaultPosition());
+    pWindow->setPosition(pWindow->getDefaultPosition());
     pWindow->setSize(pWindow->getDefaultSize());
 
     pWindow->setEffectivePosition(pWindow->getPosition() + Vector2D(10,10));
@@ -824,6 +825,55 @@ void CWindowManager::warpCursorTo(Vector2D to) {
 
     xcb_warp_pointer(DisplayConnection, XCB_NONE, Screen->root, 0, 0, 0, 0, (int)to.x, (int)to.y);
     free(pointerreply);
+}
+
+void CWindowManager::moveActiveWindowToWorkspace(int workspace) {
+
+    const auto PWINDOW = getWindowFromDrawable(LastWindow);
+
+    if (!PWINDOW)
+        return;
+
+    const auto SAVEDDEFAULTSIZE = PWINDOW->getDefaultSize();
+    const auto SAVEDFLOATSTATUS = PWINDOW->getIsFloating();
+    const auto SAVEDDRAWABLE    = PWINDOW->getDrawable();
+
+    closeWindowAllChecks(SAVEDDRAWABLE);
+
+    // PWINDOW is dead!
+
+    changeWorkspaceByID(workspace);
+
+    // Find new mon
+    int NEWMONITOR = 0;
+    for (long unsigned int i = 0; i < activeWorkspaces.size(); ++i) {
+        if (activeWorkspaces[i] == workspace) {
+            NEWMONITOR = i;
+        }
+    }
+
+    // Find the first window on the new workspace
+    xcb_drawable_t newLastWindow = 0;
+    for (auto& w : windows) {
+        if (w.getDrawable() > 0 && w.getWorkspaceID() == workspace && !w.getIsFloating()) {
+            newLastWindow = w.getDrawable();
+            break;
+        }
+    }
+
+    if (newLastWindow) {
+        setFocusedWindow(newLastWindow);
+    }
+
+
+    CWindow* PNEWWINDOW = nullptr;
+    if (SAVEDFLOATSTATUS)
+        PNEWWINDOW = Events::remapFloatingWindow(SAVEDDRAWABLE, NEWMONITOR);
+    else
+        PNEWWINDOW = Events::remapWindow(SAVEDDRAWABLE, false, NEWMONITOR);
+
+
+    PNEWWINDOW->setDefaultSize(SAVEDDEFAULTSIZE);
 }
 
 void CWindowManager::moveActiveWindowTo(char dir) {
