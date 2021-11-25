@@ -217,7 +217,8 @@ bool CWindowManager::handleEvent() {
                 break;
 
             default:
-                //Debug::log(WARN, "Unknown event: " + std::to_string(ev->response_type & ~0x80));
+                if (ev->response_type & ~0x80 != 14)
+                    Debug::log(WARN, "Unknown event: " + std::to_string(ev->response_type & ~0x80));
                 break;
         }
 
@@ -718,10 +719,10 @@ void CWindowManager::closeWindowAllChecks(int64_t id) {
     const auto CLOSEDWINDOW = g_pWindowManager->getWindowFromDrawable(id);
     if (CLOSEDWINDOW && !CLOSEDWINDOW->getIsFloating()) {
         g_pWindowManager->fixWindowOnClose(CLOSEDWINDOW);
-
-        // delete off of the arr
-        g_pWindowManager->removeWindowFromVectorSafe(id);
     }
+
+    // delete off of the arr
+    g_pWindowManager->removeWindowFromVectorSafe(id);
 }
 
 void CWindowManager::fixWindowOnClose(CWindow* pClosedWindow) {
