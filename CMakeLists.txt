@@ -25,5 +25,6 @@ target_link_libraries(Hypr
         xcb-keysyms
         xcb-randr
         xcb-xinerama
+        xcb-cursor
         ${CMAKE_THREAD_LIBS_INIT}
 )

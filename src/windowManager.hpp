@@ -46,6 +46,9 @@ public:
     std::atomic<bool>           mainThreadBusy = false;
     std::atomic<bool>           animationUtilBusy = false;
 
+    xcb_cursor_t                pointerCursor;
+    xcb_cursor_context_t*       pointerContext;
+
     CWindow*                    getWindowFromDrawable(int64_t);
     void                        addWindowToVectorSafe(CWindow);
     void                        removeWindowFromVectorSafe(int64_t);
@@ -100,6 +103,7 @@ public:
     void                        cleanupUnusedWorkspaces();
     xcb_visualtype_t*           setupColors();
     void                        updateBarInfo();
+    void                        updateRootCursor();
 
 };
 

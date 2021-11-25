@@ -15,12 +15,22 @@ xcb_visualtype_t* CWindowManager::setupColors() {
     return nullptr;
 }
 
+void CWindowManager::updateRootCursor() {
+    if (xcb_cursor_context_new(DisplayConnection, Screen, &pointerContext) < 0) {
+        Debug::log(ERR, "Creating a cursor context failed!");
+        return;
+    }
+
+    pointerCursor = xcb_cursor_load_cursor(pointerContext, "left_ptr");
+
+    Debug::log(LOG, "Cursor created with ID " + std::to_string(pointerCursor));
+
+    // Set the cursor
+    uint32_t values[1] = { pointerCursor };
+    xcb_change_window_attributes(DisplayConnection, Screen->root, XCB_CW_CURSOR, values);
+}
+
 void CWindowManager::setupRandrMonitors() {
-
-    // TODO: this stopped working on my machine for some reason.
-    // i3 works though...?
-
-    // finds 0 monitors
 
     XCBQUERYCHECK(RANDRVER, xcb_randr_query_version_reply(
         DisplayConnection, xcb_randr_query_version(DisplayConnection, XCB_RANDR_MAJOR_VERSION, XCB_RANDR_MINOR_VERSION), &errorRANDRVER), "RandR query failed!" );
@@ -159,6 +169,8 @@ void CWindowManager::setupManager() {
     Debug::log(LOG, "Bar done.");
 
     ConfigManager::loadConfigLoadVars();
+
+    updateRootCursor();
 
     Debug::log(LOG, "Finished setup!");
 

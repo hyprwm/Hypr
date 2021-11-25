@@ -11,6 +11,7 @@
 #include <xcb/xinerama.h>
 #include <xcb/xcb_event.h>
 #include <xcb/xcb_util.h>
+#include <xcb/xcb_cursor.h>
 
 #include <memory>
 #include <string>
