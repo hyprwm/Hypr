@@ -606,11 +606,14 @@ void CWindowManager::calculateNewFloatingWindow(CWindow* pWindow) {
     if (!pWindow)
         return;
 
-    pWindow->setPosition(pWindow->getDefaultPosition());
+    //pWindow->setPosition(pWindow->getDefaultPosition());
     pWindow->setSize(pWindow->getDefaultSize());
 
-    pWindow->setEffectivePosition(pWindow->getDefaultPosition());
+    pWindow->setEffectivePosition(pWindow->getPosition() + Vector2D(10,10));
     pWindow->setEffectiveSize(pWindow->getDefaultSize());
+
+    pWindow->setRealPosition(pWindow->getPosition());
+    pWindow->setRealSize(pWindow->getSize());
 
     Values[0] = XCB_STACK_MODE_ABOVE;
     xcb_configure_window(DisplayConnection, pWindow->getDrawable(), XCB_CONFIG_WINDOW_STACK_MODE, Values);
