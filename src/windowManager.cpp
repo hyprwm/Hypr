@@ -105,7 +105,7 @@ void CWindowManager::setupManager() {
     EWMH::setupInitEWMH();
     setupRandrMonitors();
 
-    if (monitors.size() == 0 || true) {
+    if (monitors.size() == 0) {
         // RandR failed!
         Debug::log(WARN, "RandR failed!");
         monitors.clear();
