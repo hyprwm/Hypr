@@ -30,7 +30,6 @@ gpointer handle(gpointer data) {
 void Events::setThread() {
 
     // Start a GTK thread so that Cairo does not complain.
-    gdk_threads_enter();
 
     g_pWindowManager->barThread = g_thread_new("Bar", handle, nullptr);
 
