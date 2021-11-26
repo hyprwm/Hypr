@@ -41,7 +41,7 @@ public:
     std::vector<int>            activeWorkspaces;
 
     CStatusBar                  statusBar;
-    std::thread*                barThread;
+    GThread*                    barThread;
 
     std::atomic<bool>           mainThreadBusy = false;
     std::atomic<bool>           animationUtilBusy = false;

@@ -23,7 +23,7 @@ Hypr is a Linux tiling window manager for Xorg. It's written in XCB with modern 
 - Moving / Fullscreening windows
 
 ## Roadmap v2 (not in order)
-- [ ] Upgrade the status bar rendering to Cairo
+- [x] Upgrade the status bar rendering to Cairo
 - [ ] Better status bar configability
 - [ ] Rounded corners
 - [x] Replace default X11 cursor with the pointer

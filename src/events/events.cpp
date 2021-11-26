@@ -1,20 +1,50 @@
 #include "events.hpp"
 
-void handle() {
-    g_pWindowManager->statusBar.draw();
+gpointer handle(gpointer data) {
+    while (1) {
+        // wait for the main thread to be idle
+        while (g_pWindowManager->mainThreadBusy) {
+            ;
+        }
 
-    // check config
-    ConfigManager::tick();
+        // set state to let the main thread know to wait.
+        g_pWindowManager->animationUtilBusy = true;
+
+        // draw bar
+        g_pWindowManager->statusBar.draw();
+
+        // check config
+        ConfigManager::tick();
+
+        // update animations.
+        AnimationUtil::move();
+        //
+
+        // restore anim state
+        g_pWindowManager->animationUtilBusy = false;
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000 / ConfigManager::getInt("max_fps")));
+    }
 }
 
 void Events::setThread() {
 
-    g_pWindowManager->barThread = new std::thread([&]() {
+    // Start a GTK thread so that Cairo does not complain.
+    gdk_threads_enter();
+
+    g_pWindowManager->barThread = g_thread_new("Bar", handle, nullptr);
+
+    if (!g_pWindowManager->barThread) {
+        Debug::log(ERR, "Gthread failed!");
+        return;
+    }
+
+    /*g_pWindowManager->barThread = new std::thread([&]() {
         for (;;) {
             handle();
             std::this_thread::sleep_for(std::chrono::milliseconds(1000 / ConfigManager::getInt("max_fps")));
         }
-    });
+    });*/
 }
 
 void Events::eventEnter(xcb_generic_event_t* event) {
@@ -23,8 +53,9 @@ void Events::eventEnter(xcb_generic_event_t* event) {
     // Just focus it and update.
     g_pWindowManager->setFocusedWindow(E->event);
 
-    //                                           vvv insallah no segfaults
-    g_pWindowManager->getWindowFromDrawable(E->event)->setDirty(true);
+    if(const auto PENTERWINDOW = g_pWindowManager->getWindowFromDrawable(E->event)) {
+        PENTERWINDOW->setDirty(true);
+    }
 }
 
 void Events::eventLeave(xcb_generic_event_t* event) {

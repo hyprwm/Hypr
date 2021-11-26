@@ -30,5 +30,14 @@ private:
 
     xcb_pixmap_t        m_iPixmap;
 
+
+    // Cairo
+
+    cairo_surface_t*    m_pCairoSurface = nullptr;
+    cairo_t*            m_pCairo        = nullptr;
+
+    void                drawText(Vector2D, std::string, uint32_t);
+    int                 getTextWidth(std::string);
+
     std::unordered_map<std::string, SDrawingContext> m_mContexts;
 };

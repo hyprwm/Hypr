@@ -13,6 +13,12 @@
 #include <xcb/xcb_util.h>
 #include <xcb/xcb_cursor.h>
 
+#include <cairo/cairo.h>
+#include <cairo/cairo-xcb.h>
+#include <glib-2.0/glib.h>
+
+#include <gtk/gtk.h>
+
 #include <memory>
 #include <string>
 #include <algorithm>
@@ -58,3 +64,7 @@
 
 #define HYPRATOM(name) {name, 0}
 
+#define ALPHA(c) ((double)(((c) >> 24) & 0xff) / 255.0)
+#define RED(c) ((double)(((c) >> 16) & 0xff) / 255.0)
+#define GREEN(c) ((double)(((c) >> 8) & 0xff) / 255.0)
+#define BLUE(c) ((double)(((c)) & 0xff) / 255.0)

@@ -7,6 +7,7 @@ Started by Vaxry on 2021 / 11 / 17
 
 #include <fstream>
 #include "windowManager.hpp"
+#include "defines.hpp"
 
 int main(int argc, char** argv) {
     clearLogs();
@@ -50,6 +51,8 @@ int main(int argc, char** argv) {
     Debug::log(LOG, "Hypr reached the end! Exiting...");
 
     xcb_disconnect(g_pWindowManager->DisplayConnection);
+
+    gdk_threads_leave();
 
     if (const auto err = xcb_connection_has_error(g_pWindowManager->DisplayConnection); err != 0) {
         Debug::log(CRIT, "Exiting because of error " + std::to_string(err));

@@ -17,6 +17,7 @@ void ConfigManager::init() {
     configValues["max_fps"].intValue = 60;
 
     configValues["bar_monitor"].intValue = 0;
+    configValues["bar_enabled"].intValue = 1;
     configValues["bar_height"].intValue = 15;
 
     configValues["status_command"].strValue = "date +%I:%M\\ %p"; // Time

@@ -154,18 +154,20 @@ void CWindowManager::setupManager() {
 
     // ---- INIT THE BAR ---- //
 
-    for (auto& monitor : monitors) {
-        if (monitor.primary) {
-            statusBar.setup(ConfigManager::configValues["bar_monitor"].intValue);
+    if (ConfigManager::getInt("bar_enabled") == 1) {
+        for (auto& monitor : monitors) {
+            if (monitor.primary) {
+                statusBar.setup(ConfigManager::configValues["bar_monitor"].intValue);
+            }
         }
+
+        // Update bar info
+        updateBarInfo();
+
+        // start its' update thread
+        Events::setThread();
     }
-
-    // Update bar info
-    updateBarInfo();
-
-    // start its' update thread
-    Events::setThread();
-
+    
     Debug::log(LOG, "Bar done.");
 
     ConfigManager::loadConfigLoadVars();

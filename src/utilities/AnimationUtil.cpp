@@ -6,14 +6,6 @@ void AnimationUtil::move() {
     static std::chrono::time_point lastFrame = std::chrono::high_resolution_clock::now();
     const double DELTA = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - lastFrame).count();
 
-    // wait for the main thread to be idle
-    while (g_pWindowManager->mainThreadBusy) {
-        ;
-    }
-
-    // set state to let the main thread know to wait.
-    g_pWindowManager->animationUtilBusy = true;
-
     const double ANIMATIONSPEED = ((double)1 / (double)ConfigManager::getFloat("anim.speed")) * DELTA;
 
     
@@ -65,9 +57,6 @@ void AnimationUtil::move() {
 
     if (updateRequired)
         emptyEvent();  // send a fake request to update dirty windows
-
-    // restore anim state
-    g_pWindowManager->animationUtilBusy = false;
 
     lastFrame = std::chrono::high_resolution_clock::now();
 }
