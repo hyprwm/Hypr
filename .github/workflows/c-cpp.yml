@@ -1,0 +1,21 @@
+name: C/C++ CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: getpkgs
+      run: sudo apt install xcb cmake gcc libgtk-4-dev
+    - name: configure
+      run: make clear
+    - name: make
+      run: make release
