@@ -1,6 +1,6 @@
 ![Hypr](https://i.imgur.com/LtC153m.png)
 
-　　　　 ![BuildStatus](https://github.com/vaxerski/Hypr/actions/workflows/c-cpp.yml/badge.svg)
+![BuildStatus](https://github.com/vaxerski/Hypr/actions/workflows/c-cpp.yml/badge.svg)
 ![Issues](https://img.shields.io/github/issues/vaxerski/Hypr)
 ![PRs](https://img.shields.io/github/issues-pr/vaxerski/Hypr)
 ![Lang](https://img.shields.io/github/languages/top/vaxerski/Hypr)
