@@ -9,4 +9,4 @@ debug:
 	cmake --build ./build --config Debug --target all -j 10
 
 clear:
-	rm -r build
+	rm -rf build
