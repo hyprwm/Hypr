@@ -37,5 +37,8 @@ Hypr is a Linux tiling window manager for Xorg. It's written in XCB with modern 
 
 <br/>
 
+# Building
+See the [Wiki](https://github.com/vaxerski/Hypr/wiki/Building) to see build instructions.
+
 # Contributions
-Welcome. I actually read PRs. Please see CONTRIBUTING.md
+Refer to [CONTRIBUTING.md](https://github.com/vaxerski/Hypr/blob/main/CONTRIBUTING.md) and the [Wiki](https://github.com/vaxerski/Hypr/wiki/Contributing-&-Debugging) for contributing instructions and guidelines.
