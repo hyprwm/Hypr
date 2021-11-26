@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Hypr
+Comment=A tiling window manager written in modern C++
+Exec=Hypr
+TryExec=Hypr
+Type=Application
+X-LightDM-DesktopName=Hypr
+DesktopNames=i3
+Keywords=tiling;wm;window;manager;Hypr;

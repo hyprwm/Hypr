@@ -1,0 +1,10 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "setdisplay",
+            "command": "export DISPLAY=:1", // Could be any other shell command
+            "type": "shell"
+        }
+    ]
+}
