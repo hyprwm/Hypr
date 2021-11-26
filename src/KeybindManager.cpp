@@ -95,13 +95,13 @@ void KeybindManager::killactive(std::string args) {
 void KeybindManager::call(std::string args) {
 
     if (fork() == 0) {
-        setsid();
+        //setsid();
 
         execl("/bin/sh", "/bin/sh", "-c", args.c_str(), nullptr);
 
         _exit(0);
     }
-    wait(NULL);
+    //wait(NULL);
 }
 
 void KeybindManager::movewindow(std::string arg) {
