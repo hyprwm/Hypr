@@ -14,7 +14,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: getpkgs
-      run: sudo apt install xcb cmake gcc libgtk-3-dev ninja-build
+      run: sudo apt install xcb cmake gcc libgtk-3-dev ninja-build libgdk-pixbuf-2.0-dev
     - name: configure
       run: make clear
     - name: make
