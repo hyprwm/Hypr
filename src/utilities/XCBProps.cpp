@@ -7,6 +7,10 @@
 std::pair<std::string, std::string> getClassName(int64_t window) {
     PROP(class_cookie, XCB_ATOM_WM_CLASS, 128);
 
+    if (!class_cookiereply) {
+        return std::make_pair<>("Error", "Error");
+    }
+
     const size_t PROPLEN = xcb_get_property_value_length(class_cookiereply);
     char* NEWCLASS = (char*)xcb_get_property_value(class_cookiereply);
     const size_t CLASSNAMEINDEX = strnlen(NEWCLASS, PROPLEN) + 1;
@@ -26,6 +30,9 @@ std::pair<std::string, std::string> getClassName(int64_t window) {
 
 std::string getRoleName(int64_t window) {
     PROP(role_cookie, HYPRATOMS["WM_WINDOW_ROLE"], 128);
+
+    if (!role_cookiereply)
+        return "Error";
 
     std::string returns = "";
 
@@ -47,6 +54,9 @@ std::string getRoleName(int64_t window) {
 
 std::string getWindowName(uint64_t window) {
     PROP(name_cookie, HYPRATOMS["_NET_WM_NAME"], 128);
+
+    if (!name_cookiereply)
+        return "Error";
 
     const int len = xcb_get_property_value_length(name_cookiereply);
     char* name = strndup((const char*)xcb_get_property_value(name_cookiereply), len);

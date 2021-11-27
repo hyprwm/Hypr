@@ -135,7 +135,6 @@ void IPCRecieveMessageB(const std::string path) {
                 std::sort(g_pWindowManager->statusBar->openWorkspaces.begin(), g_pWindowManager->statusBar->openWorkspaces.end());
             } else if (PROPNAME == "lastwindowname") {
                 g_pWindowManager->statusBar->setLastWindowName(PROPVALUE);
-                Debug::log(LOG, "update window name to " + PROPVALUE);
             }
         }
     } catch(...) {
