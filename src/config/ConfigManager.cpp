@@ -16,9 +16,11 @@ void ConfigManager::init() {
 
     configValues["max_fps"].intValue = 60;
 
-    configValues["bar_monitor"].intValue = 0;
-    configValues["bar_enabled"].intValue = 1;
-    configValues["bar_height"].intValue = 15;
+    configValues["bar:monitor"].intValue = 0;
+    configValues["bar:enabled"].intValue = 1;
+    configValues["bar:height"].intValue = 15;
+    configValues["bar:col.bg"].intValue = 0xFF111111;
+    configValues["bar:col.high"].intValue = 0xFFFF3333;
 
     configValues["status_command"].strValue = "date +%I:%M\\ %p"; // Time
 
@@ -34,6 +36,37 @@ void ConfigManager::init() {
 
     loadConfigLoadVars();
     applyKeybindsToX();
+}
+
+void configSetValueSafe(const std::string& COMMAND, const std::string& VALUE) {
+    if (ConfigManager::configValues.find(COMMAND) == ConfigManager::configValues.end())
+        return;
+
+    auto& CONFIGENTRY = ConfigManager::configValues.at(COMMAND);
+    if (CONFIGENTRY.intValue != -1) {
+        try {
+            if (VALUE.find("0x") == 0) {
+                // Values with 0x are hex
+                const auto VALUEWITHOUTHEX = VALUE.substr(2);
+                CONFIGENTRY.intValue = stol(VALUEWITHOUTHEX, nullptr, 16);
+            } else
+                CONFIGENTRY.intValue = stol(VALUE);
+        } catch (...) {
+            Debug::log(WARN, "Error reading value of " + COMMAND);
+        }
+    } else if (CONFIGENTRY.floatValue != -1) {
+        try {
+            CONFIGENTRY.floatValue = stof(VALUE);
+        } catch (...) {
+            Debug::log(WARN, "Error reading value of " + COMMAND);
+        }
+    } else if (CONFIGENTRY.strValue != "") {
+        try {
+            CONFIGENTRY.strValue = VALUE;
+        } catch (...) {
+            Debug::log(WARN, "Error reading value of " + COMMAND);
+        }
+    }
 }
 
 void handleBind(const std::string& command, const std::string& value) {
@@ -85,6 +118,96 @@ void handleStatusCommand(const std::string& command, const std::string& args) {
         g_pWindowManager->statusBar->setStatusCommand(args);
 }
 
+void parseModule(const std::string& COMMANDC, const std::string& VALUE) {
+    SBarModule module;
+
+    auto valueCopy = VALUE;
+
+    const auto ALIGN = valueCopy.substr(0, valueCopy.find_first_of(","));
+    valueCopy = valueCopy.substr(valueCopy.find_first_of(",") + 1);
+
+    if (ALIGN == "pad") {
+        const auto ALIGNR = valueCopy.substr(0, valueCopy.find_first_of(","));
+        valueCopy = valueCopy.substr(valueCopy.find_first_of(",") + 1);
+
+        const auto PADW = valueCopy;
+
+        if (ALIGNR == "left") module.alignment = LEFT;
+        else if (ALIGNR == "right") module.alignment = RIGHT;
+        else if (ALIGNR == "center") module.alignment = CENTER;
+
+        try {
+            module.pad = stol(PADW);
+        } catch (...) {
+            Debug::log(ERR, "Module creation pad error: invalid pad");
+            return;
+        }
+
+        module.isPad = true;
+
+        module.color = 0;
+        module.bgcolor = 0;
+
+        g_pWindowManager->statusBar->modules.push_back(module);
+
+        return;
+    }
+
+    const auto COL1 = valueCopy.substr(0, valueCopy.find_first_of(","));
+    valueCopy = valueCopy.substr(valueCopy.find_first_of(",") + 1);
+
+    const auto COL2 = valueCopy.substr(0, valueCopy.find_first_of(","));
+    valueCopy = valueCopy.substr(valueCopy.find_first_of(",") + 1);
+
+    const auto UPDATE = valueCopy.substr(0, valueCopy.find_first_of(","));
+    valueCopy = valueCopy.substr(valueCopy.find_first_of(",") + 1);
+
+    const auto COMMAND = valueCopy;
+
+    if (ALIGN == "left") module.alignment = LEFT;
+    else if (ALIGN == "right") module.alignment = RIGHT;
+    else if (ALIGN == "center") module.alignment = CENTER;
+
+    try {
+        module.color = stol(COL1.substr(2), nullptr, 16);
+        module.bgcolor = stol(COL2.substr(2), nullptr, 16);
+    } catch (...) {
+        Debug::log(ERR, "Module creation color error: invalid color");
+        return;
+    }
+
+    try {
+        module.updateEveryMs = stol(UPDATE);
+    } catch (...) {
+        Debug::log(ERR, "Module creation error: invalid update interval");
+        return;
+    }
+
+    module.value = COMMAND;
+
+    g_pWindowManager->statusBar->modules.push_back(module);
+}
+
+void parseBarLine(const std::string& line) {
+
+    // And parse
+    // check if command
+    const auto EQUALSPLACE = line.find_first_of('=');
+
+    if (EQUALSPLACE == std::string::npos)
+        return;
+
+    const auto COMMAND = line.substr(0, EQUALSPLACE);
+    const auto VALUE = line.substr(EQUALSPLACE + 1);
+
+    // Now check commands
+    if (COMMAND == "module") {
+        parseModule(COMMAND, VALUE);
+    } else {
+        configSetValueSafe("bar:" + COMMAND, VALUE);
+    }
+}
+
 void parseLine(std::string& line) {
     // first check if its not a comment
     const auto COMMENTSTART = line.find_first_of('#');
@@ -94,6 +217,27 @@ void parseLine(std::string& line) {
     // now, cut the comment off
     if (COMMENTSTART != std::string::npos)
         line = line.substr(COMMENTSTART);
+
+    // remove shit at the beginning
+    while (line[0] == ' ' || line[0] == '\t') {
+        line = line.substr(1);
+    }
+
+    if (line.find("Bar {") != std::string::npos) {
+        ConfigManager::isBar = true;
+        return;
+    }
+
+    if (line.find("}") != std::string::npos && ConfigManager::isBar) {
+        ConfigManager::isBar = false;
+        return;
+    }
+
+    if (ConfigManager::isBar) {
+        if (g_pWindowManager->statusBar)
+            parseBarLine(line);
+        return;
+    }
 
     // And parse
     // check if command
@@ -116,38 +260,19 @@ void parseLine(std::string& line) {
         return;
     }
 
-    if (ConfigManager::configValues.find(COMMAND) == ConfigManager::configValues.end()) 
-        return;
-
-    auto& CONFIGENTRY = ConfigManager::configValues.at(COMMAND);
-    if (CONFIGENTRY.intValue != -1) {
-        try {
-            if (VALUE.find("0x") == 0) {
-                // Values with 0x are hex
-                const auto VALUEWITHOUTHEX = VALUE.substr(2);
-                CONFIGENTRY.intValue = stoi(VALUEWITHOUTHEX, nullptr, 16);
-            } else
-                CONFIGENTRY.intValue = stoi(VALUE);
-        } catch (...) {
-            Debug::log(WARN, "Error reading value of " + COMMAND);
-        }
-    } else if (CONFIGENTRY.floatValue != -1) {
-        try {
-            CONFIGENTRY.floatValue = stof(VALUE);
-        } catch (...) {
-            Debug::log(WARN, "Error reading value of " + COMMAND);
-        }
-    } else if (CONFIGENTRY.strValue != "") {
-        try {
-            CONFIGENTRY.strValue = VALUE;
-        } catch (...) {
-            Debug::log(WARN, "Error reading value of " + COMMAND);
-        }
-    }
+    configSetValueSafe(COMMAND, VALUE);
 }
 
 void ConfigManager::loadConfigLoadVars() {
     Debug::log(LOG, "Reloading the config!");
+
+    if (loadBar && g_pWindowManager->statusBar) {
+        // clear modules as we overwrite them
+        for (auto& m : g_pWindowManager->statusBar->modules) {
+            g_pWindowManager->statusBar->destroyModule(&m);
+        }
+        g_pWindowManager->statusBar->modules.clear();
+    }
 
     KeybindManager::keybinds.clear();
 
@@ -184,7 +309,7 @@ void ConfigManager::loadConfigLoadVars() {
     // Reload the bar as well, don't load it before the default is loaded.
     if (loadBar && g_pWindowManager->statusBar) {
         g_pWindowManager->statusBar->destroy();
-        g_pWindowManager->statusBar->setup(configValues["bar_monitor"].intValue);
+        g_pWindowManager->statusBar->setup(configValues["bar:monitor"].intValue);
     }
 
     loadBar = true;

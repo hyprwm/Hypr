@@ -6,3 +6,4 @@
 
 std::pair<std::string, std::string> getClassName(int64_t window);
 std::string getRoleName(int64_t window);
+std::string getWindowName(uint64_t window);

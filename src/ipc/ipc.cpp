@@ -65,8 +65,16 @@ void IPCSendMessage(const std::string path, SIPCMessageMainToBar smessage) {
             message += std::to_string(w) + ",";
         }
 
+        message += IPC_MESSAGE_SEPARATOR + "lastwindowname" + IPC_MESSAGE_EQUALITY;
+
+        if (const auto PLASTWINDOW = g_pWindowManager->getWindowFromDrawable(g_pWindowManager->LastWindow); PLASTWINDOW) {
+            message += PLASTWINDOW->getName() + IPC_MESSAGE_SEPARATOR;
+        } else {
+            message += IPC_MESSAGE_SEPARATOR;
+        }
+
         // append the EOF
-        message += IPC_MESSAGE_SEPARATOR + IPC_END_OF_FILE;
+        message += IPC_END_OF_FILE;
 
         // Send
         writeToIPCChannel(path, message);
@@ -86,21 +94,21 @@ void IPCRecieveMessageB(const std::string path) {
     try {
         std::string message = readFromIPCChannel(path);
 
-        const auto EOFPOS = message.find_first_of(IPC_END_OF_FILE);
+        const auto EOFPOS = message.find(IPC_END_OF_FILE);
 
         if (EOFPOS == std::string::npos)
             return;
 
         message = message.substr(0, EOFPOS);
 
-        while (message.find_first_of(IPC_MESSAGE_SEPARATOR) != 0 && message.find_first_of(IPC_MESSAGE_SEPARATOR) != std::string::npos) {
+        while (message.find(IPC_MESSAGE_SEPARATOR) != std::string::npos && message.find(IPC_MESSAGE_SEPARATOR) != 0) {
             // read until done.
-            const auto PROP = message.substr(0, message.find_first_of(IPC_MESSAGE_SEPARATOR));
-            message = message.substr(message.find_first_of(IPC_MESSAGE_SEPARATOR) + 1);
+            const auto PROP = message.substr(0, message.find(IPC_MESSAGE_SEPARATOR));
+            message = message.substr(message.find(IPC_MESSAGE_SEPARATOR) + IPC_MESSAGE_SEPARATOR.length());
 
             // Get the name and value
-            const auto PROPNAME = PROP.substr(0, PROP.find_first_of(IPC_MESSAGE_EQUALITY));
-            const auto PROPVALUE = PROP.substr(PROP.find_first_of(IPC_MESSAGE_EQUALITY) + 1);
+            const auto PROPNAME = PROP.substr(0, PROP.find(IPC_MESSAGE_EQUALITY));
+            const auto PROPVALUE = PROP.substr(PROP.find(IPC_MESSAGE_EQUALITY) + 1);
 
             if (PROPNAME == "active") {
                 try {
@@ -125,6 +133,9 @@ void IPCRecieveMessageB(const std::string path) {
 
                 // sort
                 std::sort(g_pWindowManager->statusBar->openWorkspaces.begin(), g_pWindowManager->statusBar->openWorkspaces.end());
+            } else if (PROPNAME == "lastwindowname") {
+                g_pWindowManager->statusBar->setLastWindowName(PROPVALUE);
+                Debug::log(LOG, "update window name to " + PROPVALUE);
             }
         }
     } catch(...) {
@@ -143,21 +154,21 @@ void IPCRecieveMessageM(const std::string path) {
     try {
         std::string message = readFromIPCChannel(path);
 
-        const auto EOFPOS = message.find_first_of(IPC_END_OF_FILE);
+        const auto EOFPOS = message.find(IPC_END_OF_FILE);
 
         if (EOFPOS == std::string::npos)
             return;
 
         message = message.substr(0, EOFPOS);
 
-        while (message.find_first_of(IPC_MESSAGE_SEPARATOR) != 0 && message.find_first_of(IPC_MESSAGE_SEPARATOR) != std::string::npos) {
+        while (message.find(IPC_MESSAGE_SEPARATOR) != std::string::npos && message.find(IPC_MESSAGE_SEPARATOR) != 0) {
             // read until done.
-            const auto PROP = message.substr(0, message.find_first_of(IPC_MESSAGE_SEPARATOR));
-            message = message.substr(message.find_first_of(IPC_MESSAGE_SEPARATOR) + 1);
+            const auto PROP = message.substr(0, message.find(IPC_MESSAGE_SEPARATOR));
+            message = message.substr(message.find(IPC_MESSAGE_SEPARATOR) + IPC_MESSAGE_SEPARATOR.length());
 
             // Get the name and value
-            const auto PROPNAME = PROP.substr(0, PROP.find_first_of(IPC_MESSAGE_EQUALITY));
-            const auto PROPVALUE = PROP.substr(PROP.find_first_of(IPC_MESSAGE_EQUALITY) + 1);
+            const auto PROPNAME = PROP.substr(0, PROP.find(IPC_MESSAGE_EQUALITY));
+            const auto PROPVALUE = PROP.substr(PROP.find(IPC_MESSAGE_EQUALITY) + 1);
 
             if (PROPNAME == "wid") {
                 try {

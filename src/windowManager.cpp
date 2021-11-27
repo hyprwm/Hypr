@@ -255,6 +255,12 @@ bool CWindowManager::handleEvent() {
     // remove unused workspaces
     cleanupUnusedWorkspaces();
 
+    // Update last window name
+    updateActiveWindowName();
+
+    // Update the bar with the freshest stuff
+    updateBarInfo();
+
     xcb_flush(DisplayConnection);
 
     // Restore thread state
@@ -541,9 +547,9 @@ void CWindowManager::setEffectiveSizePosUsingConfig(CWindow* pWindow) {
     pWindow->setEffectiveSize(pWindow->getSize() - (Vector2D(ConfigManager::getInt("border_size"), ConfigManager::getInt("border_size")) * 2));
 
     // do gaps, set top left
-    pWindow->setEffectivePosition(pWindow->getEffectivePosition() + Vector2D(DISPLAYLEFT ? ConfigManager::getInt("gaps_out") : ConfigManager::getInt("gaps_in"), DISPLAYTOP ? ConfigManager::getInt("gaps_out") + (MONITOR->ID == ConfigManager::getInt("bar_monitor") ? ConfigManager::getInt("bar_height") : 0) : ConfigManager::getInt("gaps_in")));
+    pWindow->setEffectivePosition(pWindow->getEffectivePosition() + Vector2D(DISPLAYLEFT ? ConfigManager::getInt("gaps_out") : ConfigManager::getInt("gaps_in"), DISPLAYTOP ? ConfigManager::getInt("gaps_out") + (MONITOR->ID == ConfigManager::getInt("bar:monitor") ? ConfigManager::getInt("bar:height") : 0) : ConfigManager::getInt("gaps_in")));
     // fix to old size bottom right
-    pWindow->setEffectiveSize(pWindow->getEffectiveSize() - Vector2D(DISPLAYLEFT ? ConfigManager::getInt("gaps_out") : ConfigManager::getInt("gaps_in"), DISPLAYTOP ? ConfigManager::getInt("gaps_out") + (MONITOR->ID == ConfigManager::getInt("bar_monitor") ? ConfigManager::getInt("bar_height") : 0) : ConfigManager::getInt("gaps_in")));
+    pWindow->setEffectiveSize(pWindow->getEffectiveSize() - Vector2D(DISPLAYLEFT ? ConfigManager::getInt("gaps_out") : ConfigManager::getInt("gaps_in"), DISPLAYTOP ? ConfigManager::getInt("gaps_out") + (MONITOR->ID == ConfigManager::getInt("bar:monitor") ? ConfigManager::getInt("bar:height") : 0) : ConfigManager::getInt("gaps_in")));
     // set bottom right
     pWindow->setEffectiveSize(pWindow->getEffectiveSize() - Vector2D(DISPLAYRIGHT ? ConfigManager::getInt("gaps_out") : ConfigManager::getInt("gaps_in"), DISPLAYBOTTOM ? ConfigManager::getInt("gaps_out") : ConfigManager::getInt("gaps_in")));
 }
@@ -1073,7 +1079,21 @@ void CWindowManager::updateBarInfo() {
         return;
     }
 
+    
+
     message.activeWorkspace = activeWorkspaces[getMonitorFromCursor()->ID];
+
+    auto winname = getWindowFromDrawable(LastWindow) ? getWindowFromDrawable(LastWindow)->getName() : "";
+
+    for (auto& c : winname) {
+        // Remove illegal chars
+        if (c == '=')
+            c = ' ';
+        else if (c == '\t')
+            c = ' ';
+    }
+
+    message.lastWindowName = winname;
 
     for (auto& workspace : workspaces) {
         message.openWorkspaces.push_back(workspace.getID());
@@ -1121,6 +1141,7 @@ bool CWindowManager::shouldBeFloatedOnInit(int64_t window) {
         return true;
     }
 
+
     //
     // Type stuff
     //
@@ -1146,4 +1167,17 @@ bool CWindowManager::shouldBeFloatedOnInit(int64_t window) {
     //
 
     return false;
+}
+
+void CWindowManager::updateActiveWindowName() {
+    if (!getWindowFromDrawable(LastWindow))
+        return;
+
+    const auto PLASTWINDOW = getWindowFromDrawable(LastWindow);
+
+    auto WINNAME = getWindowName(LastWindow);
+    if (WINNAME != PLASTWINDOW->getName()) {
+        Debug::log(LOG, "Update, window got name: " + WINNAME);
+        PLASTWINDOW->setName(WINNAME);
+    }
 }

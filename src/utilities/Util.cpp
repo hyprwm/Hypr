@@ -55,3 +55,21 @@ bool xcbContainsAtom(xcb_get_property_reply_t* PROP, xcb_atom_t ATOM) {
 
     return false;
 }
+
+std::vector<std::string> splitString(std::string in, char c) {
+    std::vector<std::string> returns;
+
+    while(in.length() > 0) {
+        std::string toPush = in.substr(0, in.find_first_of(c));
+        if (toPush != "") {
+            returns.push_back(toPush);
+        }
+        
+        if (in.find_first_of(c) != std::string::npos)
+            in = in.substr(in.find_first_of(c) + 1);
+        else
+            in = "";
+    }
+
+    return returns;
+}

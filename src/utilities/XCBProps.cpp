@@ -44,3 +44,16 @@ std::string getRoleName(int64_t window) {
 
     return returns;
 }
+
+std::string getWindowName(uint64_t window) {
+    PROP(name_cookie, HYPRATOMS["_NET_WM_NAME"], 128);
+
+    const int len = xcb_get_property_value_length(name_cookiereply);
+    char* name = strndup((const char*)xcb_get_property_value(name_cookiereply), len);
+    std::string stringname(name);
+    free(name);
+
+    free(name_cookiereply);
+
+    return stringname;
+}

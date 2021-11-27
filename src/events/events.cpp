@@ -1,6 +1,8 @@
 #include "events.hpp"
 
 gpointer handle(gpointer data) {
+    int lazyUpdateCounter = 0;
+
     while (1) {
         // wait for the main thread to be idle
         while (g_pWindowManager->mainThreadBusy) {
@@ -10,12 +12,25 @@ gpointer handle(gpointer data) {
         // set state to let the main thread know to wait.
         g_pWindowManager->animationUtilBusy = true;
 
-        // check config
-        ConfigManager::tick();
-
         // update animations.
         AnimationUtil::move();
         //
+
+        // Don't spam these
+        if (lazyUpdateCounter > 10){
+            // Update the active window name
+            g_pWindowManager->updateActiveWindowName();
+
+            // Update the bar
+            g_pWindowManager->updateBarInfo();
+
+            // check config
+            ConfigManager::tick();
+
+            lazyUpdateCounter = 0;
+        }
+
+        ++lazyUpdateCounter;
 
         // restore anim state
         g_pWindowManager->animationUtilBusy = false;
@@ -80,6 +95,11 @@ CWindow* Events::remapFloatingWindow(int windowID, int forcemonitor) {
     window.setWorkspaceID(g_pWindowManager->activeWorkspaces[CURRENTSCREEN]);
     window.setMonitor(CURRENTSCREEN);
 
+    // Window name
+    const auto WINNAME = getWindowName(windowID);
+    Debug::log(LOG, "New window got name: " + WINNAME);
+    window.setName(WINNAME);
+
     // For all floating windows, get their default size
     const auto GEOMETRYCOOKIE   = xcb_get_geometry(g_pWindowManager->DisplayConnection, windowID);
     const auto GEOMETRY         = xcb_get_geometry_reply(g_pWindowManager->DisplayConnection, GEOMETRYCOOKIE, 0);
@@ -131,6 +151,11 @@ CWindow* Events::remapWindow(int windowID, bool wasfloating, int forcemonitor) {
     const auto CURRENTSCREEN = forcemonitor != -1 ? forcemonitor : g_pWindowManager->getMonitorFromCursor()->ID;
     window.setWorkspaceID(g_pWindowManager->activeWorkspaces[CURRENTSCREEN]);
     window.setMonitor(CURRENTSCREEN);
+
+    // Window name
+    const auto WINNAME = getWindowName(windowID);
+    Debug::log(LOG, "New window got name: " + WINNAME);
+    window.setName(WINNAME);
 
     // For all floating windows, get their default size
     const auto GEOMETRYCOOKIE = xcb_get_geometry(g_pWindowManager->DisplayConnection, windowID);

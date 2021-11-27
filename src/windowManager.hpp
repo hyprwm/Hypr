@@ -96,6 +96,9 @@ public:
     void                        createAndOpenAllPipes();
     void                        setupDepth();
 
+    void                        updateActiveWindowName();
+    void                        updateBarInfo();
+
    private:
 
     // Internal WM functions that don't have to be exposed
@@ -110,7 +113,6 @@ public:
     void                        setEffectiveSizePosUsingConfig(CWindow* pWindow);
     void                        cleanupUnusedWorkspaces();
     xcb_visualtype_t*           setupColors();
-    void                        updateBarInfo();
     void                        updateRootCursor();
 };
 
