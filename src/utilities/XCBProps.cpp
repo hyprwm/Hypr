@@ -15,17 +15,22 @@ std::pair<std::string, std::string> getClassName(int64_t window) {
     char* NEWCLASS = (char*)xcb_get_property_value(class_cookiereply);
     const size_t CLASSNAMEINDEX = strnlen(NEWCLASS, PROPLEN) + 1;
 
-    const char* CLASSINSTANCE = strndup(NEWCLASS, PROPLEN);
-    const char* CLASSNAME;
+    char* CLASSINSTANCE = strndup(NEWCLASS, PROPLEN);
+    char* CLASSNAME;
     if (CLASSNAMEINDEX < PROPLEN) {
         CLASSNAME = strndup(NEWCLASS + CLASSNAMEINDEX, PROPLEN - CLASSNAMEINDEX);
     } else {
         CLASSNAME = "";
     }
 
-    free(class_cookiereply);
+    std::string CLASSINST(CLASSINSTANCE);
+    std::string CLASSNAM(CLASSNAME);
 
-    return std::make_pair<>(std::string(CLASSINSTANCE), std::string(CLASSNAME));
+    free(class_cookiereply);
+    free(CLASSINSTANCE);
+    free(CLASSNAME);
+
+    return std::make_pair<>(CLASSINST, CLASSNAM);
 }
 
 std::string getRoleName(int64_t window) {
@@ -45,6 +50,8 @@ std::string getRoleName(int64_t window) {
         asprintf(&role, "%.*s", xcb_get_property_value_length(role_cookiereply), (char*)xcb_get_property_value(role_cookiereply));
 
         returns = role;
+
+        free(role);
     }
 
     free(role_cookiereply);
