@@ -36,12 +36,17 @@ Hypr is a Linux tiling window manager for Xorg. It's written in XCB with modern 
 - [ ] Fix animation flicker (if possible)
 - [ ] Config expansion (rules, default workspaces, etc.)
 
-<br/>
 
 # Configuring
 See the [Wiki Page](https://github.com/vaxerski/Hypr/wiki/Configuring-Hypr) for a detailed overview on the config, or refer to the example config in examples/hypr.conf.
 
 To use a custom config, place it in ~/.config/hypr/hypr.conf
+
+# Screenshot Gallery
+
+![One](https://i.imgur.com/5HmGM4R.png)
+![Two](https://i.imgur.com/V4lIjkC.png)
+![Three](https://i.imgur.com/yvZVde7.png)
 
 # Building
 See the [Wiki](https://github.com/vaxerski/Hypr/wiki/Building) to see build instructions.
