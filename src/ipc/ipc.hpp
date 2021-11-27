@@ -12,6 +12,7 @@ struct SIPCMessageMainToBar {
     std::vector<int>    openWorkspaces;
     uint64_t            activeWorkspace;
     std::string         lastWindowName;
+    bool                fullscreenOnBar;
 };
 
 struct SIPCMessageBarToMain {

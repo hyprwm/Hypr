@@ -1095,6 +1095,8 @@ void CWindowManager::updateBarInfo() {
 
     message.lastWindowName = winname;
 
+    message.fullscreenOnBar = getWorkspaceByID(activeWorkspaces[ConfigManager::getInt("bar:monitor") > monitors.size() ? 0 : ConfigManager::getInt("bar:monitor")])->getHasFullscreenWindow();
+
     for (auto& workspace : workspaces) {
         message.openWorkspaces.push_back(workspace.getID());
     }

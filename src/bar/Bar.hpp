@@ -42,6 +42,7 @@ public:
     EXPOSED_MEMBER(MonitorID, int, i);
     EXPOSED_MEMBER(StatusCommand, std::string, sz); // TODO: make the bar better
     EXPOSED_MEMBER(LastWindowName, std::string, sz);
+    EXPOSED_MEMBER(IsCovered, bool, b);
 
     void                draw();
     void                setup(int MonitorID);

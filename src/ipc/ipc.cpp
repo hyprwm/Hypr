@@ -65,6 +65,8 @@ void IPCSendMessage(const std::string path, SIPCMessageMainToBar smessage) {
             message += std::to_string(w) + ",";
         }
 
+        message += IPC_MESSAGE_SEPARATOR + "barfullscreenwindow" + IPC_MESSAGE_EQUALITY + (smessage.fullscreenOnBar ? "1" : "0");
+
         message += IPC_MESSAGE_SEPARATOR + "lastwindowname" + IPC_MESSAGE_EQUALITY;
 
         if (const auto PLASTWINDOW = g_pWindowManager->getWindowFromDrawable(g_pWindowManager->LastWindow); PLASTWINDOW) {
@@ -135,6 +137,8 @@ void IPCRecieveMessageB(const std::string path) {
                 std::sort(g_pWindowManager->statusBar->openWorkspaces.begin(), g_pWindowManager->statusBar->openWorkspaces.end());
             } else if (PROPNAME == "lastwindowname") {
                 g_pWindowManager->statusBar->setLastWindowName(PROPVALUE);
+            } else if (PROPNAME == "barfullscreenwindow") {
+                g_pWindowManager->statusBar->setIsCovered(PROPVALUE == "1" ? true : false);
             }
         }
     } catch(...) {

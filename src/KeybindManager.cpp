@@ -131,14 +131,16 @@ void KeybindManager::changeworkspace(std::string arg) {
 }
 
 void KeybindManager::toggleActiveWindowFullscreen(std::string unusedArg) {
-    const auto MONITOR = g_pWindowManager->getMonitorFromWindow(g_pWindowManager->getWindowFromDrawable(g_pWindowManager->LastWindow));
+    if (!g_pWindowManager->getWindowFromDrawable(g_pWindowManager->LastWindow))
+        return;
+
+    const auto PWINDOW = g_pWindowManager->getWindowFromDrawable(g_pWindowManager->LastWindow);
+    const auto MONITOR = g_pWindowManager->getMonitorFromWindow(PWINDOW);
 
     g_pWindowManager->setAllWorkspaceWindowsDirtyByID(g_pWindowManager->activeWorkspaces[MONITOR->ID]);
 
-    if (auto WINDOW = g_pWindowManager->getWindowFromDrawable(g_pWindowManager->LastWindow) ; WINDOW) {
-        WINDOW->setFullscreen(!WINDOW->getFullscreen());
-        g_pWindowManager->getWorkspaceByID(g_pWindowManager->activeWorkspaces[MONITOR->ID])->setHasFullscreenWindow(WINDOW->getFullscreen());
-    }
+    PWINDOW->setFullscreen(!PWINDOW->getFullscreen());
+    g_pWindowManager->getWorkspaceByID(PWINDOW->getWorkspaceID())->setHasFullscreenWindow(PWINDOW->getFullscreen());
 }
 
 void KeybindManager::toggleActiveWindowFloating(std::string unusedArg) {
