@@ -3,7 +3,7 @@
 #include <unordered_map>
 
 #include "../defines.hpp"
-#include "../utilities/AnimationUtil.hpp"
+#include "../ipc/ipc.hpp"
 
 struct SDrawingContext {
     xcb_gcontext_t      GContext;
@@ -41,3 +41,6 @@ private:
 
     std::unordered_map<std::string, SDrawingContext> m_mContexts;
 };
+
+// Main thread for the bar. Is only initted once in main.cpp so we can do this.
+int64_t barMainThread();

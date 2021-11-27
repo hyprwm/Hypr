@@ -81,7 +81,8 @@ void handleRawExec(const std::string& command, const std::string& args) {
 }
 
 void handleStatusCommand(const std::string& command, const std::string& args) {
-    g_pWindowManager->statusBar.setStatusCommand(args);
+    if (g_pWindowManager->statusBar)
+        g_pWindowManager->statusBar->setStatusCommand(args);
 }
 
 void parseLine(std::string& line) {
@@ -174,22 +175,28 @@ void ConfigManager::loadConfigLoadVars() {
             }
             
         }
-    }
 
-    ifs.close();
+        ifs.close();
+    }
 
     g_pWindowManager->setAllWindowsDirty();
 
     // Reload the bar as well, don't load it before the default is loaded.
-    if (loadBar) {
-        g_pWindowManager->statusBar.destroy();
-        g_pWindowManager->statusBar.setup(configValues["bar_monitor"].intValue);
+    if (loadBar && g_pWindowManager->statusBar) {
+        g_pWindowManager->statusBar->destroy();
+        g_pWindowManager->statusBar->setup(configValues["bar_monitor"].intValue);
     }
 
     loadBar = true;
 }
 
 void ConfigManager::applyKeybindsToX() {
+    if (g_pWindowManager->statusBar) {
+        Debug::log(LOG, "Not applying the keybinds because status bar not null");
+        return;  // If we are in the status bar don't do this.
+    }
+        
+
     xcb_ungrab_key(g_pWindowManager->DisplayConnection, XCB_GRAB_ANY, g_pWindowManager->Screen->root, XCB_MOD_MASK_ANY);
 
     for (auto& keybind : KeybindManager::keybinds) {

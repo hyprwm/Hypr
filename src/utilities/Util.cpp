@@ -31,7 +31,7 @@ double parabolic(double from, double to, double incline) {
 
 void emptyEvent() {
     xcb_expose_event_t exposeEvent;
-    exposeEvent.window = g_pWindowManager->statusBar.getWindowID();
+    exposeEvent.window = 0;
     exposeEvent.response_type = 0;
     exposeEvent.x = 0;
     exposeEvent.y = 0;

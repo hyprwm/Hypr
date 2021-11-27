@@ -8,11 +8,32 @@ Started by Vaxry on 2021 / 11 / 17
 #include <fstream>
 #include "windowManager.hpp"
 #include "defines.hpp"
+#include "bar/Bar.hpp"
 
 int main(int argc, char** argv) {
     clearLogs();
 
     Debug::log(LOG, "Hypr debug log. Built on " + std::string(__DATE__) + " at " + std::string(__TIME__));
+
+    // Create all pipes
+    g_pWindowManager->createAndOpenAllPipes();
+
+    Debug::log(LOG, "Pipes done! Forking!");
+
+    if (fork() == 0) {
+        // Child. Bar.
+
+        // Sleep for 2 seconds. When launching on a real Xorg session there is some race condition there
+        // I don't know where it is but this will fix it for now.
+        // Feel free to search for it.
+        std::this_thread::sleep_for(std::chrono::seconds(2));
+
+        const int BARRET = barMainThread();
+        Debug::log(BARRET == 0 ? LOG : ERR, "Bar exited with code " + std::to_string(BARRET) + "!");
+        return 0;
+    }
+
+    Debug::log(LOG, "Parent continuing!");
 
     g_pWindowManager->DisplayConnection = xcb_connect(NULL, NULL);
     if (const auto RET = xcb_connection_has_error(g_pWindowManager->DisplayConnection); RET != 0) {

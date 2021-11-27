@@ -2,8 +2,89 @@
 
 #include <codecvt>
 #include <locale>
-
+#include "../config/ConfigManager.hpp"
 #include "../windowManager.hpp"
+
+bool isParentDead() {
+    const auto PPID = getppid();
+
+    return PPID == 1;
+}
+
+int64_t barMainThread() {
+    // Main already created all the pipes
+
+    Debug::log(LOG, "Child says Hello World!");
+
+    // Well now this is the init
+    // it's pretty tricky because we only need to init the stuff we need
+    g_pWindowManager->DisplayConnection = xcb_connect(NULL, NULL);
+    if (const auto RET = xcb_connection_has_error(g_pWindowManager->DisplayConnection); RET != 0) {
+        Debug::log(CRIT, "Connection Failed! Return: " + std::to_string(RET));
+        return RET;
+    }
+
+    // Screen
+    g_pWindowManager->Screen = xcb_setup_roots_iterator(xcb_get_setup(g_pWindowManager->DisplayConnection)).data;
+
+    if (!g_pWindowManager->Screen) {
+        Debug::log(CRIT, "Screen was null!");
+        return 1;
+    }
+
+    Debug::log(LOG, "Bar init Phase 1 done.");
+
+    // Init randr for monitors.
+    g_pWindowManager->setupRandrMonitors();
+
+    // Init depth
+    g_pWindowManager->setupDepth();
+
+    // Setup our bar
+    CStatusBar STATUSBAR;
+
+    // Tell everyone we are in the child process.
+    g_pWindowManager->statusBar = &STATUSBAR;
+
+    Debug::log(LOG, "Bar init Phase 2 done.");
+
+    // Init config manager
+    ConfigManager::init();
+
+    STATUSBAR.setup(0);
+
+    Debug::log(LOG, "Bar setup finished!");
+
+    while (1) {
+        ConfigManager::tick();
+
+        // Recieve the message and send our reply
+        IPCRecieveMessageB(g_pWindowManager->m_sIPCBarPipeIn.szPipeName);
+        SIPCMessageBarToMain message;
+        message.windowID = STATUSBAR.getWindowID();
+        IPCSendMessage(g_pWindowManager->m_sIPCBarPipeOut.szPipeName, message);
+        //
+
+        // draw the bar
+        STATUSBAR.draw();
+
+        if (isParentDead()) {
+            // Just for debugging
+            SIPCMessageBarToMain message;
+            message.windowID = 0;
+            IPCSendMessage(g_pWindowManager->m_sIPCBarPipeOut.szPipeName, message);
+
+            Debug::log(LOG, "Bar parent died!");
+
+            return 0;  // If the parent died, kill the bar too.
+        }
+            
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000 / ConfigManager::getInt("max_fps")));
+    }
+
+    return 0;
+}
 
 void CStatusBar::setup(int MonitorID) {
     Debug::log(LOG, "Creating the bar!");
@@ -23,6 +104,11 @@ void CStatusBar::setup(int MonitorID) {
 
     // window
     m_iWindowID = (xcb_generate_id(g_pWindowManager->DisplayConnection));
+
+    // send the message IMMEDIATELY so that the main thread has time to update our WID.
+    SIPCMessageBarToMain message;
+    message.windowID = m_iWindowID;
+    IPCSendMessage(g_pWindowManager->m_sIPCBarPipeOut.szPipeName, message);
 
     values[0] = XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY | XCB_EVENT_MASK_PROPERTY_CHANGE;
 
@@ -139,10 +225,10 @@ void CStatusBar::drawText(Vector2D pos, std::string text, uint32_t color) {
 
 void CStatusBar::draw() {
 
-    const auto WORKSPACE = g_pWindowManager->getWorkspaceByID(g_pWindowManager->activeWorkspaces[m_iMonitorID]);
+   // const auto WORKSPACE = g_pWindowManager->getWorkspaceByID(g_pWindowManager->activeWorkspaces[m_iMonitorID]);
 
-    if (!WORKSPACE || WORKSPACE->getHasFullscreenWindow()) // TODO: fix this
-        return; // Do not draw a bar on a fullscreen window.
+   // if (!WORKSPACE || WORKSPACE->getHasFullscreenWindow()) // TODO: fix this
+    //    return; // Do not draw a bar on a fullscreen window.
 
     if (!m_pCairo) {
         Debug::log(ERR, "Cairo is null but attempted to draw!");

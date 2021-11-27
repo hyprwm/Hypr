@@ -10,9 +10,6 @@ gpointer handle(gpointer data) {
         // set state to let the main thread know to wait.
         g_pWindowManager->animationUtilBusy = true;
 
-        // draw bar
-        g_pWindowManager->statusBar.draw();
-
         // check config
         ConfigManager::tick();
 
@@ -223,12 +220,12 @@ CWindow* Events::remapWindow(int windowID, bool wasfloating, int forcemonitor) {
 void Events::eventMapWindow(xcb_generic_event_t* event) {
     const auto E = reinterpret_cast<xcb_map_request_event_t*>(event);
 
-    // make sure it's not the bar!
-    if (E->window == g_pWindowManager->statusBar.getWindowID())
-        return;
-
     // Map the window
     xcb_map_window(g_pWindowManager->DisplayConnection, E->window);
+
+    // make sure it's not the bar!
+    if (E->window == g_pWindowManager->barWindowID)
+        return;
 
     // We check if the window is not on our tile-blacklist and if it is, we have a special treatment procedure for it.
     // this func also sets some stuff
@@ -344,8 +341,5 @@ void Events::eventMotionNotify(xcb_generic_event_t* event) {
 void Events::eventExpose(xcb_generic_event_t* event) {
     const auto E = reinterpret_cast<xcb_expose_event_t*>(event);
 
-    // Draw the bar, disable thread warn
-    g_pWindowManager->mainThreadBusy = false;
-    g_pWindowManager->statusBar.draw();
-    g_pWindowManager->mainThreadBusy = true;
+    // nothing
 }

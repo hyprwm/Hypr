@@ -1,4 +1,7 @@
 #include <stdlib.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
 #include <xcb/randr.h>
@@ -26,6 +29,12 @@
 
 #include "./helpers/Vector.hpp"
 #include "./utilities/Debug.hpp"
+
+#ifndef NDEBUG
+#define ISDEBUG true
+#else
+#define ISDEBUG false
+#endif
 
 #define EXPOSED_MEMBER(var, type, prefix) \
     private: \

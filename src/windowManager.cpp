@@ -15,6 +15,25 @@ xcb_visualtype_t* CWindowManager::setupColors() {
     return nullptr;
 }
 
+void CWindowManager::setupDepth() {
+    // init visual type, default 32 bit depth
+    // TODO: fix this, ugh
+    Depth = 24;  //32
+    VisualType = setupColors();
+    if (VisualType == NULL) {
+        Depth = 24;
+        VisualType = setupColors();
+    }
+}
+
+void CWindowManager::createAndOpenAllPipes() {
+    system("mkdir -p /tmp/hypr");
+    system("cat \" \" > /tmp/hypr/hyprbarin");
+    system("cat \" \" > /tmp/hypr/hyprbarout");
+    system("cat \" \" > /tmp/hypr/hyprbarind");
+    system("cat \" \" > /tmp/hypr/hyprbaroutd");
+}
+
 void CWindowManager::updateRootCursor() {
     if (xcb_cursor_context_new(DisplayConnection, Screen, &pointerContext) < 0) {
         Debug::log(ERR, "Creating a cursor context failed!");
@@ -99,11 +118,6 @@ void CWindowManager::setupRandrMonitors() {
     }
 
     xcb_flush(DisplayConnection);
-}
-
-void CWindowManager::setupManager() {
-    EWMH::setupInitEWMH();
-    setupRandrMonitors();
 
     if (monitors.size() == 0) {
         // RandR failed!
@@ -119,6 +133,11 @@ void CWindowManager::setupManager() {
             monitors[i].szName = "Screen" + std::to_string(i);
         }
     }
+}
+
+void CWindowManager::setupManager() {
+    EWMH::setupInitEWMH();
+    setupRandrMonitors();
 
     Debug::log(LOG, "RandR done.");
 
@@ -143,32 +162,14 @@ void CWindowManager::setupManager() {
     Debug::log(LOG, "Workspace protos done.");
     //
 
-    // init visual type, default 32 bit depth
-    // TODO: fix this, ugh
-    Depth = 24; //32
-    VisualType = setupColors();
-    if (VisualType == NULL) {
-        Depth = 24;
-        VisualType = setupColors();
-    }
+    setupDepth();
 
-    // ---- INIT THE BAR ---- //
+    // ---- INIT THE THREAD FOR ANIM & CONFIG ---- //
 
-    if (ConfigManager::getInt("bar_enabled") == 1) {
-        for (auto& monitor : monitors) {
-            if (monitor.primary) {
-                statusBar.setup(ConfigManager::configValues["bar_monitor"].intValue);
-            }
-        }
+    // start its' update thread
+    Events::setThread();
 
-        // Update bar info
-        updateBarInfo();
-
-        // start its' update thread
-        Events::setThread();
-    }
-    
-    Debug::log(LOG, "Bar done.");
+    Debug::log(LOG, "Thread (Parent) done.");
 
     ConfigManager::loadConfigLoadVars();
 
@@ -192,6 +193,9 @@ bool CWindowManager::handleEvent() {
 
         // Set thread state, halt animations until done.
         mainThreadBusy = true;
+
+        // Read from the bar
+        IPCRecieveMessageM(m_sIPCBarPipeOut.szPipeName);
 
         switch (ev->response_type & ~0x80) {
             case XCB_ENTER_NOTIFY:
@@ -537,9 +541,9 @@ void CWindowManager::setEffectiveSizePosUsingConfig(CWindow* pWindow) {
     pWindow->setEffectiveSize(pWindow->getSize() - (Vector2D(ConfigManager::getInt("border_size"), ConfigManager::getInt("border_size")) * 2));
 
     // do gaps, set top left
-    pWindow->setEffectivePosition(pWindow->getEffectivePosition() + Vector2D(DISPLAYLEFT ? ConfigManager::getInt("gaps_out") : ConfigManager::getInt("gaps_in"), DISPLAYTOP ? ConfigManager::getInt("gaps_out") + (MONITOR->ID == statusBar.getMonitorID() ? ConfigManager::getInt("bar_height") : 0) : ConfigManager::getInt("gaps_in")));
+    pWindow->setEffectivePosition(pWindow->getEffectivePosition() + Vector2D(DISPLAYLEFT ? ConfigManager::getInt("gaps_out") : ConfigManager::getInt("gaps_in"), DISPLAYTOP ? ConfigManager::getInt("gaps_out") + (MONITOR->ID == ConfigManager::getInt("bar_monitor") ? ConfigManager::getInt("bar_height") : 0) : ConfigManager::getInt("gaps_in")));
     // fix to old size bottom right
-    pWindow->setEffectiveSize(pWindow->getEffectiveSize() - Vector2D(DISPLAYLEFT ? ConfigManager::getInt("gaps_out") : ConfigManager::getInt("gaps_in"), DISPLAYTOP ? ConfigManager::getInt("gaps_out") + (MONITOR->ID == statusBar.getMonitorID() ? ConfigManager::getInt("bar_height") : 0) : ConfigManager::getInt("gaps_in")));
+    pWindow->setEffectiveSize(pWindow->getEffectiveSize() - Vector2D(DISPLAYLEFT ? ConfigManager::getInt("gaps_out") : ConfigManager::getInt("gaps_in"), DISPLAYTOP ? ConfigManager::getInt("gaps_out") + (MONITOR->ID == ConfigManager::getInt("bar_monitor") ? ConfigManager::getInt("bar_height") : 0) : ConfigManager::getInt("gaps_in")));
     // set bottom right
     pWindow->setEffectiveSize(pWindow->getEffectiveSize() - Vector2D(DISPLAYRIGHT ? ConfigManager::getInt("gaps_out") : ConfigManager::getInt("gaps_in"), DISPLAYBOTTOM ? ConfigManager::getInt("gaps_out") : ConfigManager::getInt("gaps_in")));
 }
@@ -1055,19 +1059,27 @@ bool CWindowManager::isWorkspaceVisible(int workspaceID) {
 }
 
 void CWindowManager::updateBarInfo() {
-    statusBar.openWorkspaces.clear();
-    for (auto& workspace : workspaces) {
-        statusBar.openWorkspaces.push_back(workspace.getID());
-    }
 
-    std::sort(statusBar.openWorkspaces.begin(), statusBar.openWorkspaces.end());
+    // IPC
+
+    // What we need to send:
+    // - Workspace data
+    // - Active Workspace
+
+    SIPCMessageMainToBar message;
 
     if (!getMonitorFromCursor()) {
         Debug::log(ERR, "Monitor was null! (updateBarInfo)");
         return;
     }
 
-    statusBar.setCurrentWorkspace(activeWorkspaces[getMonitorFromCursor()->ID]);
+    message.activeWorkspace = activeWorkspaces[getMonitorFromCursor()->ID];
+
+    for (auto& workspace : workspaces) {
+        message.openWorkspaces.push_back(workspace.getID());
+    }
+
+    IPCSendMessage(m_sIPCBarPipeIn.szPipeName, message);
 }
 
 void CWindowManager::setAllFloatingWindowsTop() {

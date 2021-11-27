@@ -9,13 +9,15 @@
 
 #include "KeybindManager.hpp"
 #include "utilities/Workspace.hpp"
-#include "bar/Bar.hpp"
 #include "config/ConfigManager.hpp"
 #include "utilities/Monitor.hpp"
 #include "utilities/Util.hpp"
 #include "utilities/AnimationUtil.hpp"
 #include "utilities/XCBProps.hpp"
 #include "ewmh/ewmh.hpp"
+#include "bar/Bar.hpp"
+
+#include "ipc/ipc.hpp"
 
 class CWindowManager {
 public:
@@ -40,8 +42,12 @@ public:
     std::vector<CWorkspace>     workspaces;
     std::vector<int>            activeWorkspaces;
 
-    CStatusBar                  statusBar;
-    GThread*                    barThread;
+    // Pipes
+    SIPCPipe                    m_sIPCBarPipeIn = {ISDEBUG ? "/tmp/hypr/hyprbarind" : "/tmp/hypr/hyprbarin", 0};
+    SIPCPipe                    m_sIPCBarPipeOut = {ISDEBUG ? "/tmp/hypr/hyprbaroutd" : "/tmp/hypr/hyprbarout", 0};
+    CStatusBar*                 statusBar = nullptr;
+    uint64_t                    barWindowID = 0;
+    GThread*                    barThread; /* Well right now anything but the bar but lol */
 
     std::atomic<bool>           mainThreadBusy = false;
     std::atomic<bool>           animationUtilBusy = false;
@@ -86,11 +92,13 @@ public:
 
     bool                        shouldBeFloatedOnInit(int64_t);
 
+    void                        setupRandrMonitors();
+    void                        createAndOpenAllPipes();
+    void                        setupDepth();
+
    private:
 
     // Internal WM functions that don't have to be exposed
-
-    void                        setupRandrMonitors();
 
     void                        sanityCheckOnWorkspace(int);
     CWindow*                    getNeighborInDir(char dir);
@@ -104,7 +112,6 @@ public:
     xcb_visualtype_t*           setupColors();
     void                        updateBarInfo();
     void                        updateRootCursor();
-
 };
 
 inline std::unique_ptr<CWindowManager> g_pWindowManager = std::make_unique<CWindowManager>();
