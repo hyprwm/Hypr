@@ -744,8 +744,12 @@ void CWindowManager::eatWindow(CWindow* a, CWindow* toEat) {
 void CWindowManager::closeWindowAllChecks(int64_t id) {
     // fix last window if tile
     const auto CLOSEDWINDOW = g_pWindowManager->getWindowFromDrawable(id);
-    if (CLOSEDWINDOW && !CLOSEDWINDOW->getIsFloating()) {
-        g_pWindowManager->fixWindowOnClose(CLOSEDWINDOW);
+    if (CLOSEDWINDOW) {
+        if (!CLOSEDWINDOW->getIsFloating())
+            g_pWindowManager->fixWindowOnClose(CLOSEDWINDOW);
+
+        if (const auto WORKSPACE = getWorkspaceByID(CLOSEDWINDOW->getWorkspaceID()); WORKSPACE && CLOSEDWINDOW->getFullscreen())
+            WORKSPACE->setHasFullscreenWindow(false);
     }
 
     // delete off of the arr
