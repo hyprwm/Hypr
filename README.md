@@ -13,11 +13,12 @@ Hypr is a Linux tiling window manager for Xorg. It's written in XCB with modern 
 !WARNING: Hypr is still in early development. Please report all bugs in Github issues, or open a PR!
 <br/>
 
-# Features
+# Key Features
 - True parabolic animations
 - Config reloaded instantly upon saving
-- A built-in status bar
-- Keybinds
+- A built-in status bar with modules
+- Rounded corners (simple)
+- Keybinds config
 - Tiling windows
 - Floating windows
 - Workspaces
