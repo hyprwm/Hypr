@@ -202,8 +202,10 @@ void parseBarLine(const std::string& line) {
 
     // Now check commands
     if (COMMAND == "module") {
-        parseModule(COMMAND, VALUE);
+        if (g_pWindowManager->statusBar)
+            parseModule(COMMAND, VALUE);
     } else {
+        // We need to parse those to let the main thread know e.g. the bar height
         configSetValueSafe("bar:" + COMMAND, VALUE);
     }
 }
@@ -234,8 +236,7 @@ void parseLine(std::string& line) {
     }
 
     if (ConfigManager::isBar) {
-        if (g_pWindowManager->statusBar)
-            parseBarLine(line);
+        parseBarLine(line);
         return;
     }
 
