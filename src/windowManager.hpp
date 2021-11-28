@@ -46,6 +46,7 @@ public:
     SIPCPipe                    m_sIPCBarPipeIn = {ISDEBUG ? "/tmp/hypr/hyprbarind" : "/tmp/hypr/hyprbarin", 0};
     SIPCPipe                    m_sIPCBarPipeOut = {ISDEBUG ? "/tmp/hypr/hyprbaroutd" : "/tmp/hypr/hyprbarout", 0};
     CStatusBar*                 statusBar = nullptr;
+    Vector2D                    lastKnownBarPosition = {-1,-1};
     uint64_t                    barWindowID = 0;
     GThread*                    barThread; /* Well right now anything but the bar but lol */
 

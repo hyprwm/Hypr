@@ -1108,6 +1108,28 @@ void CWindowManager::updateBarInfo() {
     }
 
     IPCSendMessage(m_sIPCBarPipeIn.szPipeName, message);
+
+
+    // Also check if the bar should be made invisibel
+    // we make it by moving it far far away
+    // the bar will also stop all updates
+    if (message.fullscreenOnBar) {
+        if (lastKnownBarPosition.x == -1 && lastKnownBarPosition.y == -1) {
+            lastKnownBarPosition = monitors[ConfigManager::getInt("bar:monitor") > monitors.size() ? 0 : ConfigManager::getInt("bar:monitor")].vecPosition;
+        }
+
+        Values[0] = (int)-99999;
+        Values[1] = (int)-99999;
+        xcb_configure_window(DisplayConnection, barWindowID, XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, Values);
+    } else {
+        if (lastKnownBarPosition.x != -1 && lastKnownBarPosition.y != -1) {
+            Values[0] = (int)lastKnownBarPosition.x;
+            Values[1] = (int)lastKnownBarPosition.y;
+            xcb_configure_window(DisplayConnection, barWindowID, XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, Values);
+        }
+
+        lastKnownBarPosition = Vector2D(-1, -1);
+    }
 }
 
 void CWindowManager::setAllFloatingWindowsTop() {
