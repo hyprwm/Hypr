@@ -1,7 +1,7 @@
 #include "window.hpp"
 #include "windowManager.hpp"
 
-CWindow::CWindow() { this->setImmovable(false); this->setDirty(true); this->setFullscreen(false); this->setIsFloating(false); this->setParentNodeID(0); this->setChildNodeAID(0); this->setChildNodeBID(0); this->setName(""); }
+CWindow::CWindow() { this->setImmovable(false); this->setNoInterventions(false); this->setDirty(true); this->setFullscreen(false); this->setIsFloating(false); this->setParentNodeID(0); this->setChildNodeAID(0); this->setChildNodeBID(0); this->setName(""); }
 CWindow::~CWindow() { }
 
 void CWindow::generateNodeID() {

@@ -24,4 +24,7 @@ namespace Events {
     void            setThread();
 
     inline          timer_t timerid;
+
+    // For docks etc
+    inline bool     nextWindowCentered = false;
 };

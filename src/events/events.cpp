@@ -80,6 +80,8 @@ void Events::eventDestroy(xcb_generic_event_t* event) {
     xcb_kill_client(g_pWindowManager->DisplayConnection, E->window);
 
     g_pWindowManager->closeWindowAllChecks(E->window);
+
+    // Can someone tell me why the fuck some dialogs do not report they are closed and still respond to XCB even after they disappear???
 }
 
 CWindow* Events::remapFloatingWindow(int windowID, int forcemonitor) {
@@ -112,6 +114,12 @@ CWindow* Events::remapFloatingWindow(int windowID, int forcemonitor) {
 
         window.setDefaultPosition(g_pWindowManager->monitors[CURRENTSCREEN].vecPosition);
         window.setDefaultSize(Vector2D(g_pWindowManager->Screen->width_in_pixels / 2.f, g_pWindowManager->Screen->height_in_pixels / 2.f));
+    }
+
+    if (nextWindowCentered) {
+        nextWindowCentered = false;
+
+        window.setDefaultPosition(g_pWindowManager->monitors[CURRENTSCREEN].vecSize / 2.f - window.getDefaultSize() / 2.f);
     }
 
     //

@@ -491,6 +491,32 @@ void CWindowManager::sanityCheckOnWorkspace(int workspaceID) {
                     closeWindowAllChecks(w.getDrawable());
                     continue;
                 }
+
+                // Type 2: is hidden.
+                const auto window = w.getDrawable();
+                PROP(wm_type_cookie, HYPRATOMS["_NET_WM_WINDOW_TYPE"], UINT32_MAX);
+
+                if (wm_type_cookiereply == NULL || xcb_get_property_value_length(wm_type_cookiereply) < 1) {
+                    Debug::log(LOG, "No preferred type found.");
+                } else {
+                    const auto ATOMS = (xcb_atom_t*)xcb_get_property_value(wm_type_cookiereply);
+                    if (!ATOMS) {
+                        Debug::log(ERR, "Atoms not found in preferred type!");
+                    } else {
+                        if (xcbContainsAtom(wm_type_cookiereply, HYPRATOMS["_NET_WM_STATE_HIDDEN"])) {
+                            // delete it
+                            // NOTE: this is NOT the cause of windows in tray not being able
+                            // to open.
+                            free(wm_type_cookiereply);
+                            
+                            Debug::log(LOG, "Found a dead window, ID: " + std::to_string(w.getDrawable()) + ", removing it.");
+
+                            closeWindowAllChecks(w.getDrawable());
+                            continue;
+                        }
+                    }
+                }
+                free(wm_type_cookiereply);
             }
         }
     }
@@ -1244,10 +1270,16 @@ bool CWindowManager::shouldBeFloatedOnInit(int64_t window) {
         if (!ATOMS) {
             Debug::log(ERR, "Atoms not found in preferred type!");
         } else {
-            if (xcbContainsAtom(wm_type_cookiereply, HYPRATOMS["_NET_WM_WINDOW_TYPE_NOTIFICATION"])) {
+            if (xcbContainsAtom(wm_type_cookiereply, HYPRATOMS["_NET_WM_WINDOW_TYPE_DOCK"])) {
                 free(wm_type_cookiereply);
                 return true;
-            } else if (xcbContainsAtom(wm_type_cookiereply, HYPRATOMS["_NET_WM_WINDOW_TYPE_DOCK"])) {
+            } else if (xcbContainsAtom(wm_type_cookiereply, HYPRATOMS["_NET_WM_WINDOW_TYPE_DIALOG"])
+                || xcbContainsAtom(wm_type_cookiereply, HYPRATOMS["_NET_WM_WINDOW_TYPE_TOOLBAR"])
+                || xcbContainsAtom(wm_type_cookiereply, HYPRATOMS["_NET_WM_WINDOW_TYPE_UTILITY"])
+                || xcbContainsAtom(wm_type_cookiereply, HYPRATOMS["_NET_WM_STATE_MODAL"])
+                || xcbContainsAtom(wm_type_cookiereply, HYPRATOMS["_NET_WM_WINDOW_TYPE_SPLASH"])) {
+                
+                Events::nextWindowCentered = true;
                 free(wm_type_cookiereply);
                 return true;
             }
@@ -1281,7 +1313,6 @@ void CWindowManager::doPostCreationChecks(CWindow* pWindow) {
     const auto window = pWindow->getDrawable();
 
     PROP(wm_type_cookie, HYPRATOMS["_NET_WM_WINDOW_TYPE"], UINT32_MAX);
-    xcb_atom_t TYPEATOM = NULL;
 
     if (wm_type_cookiereply == NULL || xcb_get_property_value_length(wm_type_cookiereply) < 1) {
         Debug::log(LOG, "No preferred type found.");
