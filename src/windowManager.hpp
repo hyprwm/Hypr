@@ -116,6 +116,7 @@ public:
     void                        cleanupUnusedWorkspaces();
     xcb_visualtype_t*           setupColors();
     void                        updateRootCursor();
+    void                        applyRoundedCornersToWindow(CWindow* pWindow);
 };
 
 inline std::unique_ptr<CWindowManager> g_pWindowManager = std::make_unique<CWindowManager>();

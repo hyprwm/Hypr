@@ -13,6 +13,7 @@ void ConfigManager::init() {
     configValues["border_size"].intValue = 1;
     configValues["gaps_in"].intValue = 5;
     configValues["gaps_out"].intValue = 20;
+    configValues["rounding"].intValue = 5;
 
     configValues["max_fps"].intValue = 60;
 

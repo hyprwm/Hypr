@@ -31,5 +31,6 @@ target_link_libraries(Hypr
         xcb-randr
         xcb-xinerama
         xcb-cursor
+        xcb-shape
         ${CMAKE_THREAD_LIBS_INIT}
 )

@@ -15,6 +15,7 @@
 #include <xcb/xcb_event.h>
 #include <xcb/xcb_util.h>
 #include <xcb/xcb_cursor.h>
+#include <xcb/shape.h>
 
 #include <cairo/cairo.h>
 #include <cairo/cairo-xcb.h>

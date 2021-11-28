@@ -373,6 +373,9 @@ void CWindowManager::refreshDirtyWindows() {
                 xcb_change_window_attributes(DisplayConnection, window.getDrawable(), XCB_CW_BORDER_PIXEL, Values);
             }
 
+            // Apply rounded corners, does all the checks inside
+            applyRoundedCornersToWindow(&window);
+
             Debug::log(LOG, "Refreshed dirty window, with an ID of " + std::to_string(window.getDrawable()));
         }
     }
@@ -528,6 +531,62 @@ void CWindowManager::removeWindowFromVectorSafe(int64_t window) {
             continue;
         }
     }
+}
+
+void CWindowManager::applyRoundedCornersToWindow(CWindow* pWindow) {
+    if (!pWindow)
+        return;
+
+    const auto ROUNDING = ConfigManager::getInt("rounding");
+
+    if (!ROUNDING)
+        return;
+
+    const auto SHAPEQUERY = xcb_get_extension_data(DisplayConnection, &xcb_shape_id);
+
+    if (!SHAPEQUERY || !SHAPEQUERY->present || pWindow->getNoInterventions() || pWindow->getFullscreen())
+        return;
+
+    
+    const xcb_pixmap_t PIXMAPID = xcb_generate_id(DisplayConnection);
+    xcb_create_pixmap(DisplayConnection, 1, PIXMAPID, pWindow->getDrawable(), pWindow->getRealSize().x, pWindow->getRealSize().y);
+
+    const xcb_gcontext_t BLACKPIXEL = xcb_generate_id(DisplayConnection);
+    const xcb_gcontext_t WHITEPIXEL = xcb_generate_id(DisplayConnection);
+
+    Values[0] = 0;
+    Values[1] = 0;
+    xcb_create_gc(DisplayConnection, BLACKPIXEL, PIXMAPID, XCB_GC_FOREGROUND, Values);
+    Values[0] = 1;
+    xcb_create_gc(DisplayConnection, WHITEPIXEL, PIXMAPID, XCB_GC_FOREGROUND, Values);
+
+    const auto R = (uint16_t)(ROUNDING);
+    const auto D = (uint16_t)(2 * ROUNDING);
+    const auto H = (uint16_t)(pWindow->getRealSize().y);
+    const auto W = (uint16_t)(pWindow->getRealSize().x);
+
+    const xcb_arc_t ARCS[] = {
+        {0, 0, D, D, 0, 360 << 6},
+        {0, H - D - 1, D, D, 0, 360 << 6},
+        {W - D - 1, 0, D, D, 0, 360 << 6},
+        {W - D - 1, H - D - 1, D, D, 0, 360 << 6}
+    };
+
+    const xcb_rectangle_t RECTANGLES[] = {
+        {R, 0, W - D, H},
+        {0, R, W, H - D}
+    };
+
+    const xcb_rectangle_t WINDOWRECT = {0,0,W,H};
+
+    xcb_poly_fill_rectangle(DisplayConnection, PIXMAPID, BLACKPIXEL, 1, &WINDOWRECT);
+    xcb_poly_fill_rectangle(DisplayConnection, PIXMAPID, WHITEPIXEL, 2, RECTANGLES);
+    xcb_poly_fill_arc(DisplayConnection, PIXMAPID, WHITEPIXEL, 4, ARCS);
+
+    xcb_shape_mask(DisplayConnection, XCB_SHAPE_SO_SET, XCB_SHAPE_SK_BOUNDING, pWindow->getDrawable(), 0, 0, PIXMAPID);
+    xcb_shape_mask(DisplayConnection, XCB_SHAPE_SO_SET, XCB_SHAPE_SK_CLIP, pWindow->getDrawable(), 0, 0, PIXMAPID);
+
+    xcb_free_pixmap(DisplayConnection, PIXMAPID);
 }
 
 void CWindowManager::setEffectiveSizePosUsingConfig(CWindow* pWindow) {
