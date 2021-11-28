@@ -114,6 +114,37 @@ CWindow* Events::remapFloatingWindow(int windowID, int forcemonitor) {
         window.setDefaultSize(Vector2D(g_pWindowManager->Screen->width_in_pixels / 2.f, g_pWindowManager->Screen->height_in_pixels / 2.f));
     }
 
+    //
+    // Dock Checks
+    //
+    const auto wm_type_cookie = xcb_get_property(g_pWindowManager->DisplayConnection, false, windowID, HYPRATOMS["_NET_WM_WINDOW_TYPE"], XCB_GET_PROPERTY_TYPE_ANY, 0, (4294967295U));
+    const auto wm_type_cookiereply = xcb_get_property_reply(g_pWindowManager->DisplayConnection, wm_type_cookie, NULL);
+    xcb_atom_t TYPEATOM = NULL;
+    if (wm_type_cookiereply == NULL || xcb_get_property_value_length(wm_type_cookiereply) < 1) {
+        Debug::log(LOG, "No preferred type found.");
+    } else {
+        const auto ATOMS = (xcb_atom_t*)xcb_get_property_value(wm_type_cookiereply);
+        if (!ATOMS) {
+            Debug::log(ERR, "Atoms not found in preferred type!");
+        } else {
+            if (xcbContainsAtom(wm_type_cookiereply, HYPRATOMS["_NET_WM_WINDOW_TYPE_DOCK"])) {
+                // set to floating and set the immovable and nointerventions flag
+                window.setImmovable(true);
+                window.setNoInterventions(true);
+
+                window.setDefaultPosition(Vector2D(GEOMETRY->x, GEOMETRY->y));
+                window.setDefaultSize(Vector2D(GEOMETRY->width, GEOMETRY->height));
+
+                Debug::log(LOG, "New dock created, setting default XYWH to: " + std::to_string(GEOMETRY->x) + ", " + std::to_string(GEOMETRY->y)
+                    + ", " + std::to_string(GEOMETRY->width) + ", " + std::to_string(GEOMETRY->height));
+            }
+        }
+    }
+    free(wm_type_cookiereply);
+    //
+    //
+    //
+
     // Also sets the old one
     g_pWindowManager->calculateNewWindowParams(&window);
 
@@ -254,13 +285,21 @@ void Events::eventMapWindow(xcb_generic_event_t* event) {
 
     // We check if the window is not on our tile-blacklist and if it is, we have a special treatment procedure for it.
     // this func also sets some stuff
+
+    CWindow* pNewWindow = nullptr;
     if (g_pWindowManager->shouldBeFloatedOnInit(E->window)) {
         Debug::log(LOG, "Window SHOULD be floating on start.");
-        remapFloatingWindow(E->window);
+        pNewWindow = remapFloatingWindow(E->window);
     } else {
         Debug::log(LOG, "Window should NOT be floating on start.");
-        remapWindow(E->window);
+        pNewWindow = remapWindow(E->window);
     }
+
+    if (!pNewWindow)
+        return;
+
+    // Do post-creation checks.
+    g_pWindowManager->doPostCreationChecks(pNewWindow);
 }
 
 void Events::eventButtonPress(xcb_generic_event_t* event) {

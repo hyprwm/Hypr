@@ -304,8 +304,8 @@ void CWindowManager::refreshDirtyWindows() {
         if (window.getDirty()) {
             window.setDirty(false);
 
-            // Check if the window isn't a node
-            if (window.getChildNodeAID() != 0) 
+            // Check if the window isn't a node or has the noInterventions prop
+            if (window.getChildNodeAID() != 0 || window.getNoInterventions()) 
                 continue;
                 
             setEffectiveSizePosUsingConfig(&window);
@@ -632,14 +632,16 @@ void CWindowManager::calculateNewFloatingWindow(CWindow* pWindow) {
     if (!pWindow)
         return;
 
-    pWindow->setPosition(pWindow->getDefaultPosition());
-    pWindow->setSize(pWindow->getDefaultSize());
+    if (!pWindow->getNoInterventions()) {
+        pWindow->setPosition(pWindow->getDefaultPosition());
+        pWindow->setSize(pWindow->getDefaultSize());
 
-    pWindow->setEffectivePosition(pWindow->getPosition() + Vector2D(10,10));
-    pWindow->setEffectiveSize(pWindow->getDefaultSize());
+        pWindow->setEffectivePosition(pWindow->getPosition() + Vector2D(10, 10));
+        pWindow->setEffectiveSize(pWindow->getDefaultSize());
 
-    pWindow->setRealPosition(pWindow->getPosition());
-    pWindow->setRealSize(pWindow->getSize());
+        pWindow->setRealPosition(pWindow->getPosition());
+        pWindow->setRealSize(pWindow->getSize());
+    }
 
     Values[0] = XCB_STACK_MODE_ABOVE;
     xcb_configure_window(DisplayConnection, pWindow->getDrawable(), XCB_CONFIG_WINDOW_STACK_MODE, Values);
@@ -1160,6 +1162,9 @@ bool CWindowManager::shouldBeFloatedOnInit(int64_t window) {
             if (xcbContainsAtom(wm_type_cookiereply, HYPRATOMS["_NET_WM_WINDOW_TYPE_NOTIFICATION"])) {
                 free(wm_type_cookiereply);
                 return true;
+            } else if (xcbContainsAtom(wm_type_cookiereply, HYPRATOMS["_NET_WM_WINDOW_TYPE_DOCK"])) {
+                free(wm_type_cookiereply);
+                return true;
             }
         }
     }
@@ -1182,4 +1187,36 @@ void CWindowManager::updateActiveWindowName() {
         Debug::log(LOG, "Update, window got name: " + WINNAME);
         PLASTWINDOW->setName(WINNAME);
     }
+}
+
+void CWindowManager::doPostCreationChecks(CWindow* pWindow) {
+    //
+    Debug::log(LOG, "Post creation checks init");
+
+    const auto window = pWindow->getDrawable();
+
+    PROP(wm_type_cookie, HYPRATOMS["_NET_WM_WINDOW_TYPE"], UINT32_MAX);
+    xcb_atom_t TYPEATOM = NULL;
+
+    if (wm_type_cookiereply == NULL || xcb_get_property_value_length(wm_type_cookiereply) < 1) {
+        Debug::log(LOG, "No preferred type found.");
+    } else {
+        const auto ATOMS = (xcb_atom_t*)xcb_get_property_value(wm_type_cookiereply);
+        if (!ATOMS) {
+            Debug::log(ERR, "Atoms not found in preferred type!");
+        } else {
+            if (xcbContainsAtom(wm_type_cookiereply, HYPRATOMS["_NET_WM_STATE_FULLSCREEN"])) {
+                // set it fullscreen
+                pWindow->setFullscreen(true);
+
+                setFocusedWindow(window);
+                
+                KeybindManager::toggleActiveWindowFullscreen("");
+            }
+        }
+    }
+    free(wm_type_cookiereply);
+
+    Debug::log(LOG, "Post creation checks ended");
+    //
 }

@@ -91,6 +91,7 @@ public:
     CWindow*                    findWindowAtCursor();
 
     bool                        shouldBeFloatedOnInit(int64_t);
+    void                        doPostCreationChecks(CWindow*);
 
     void                        setupRandrMonitors();
     void                        createAndOpenAllPipes();

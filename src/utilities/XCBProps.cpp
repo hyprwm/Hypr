@@ -17,10 +17,12 @@ std::pair<std::string, std::string> getClassName(int64_t window) {
 
     char* CLASSINSTANCE = strndup(NEWCLASS, PROPLEN);
     char* CLASSNAME;
+    bool freeClassName = true;
     if (CLASSNAMEINDEX < PROPLEN) {
         CLASSNAME = strndup(NEWCLASS + CLASSNAMEINDEX, PROPLEN - CLASSNAMEINDEX);
     } else {
         CLASSNAME = "";
+        freeClassName = false;
     }
 
     std::string CLASSINST(CLASSINSTANCE);
@@ -28,7 +30,8 @@ std::pair<std::string, std::string> getClassName(int64_t window) {
 
     free(class_cookiereply);
     free(CLASSINSTANCE);
-    free(CLASSNAME);
+    if (freeClassName)
+        free(CLASSNAME);
 
     return std::make_pair<>(CLASSINST, CLASSNAM);
 }

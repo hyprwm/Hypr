@@ -61,6 +61,10 @@ public:
 
     // Monitors
     EXPOSED_MEMBER(Monitor, int, i);
+
+    // Docks etc
+    EXPOSED_MEMBER(Immovable, bool, b);
+    EXPOSED_MEMBER(NoInterventions, bool, b);
     
 
 private:
