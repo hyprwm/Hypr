@@ -2,28 +2,26 @@
 #include "./events/events.hpp"
 #include <string.h>
 
-xcb_visualtype_t* CWindowManager::setupColors() {
+xcb_visualtype_t* CWindowManager::setupColors(const int& desiredDepth) {
     auto depthIter = xcb_screen_allowed_depths_iterator(Screen);
-    xcb_visualtype_iterator_t visualIter;
-    for (; depthIter.rem; xcb_depth_next(&depthIter)) {
-        if (depthIter.data->depth == Depth) {
-            visualIter = xcb_depth_visuals_iterator(depthIter.data);
-            return visualIter.data;
+    if (depthIter.data) {
+        for (; depthIter.rem; xcb_depth_next(&depthIter)) {
+            if (desiredDepth == 0 || desiredDepth == depthIter.data->depth) {
+                for (auto it = xcb_depth_visuals_iterator(depthIter.data); it.rem; xcb_visualtype_next(&it)) {
+                    return it.data;
+                }
+            }
+        }
+        if (desiredDepth > 0) {
+            return setupColors(0);
         }
     }
-
     return nullptr;
 }
 
 void CWindowManager::setupDepth() {
-    // init visual type, default 32 bit depth
-    // TODO: fix this, ugh
-    Depth = 24;  //32
-    VisualType = setupColors();
-    if (VisualType == NULL) {
-        Depth = 24;
-        VisualType = setupColors();
-    }
+    Depth = 24;
+    VisualType = setupColors(Depth);
 }
 
 void CWindowManager::createAndOpenAllPipes() {
@@ -47,6 +45,22 @@ void CWindowManager::updateRootCursor() {
     // Set the cursor
     uint32_t values[1] = { pointerCursor };
     xcb_change_window_attributes(DisplayConnection, Screen->root, XCB_CW_CURSOR, values);
+}
+
+void CWindowManager::setupColormapAndStuff() {
+    VisualType = xcb_aux_find_visual_by_attrs(Screen, -1, 32); // Transparency by default
+
+    Depth = xcb_aux_get_depth_of_visual(Screen, VisualType->visual_id);
+    Colormap = xcb_generate_id(DisplayConnection);
+    const auto COOKIE = xcb_create_colormap(DisplayConnection, XCB_COLORMAP_ALLOC_NONE, Colormap, Screen->root, VisualType->visual_id);
+
+    const auto XERR = xcb_request_check(DisplayConnection, COOKIE);
+
+    if (XERR != NULL) {
+        Debug::log(ERR, "Error in setupColormapAndStuff! Code: " + std::to_string(XERR->error_code));
+    }
+
+    free(XERR);
 }
 
 void CWindowManager::setupRandrMonitors() {
@@ -136,6 +150,7 @@ void CWindowManager::setupRandrMonitors() {
 }
 
 void CWindowManager::setupManager() {
+    setupColormapAndStuff();
     EWMH::setupInitEWMH();
     setupRandrMonitors();
 
@@ -161,8 +176,6 @@ void CWindowManager::setupManager() {
 
     Debug::log(LOG, "Workspace protos done.");
     //
-
-    setupDepth();
 
     // ---- INIT THE THREAD FOR ANIM & CONFIG ---- //
 

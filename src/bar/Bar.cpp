@@ -59,7 +59,7 @@ int64_t barMainThread() {
     g_pWindowManager->setupRandrMonitors();
 
     // Init depth
-    g_pWindowManager->setupDepth();
+    g_pWindowManager->setupColormapAndStuff();
 
     // Setup our bar
     CStatusBar STATUSBAR;
@@ -154,12 +154,15 @@ void CStatusBar::setup(int MonitorID) {
     message.windowID = m_iWindowID;
     IPCSendMessage(g_pWindowManager->m_sIPCBarPipeOut.szPipeName, message);
 
-    values[0] = XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY | XCB_EVENT_MASK_PROPERTY_CHANGE;
+    values[0] = ConfigManager::getInt("bar:col.bg");
+    values[1] = ConfigManager::getInt("bar:col.bg");
+    values[2] = XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY | XCB_EVENT_MASK_PROPERTY_CHANGE;
+    values[3] = g_pWindowManager->Colormap;
 
     xcb_create_window(g_pWindowManager->DisplayConnection, g_pWindowManager->Depth, m_iWindowID,
                       g_pWindowManager->Screen->root, m_vecPosition.x, m_vecPosition.y, m_vecSize.x, m_vecSize.y,
-                      0, XCB_WINDOW_CLASS_INPUT_OUTPUT, g_pWindowManager->Screen->root_visual,
-                      XCB_CW_EVENT_MASK, values);
+                      0, XCB_WINDOW_CLASS_INPUT_OUTPUT, g_pWindowManager->VisualType->visual_id,
+                      XCB_CW_BACK_PIXEL | XCB_CW_BORDER_PIXEL | XCB_CW_EVENT_MASK | XCB_CW_COLORMAP, values);
 
     // Set the state to dock to avoid some issues
     xcb_atom_t dockAtom[] = { HYPRATOMS["_NET_WM_WINDOW_TYPE_DOCK"] };

@@ -36,6 +36,7 @@ public:
 
     uint8_t                     Depth = 32;
     xcb_visualtype_t*           VisualType;
+    xcb_colormap_t              Colormap;
 
     std::vector<CWindow>        windows; // windows never left. It has always been hiding amongst us.
     xcb_drawable_t              LastWindow = -1;
@@ -98,6 +99,7 @@ public:
     void                        setupRandrMonitors();
     void                        createAndOpenAllPipes();
     void                        setupDepth();
+    void                        setupColormapAndStuff();
 
     void                        updateActiveWindowName();
     void                        updateBarInfo();
@@ -115,7 +117,7 @@ public:
     void                        calculateNewFloatingWindow(CWindow* pWindow);
     void                        setEffectiveSizePosUsingConfig(CWindow* pWindow);
     void                        cleanupUnusedWorkspaces();
-    xcb_visualtype_t*           setupColors();
+    xcb_visualtype_t*           setupColors(const int&);
     void                        updateRootCursor();
     void                        applyRoundedCornersToWindow(CWindow* pWindow);
 };
