@@ -175,7 +175,7 @@ void CStatusBar::setup(int MonitorID) {
     m_iPixmap = xcb_generate_id(g_pWindowManager->DisplayConnection);
     xcb_create_pixmap(g_pWindowManager->DisplayConnection, g_pWindowManager->Depth, m_iPixmap, m_iWindowID, m_vecSize.x, m_vecSize.y);
 
-    // setup contexts.. ugh..
+    // setup contexts
 
     auto contextBG = &m_mContexts["BG"];
     contextBG->GContext = xcb_generate_id(g_pWindowManager->DisplayConnection);
@@ -183,25 +183,6 @@ void CStatusBar::setup(int MonitorID) {
     values[0] = ConfigManager::getInt("bar:col.bg");
     values[1] = ConfigManager::getInt("bar:col.bg");
     xcb_create_gc(g_pWindowManager->DisplayConnection, contextBG->GContext, m_iPixmap, XCB_GC_BACKGROUND | XCB_GC_FOREGROUND, values);
-
-    //
-    //
-
-    auto contextBGT = &m_mContexts["BGT"];
-    contextBGT->GContext = xcb_generate_id(g_pWindowManager->DisplayConnection);
-
-    values[0] = 0x00000000;
-    values[1] = 0x00000000;
-    xcb_create_gc(g_pWindowManager->DisplayConnection, contextBGT->GContext, m_iPixmap, XCB_GC_BACKGROUND | XCB_GC_FOREGROUND, values);
-
-    //
-    //
-    auto contextHIGH = &m_mContexts["HIGH"];
-    contextHIGH->GContext = xcb_generate_id(g_pWindowManager->DisplayConnection);
-
-    values[0] = ConfigManager::getInt("bar:col.high");
-    values[1] = ConfigManager::getInt("bar:col.high");
-    xcb_create_gc(g_pWindowManager->DisplayConnection, contextHIGH->GContext, m_iPixmap, XCB_GC_BACKGROUND | XCB_GC_FOREGROUND, values);
 
     //
     //
@@ -247,6 +228,12 @@ void CStatusBar::drawText(Vector2D pos, std::string text, uint32_t color) {
     cairo_show_text(m_pCairo, text.c_str());
 }
 
+void CStatusBar::drawCairoRectangle(Vector2D pos, Vector2D size, uint32_t color) {
+    cairo_set_source_rgba(m_pCairo, RED(color), GREEN(color), BLUE(color), ALPHA(color));
+    cairo_rectangle(m_pCairo, pos.x, pos.y, size.x, size.y);
+    cairo_fill(m_pCairo);
+}
+
 int CStatusBar::getTextHalfY() {
     return m_vecSize.y - (m_vecSize.y - 9) / 2.f;
 }
@@ -268,10 +255,7 @@ void CStatusBar::draw() {
     cairo_restore(m_pCairo);
     //
 
-    if (ALPHA((uint32_t)ConfigManager::getInt("bar:col.bg")) != 0) {
-        xcb_rectangle_t rectangles[] = {{(int)0, (int)0, (int)m_vecSize.x, (int)m_vecSize.y}};
-        xcb_poly_fill_rectangle(g_pWindowManager->DisplayConnection, m_iPixmap, m_mContexts["BG"].GContext, 1, rectangles);
-    }
+    drawCairoRectangle(Vector2D(0, 0), m_vecSize, ConfigManager::getInt("bar:col.bg"));
 
     //
     //
@@ -325,8 +309,7 @@ int CStatusBar::drawWorkspacesModule(SBarModule* mod, int off) {
 
         std::string workspaceName = std::to_string(openWorkspaces[i]);
 
-        xcb_rectangle_t rectangleActive[] = {{off + m_vecSize.y * drawnWorkspaces, 0, m_vecSize.y, m_vecSize.y}};
-        xcb_poly_fill_rectangle(g_pWindowManager->DisplayConnection, m_iPixmap, WORKSPACE == MOUSEWORKSPACEID ? m_mContexts["HIGH"].GContext : m_mContexts["BG"].GContext, 1, rectangleActive);
+        drawCairoRectangle(Vector2D(off + m_vecSize.y * drawnWorkspaces, 0), Vector2D(m_vecSize.y, m_vecSize.y), WORKSPACE == MOUSEWORKSPACEID ? ConfigManager::getInt("bar:col.high") : ConfigManager::getInt("bar:col.bg"));
 
         drawText(Vector2D(off + m_vecSize.y * drawnWorkspaces + m_vecSize.y / 2.f - getTextWidth(workspaceName) / 2.f, getTextHalfY()),
                  workspaceName, WORKSPACE == MOUSEWORKSPACEID ? 0xFF111111 : 0xFFFFFFFF);
@@ -372,8 +355,7 @@ int CStatusBar::drawModule(SBarModule* mod, int off) {
             break;
     }
 
-    xcb_rectangle_t rects[] = {{ position.x, position.y, MODULEWIDTH, m_vecSize.y }};
-    xcb_poly_fill_rectangle(g_pWindowManager->DisplayConnection, m_iPixmap, mod->bgcontext, 1, rects);
+    drawCairoRectangle(position, Vector2D(MODULEWIDTH, m_vecSize.y), mod->bgcolor);
 
     drawText(position + Vector2D(PAD / 2, getTextHalfY()), mod->valueCalculated, mod->color);
 

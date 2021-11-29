@@ -28,7 +28,7 @@ struct SBarModule {
     uint64_t        updateEveryMs;
     std::chrono::system_clock::time_point updateLast;
 
-    xcb_gcontext_t  bgcontext = NULL;
+    xcb_gcontext_t  bgcontext = NULL; // deprecated
 
     // PADS
     bool            isPad = false;
@@ -68,6 +68,7 @@ private:
     cairo_t*            m_pCairo        = nullptr;
 
     void                drawText(Vector2D, std::string, uint32_t);
+    void                drawCairoRectangle(Vector2D, Vector2D, uint32_t);
     int                 getTextWidth(std::string);
     int                 drawModule(SBarModule*, int);
     int                 drawWorkspacesModule(SBarModule*, int);
