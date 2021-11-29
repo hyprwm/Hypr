@@ -233,6 +233,13 @@ void CStatusBar::draw() {
         return;
     }
 
+    // Clear the entire pixmap
+    cairo_save(m_pCairo);
+    cairo_set_operator(m_pCairo, CAIRO_OPERATOR_CLEAR);
+    cairo_paint(m_pCairo);
+    cairo_restore(m_pCairo);
+    //
+
     if (ALPHA((uint32_t)ConfigManager::getInt("bar:col.bg")) != 0) {
         xcb_rectangle_t rectangles[] = {{(int)0, (int)0, (int)m_vecSize.x, (int)m_vecSize.y}};
         xcb_poly_fill_rectangle(g_pWindowManager->DisplayConnection, m_iPixmap, m_mContexts["BG"].GContext, 1, rectangles);
