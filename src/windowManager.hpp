@@ -21,8 +21,9 @@
 
 class CWindowManager {
 public:
-    xcb_connection_t*           DisplayConnection;
-    xcb_screen_t*               Screen;
+    xcb_connection_t*           DisplayConnection = nullptr;
+    xcb_ewmh_connection_t*      EWMHConnection = nullptr; // Bar uses this
+    xcb_screen_t*               Screen = nullptr;
     xcb_drawable_t              Drawable;
     uint32_t                    Values[3];
 
@@ -121,7 +122,7 @@ public:
 
 inline std::unique_ptr<CWindowManager> g_pWindowManager = std::make_unique<CWindowManager>();
 
-inline std::map<std::string, int64_t> HYPRATOMS = {
+inline std::map<std::string, xcb_atom_t> HYPRATOMS = {
     HYPRATOM("_NET_SUPPORTED"),
     HYPRATOM("_NET_SUPPORTING_WM_CHECK"),
     HYPRATOM("_NET_WM_NAME"),
@@ -179,5 +180,4 @@ inline std::map<std::string, int64_t> HYPRATOMS = {
     HYPRATOM("_NET_FRAME_EXTENTS"),
     HYPRATOM("_MOTIF_WM_HINTS"),
     HYPRATOM("WM_CHANGE_STATE"),
-    HYPRATOM("MANAGER")
-};
+    HYPRATOM("MANAGER")};

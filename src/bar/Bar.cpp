@@ -34,6 +34,27 @@ int64_t barMainThread() {
 
     Debug::log(LOG, "Bar init Phase 1 done.");
 
+    // Init atoms
+    // get atoms
+    for (auto& ATOM : HYPRATOMS) {
+        xcb_intern_atom_cookie_t cookie = xcb_intern_atom(g_pWindowManager->DisplayConnection, 0, ATOM.first.length(), ATOM.first.c_str());
+        xcb_intern_atom_reply_t* reply = xcb_intern_atom_reply(g_pWindowManager->DisplayConnection, cookie, NULL);
+
+        if (!reply) {
+            Debug::log(ERR, "Atom failed: " + ATOM.first);
+            continue;
+        }
+
+        ATOM.second = reply->atom;
+    }
+
+    Debug::log(LOG, "Atoms done.");
+
+    g_pWindowManager->EWMHConnection = (xcb_ewmh_connection_t*)malloc(sizeof(xcb_ewmh_connection_t));
+    xcb_ewmh_init_atoms_replies(g_pWindowManager->EWMHConnection, xcb_ewmh_init_atoms(g_pWindowManager->DisplayConnection, g_pWindowManager->EWMHConnection), nullptr);
+
+    Debug::log(LOG, "Bar init EWMH done.");
+
     // Init randr for monitors.
     g_pWindowManager->setupRandrMonitors();
 
@@ -139,6 +160,10 @@ void CStatusBar::setup(int MonitorID) {
                       g_pWindowManager->Screen->root, m_vecPosition.x, m_vecPosition.y, m_vecSize.x, m_vecSize.y,
                       0, XCB_WINDOW_CLASS_INPUT_OUTPUT, g_pWindowManager->Screen->root_visual,
                       XCB_CW_EVENT_MASK, values);
+
+    // Set the state to dock to avoid some issues
+    xcb_atom_t dockAtom[] = { HYPRATOMS["_NET_WM_WINDOW_TYPE_DOCK"] };
+    xcb_ewmh_set_wm_window_type(g_pWindowManager->EWMHConnection, m_iWindowID, 1, dockAtom);
 
     // map
     xcb_map_window(g_pWindowManager->DisplayConnection, m_iWindowID);
