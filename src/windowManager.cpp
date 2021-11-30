@@ -1349,3 +1349,17 @@ void CWindowManager::doPostCreationChecks(CWindow* pWindow) {
     Debug::log(LOG, "Post creation checks ended");
     //
 }
+
+void CWindowManager::getICCCMWMProtocols(CWindow* pWindow) {
+    xcb_icccm_get_wm_protocols_reply_t WMProtocolsReply;
+    if (!xcb_icccm_get_wm_protocols_reply(DisplayConnection,
+        xcb_icccm_get_wm_protocols(DisplayConnection, pWindow->getDrawable(), HYPRATOMS["WM_PROTOCOLS"]), &WMProtocolsReply, NULL))
+        return;
+
+    for (auto i = 0; i < (int)WMProtocolsReply.atoms_len; i++) {
+        if (WMProtocolsReply.atoms[i] == HYPRATOMS["WM_DELETE_WINDOW"])
+            pWindow->setCanKill(true);
+    }
+    
+    xcb_icccm_get_wm_protocols_reply_wipe(&WMProtocolsReply);
+}

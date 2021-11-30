@@ -95,6 +95,7 @@ public:
 
     bool                        shouldBeFloatedOnInit(int64_t);
     void                        doPostCreationChecks(CWindow*);
+    void                        getICCCMWMProtocols(CWindow*);
 
     void                        setupRandrMonitors();
     void                        createAndOpenAllPipes();

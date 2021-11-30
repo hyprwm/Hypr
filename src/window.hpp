@@ -65,6 +65,9 @@ public:
     // Docks etc
     EXPOSED_MEMBER(Immovable, bool, b);
     EXPOSED_MEMBER(NoInterventions, bool, b);
+
+    // ICCCM
+    EXPOSED_MEMBER(CanKill, bool, b);
     
 
 private:

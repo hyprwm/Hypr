@@ -308,6 +308,9 @@ void Events::eventMapWindow(xcb_generic_event_t* event) {
 
     // Do post-creation checks.
     g_pWindowManager->doPostCreationChecks(pNewWindow);
+    
+    // Do ICCCM
+    g_pWindowManager->getICCCMWMProtocols(pNewWindow);
 }
 
 void Events::eventButtonPress(xcb_generic_event_t* event) {

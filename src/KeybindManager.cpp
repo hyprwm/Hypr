@@ -89,7 +89,27 @@ xcb_keycode_t KeybindManager::getKeycodeFromKeysym(xcb_keysym_t keysym) {
 
 void KeybindManager::killactive(std::string args) {
     // args unused
-    xcb_destroy_window(g_pWindowManager->DisplayConnection, g_pWindowManager->LastWindow);
+    const auto PLASTWINDOW = g_pWindowManager->getWindowFromDrawable(g_pWindowManager->LastWindow);
+
+    if (!PLASTWINDOW)
+        return;
+    
+    if (PLASTWINDOW->getCanKill()) {
+        // Send a kill message
+        xcb_client_message_event_t event;
+        bzero(&event, sizeof(event));
+        event.response_type = XCB_CLIENT_MESSAGE;
+        event.window = PLASTWINDOW->getDrawable();
+        event.type = HYPRATOMS["WM_PROTOCOLS"];
+        event.format = 32;
+        event.data.data32[0] = HYPRATOMS["WM_DELETE_WINDOW"];
+        event.data.data32[1] = 0;
+
+        xcb_send_event(g_pWindowManager->DisplayConnection, 0, PLASTWINDOW->getDrawable(), XCB_EVENT_MASK_NO_EVENT, (const char*)&event);
+    } else 
+        xcb_kill_client(g_pWindowManager->DisplayConnection, g_pWindowManager->LastWindow);
+
+    g_pWindowManager->closeWindowAllChecks(g_pWindowManager->LastWindow);
 }
 
 void KeybindManager::call(std::string args) {
@@ -160,12 +180,14 @@ void KeybindManager::toggleActiveWindowFloating(std::string unusedArg) {
             const auto RESTOREACSIZE = PWINDOW->getDefaultSize();
             const auto RESTOREACPOS = PWINDOW->getDefaultPosition();
             const auto RESTOREWINID = PWINDOW->getDrawable();
+            const auto RESTORECANKILL = PWINDOW->getCanKill();
 
             g_pWindowManager->removeWindowFromVectorSafe(PWINDOW->getDrawable());
             const auto PNEWWINDOW = Events::remapWindow(RESTOREWINID, true);
 
             PNEWWINDOW->setDefaultPosition(RESTOREACPOS);
             PNEWWINDOW->setDefaultSize(RESTOREACSIZE);
+            PNEWWINDOW->setCanKill(RESTORECANKILL);
         }
         
     }
