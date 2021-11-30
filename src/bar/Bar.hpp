@@ -21,6 +21,7 @@ enum ModuleAlignment {
 struct SBarModule {
     ModuleAlignment alignment;
     std::string     value;
+    std::string     icon;
     std::string     valueCalculated = "";
     uint64_t        color;
     uint64_t        bgcolor;
@@ -67,9 +68,9 @@ private:
     cairo_surface_t*    m_pCairoSurface = nullptr;
     cairo_t*            m_pCairo        = nullptr;
 
-    void                drawText(Vector2D, std::string, uint32_t);
+    void                drawText(Vector2D, std::string, uint32_t, std::string);
     void                drawCairoRectangle(Vector2D, Vector2D, uint32_t);
-    int                 getTextWidth(std::string);
+    int                 getTextWidth(std::string, std::string);
     int                 drawModule(SBarModule*, int);
     int                 drawWorkspacesModule(SBarModule*, int);
     int                 getTextHalfY();

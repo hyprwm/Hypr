@@ -22,14 +22,15 @@ void ConfigManager::init() {
     configValues["bar:height"].intValue = 15;
     configValues["bar:col.bg"].intValue = 0xFF111111;
     configValues["bar:col.high"].intValue = 0xFFFF3333;
+    configValues["bar:font.main"].strValue = "Noto Sans";
+    configValues["bar:font.secondary"].strValue = "Noto Sans";
+    configValues["bar:mod_pad_in"].intValue = 4;
 
-    configValues["status_command"].strValue = "date +%I:%M\\ %p"; // Time
-
+    configValues["status_command"].strValue = "date +%I:%M\\ %p"; // Time // Deprecated
 
     // Set Colors ARGB
     configValues["col.active_border"].intValue = 0x77FF3333;
     configValues["col.inactive_border"].intValue = 0x77222222;
-
 
     // animations
     configValues["anim.speed"].floatValue = 1;
@@ -163,6 +164,9 @@ void parseModule(const std::string& COMMANDC, const std::string& VALUE) {
         return;
     }
 
+    const auto ICON = valueCopy.substr(0, valueCopy.find_first_of(","));
+    valueCopy = valueCopy.substr(valueCopy.find_first_of(",") + 1);
+
     const auto COL1 = valueCopy.substr(0, valueCopy.find_first_of(","));
     valueCopy = valueCopy.substr(valueCopy.find_first_of(",") + 1);
 
@@ -192,6 +196,8 @@ void parseModule(const std::string& COMMANDC, const std::string& VALUE) {
         Debug::log(ERR, "Module creation error: invalid update interval");
         return;
     }
+
+    module.icon = ICON;
 
     module.value = COMMAND;
 
@@ -292,7 +298,7 @@ void ConfigManager::loadConfigLoadVars() {
 
     const char* const ENVHOME = getenv("HOME");
 
-    const std::string CONFIGPATH = ENVHOME + (std::string) "/.config/hypr/hypr.conf";
+    const std::string CONFIGPATH = ENVHOME + (ISDEBUG ? (std::string) "/.config/hypr/hyprd.conf" : (std::string) "/.config/hypr/hypr.conf");
 
     std::ifstream ifs;
     ifs.open(CONFIGPATH.c_str());
@@ -364,7 +370,7 @@ void ConfigManager::applyKeybindsToX() {
 void ConfigManager::tick() {
     const char* const ENVHOME = getenv("HOME");
 
-    const std::string CONFIGPATH = ENVHOME + (std::string)"/.config/hypr/hypr.conf";
+    const std::string CONFIGPATH = ENVHOME + (ISDEBUG ? (std::string) "/.config/hypr/hyprd.conf" : (std::string) "/.config/hypr/hypr.conf");
 
     struct stat fileStat;
     int err = stat(CONFIGPATH.c_str(), &fileStat);

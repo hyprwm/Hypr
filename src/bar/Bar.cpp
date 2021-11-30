@@ -210,8 +210,8 @@ void CStatusBar::destroy() {
     m_pCairo = nullptr;
 }
 
-int CStatusBar::getTextWidth(std::string text) {
-    cairo_select_font_face(m_pCairo, "Noto Sans", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+int CStatusBar::getTextWidth(std::string text, std::string font) {
+    cairo_select_font_face(m_pCairo, font.c_str(), CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
     cairo_set_font_size(m_pCairo, 12);
 
     cairo_text_extents_t textextents;
@@ -220,8 +220,8 @@ int CStatusBar::getTextWidth(std::string text) {
     return textextents.width + 1 /* pad */;
 }
 
-void CStatusBar::drawText(Vector2D pos, std::string text, uint32_t color) {
-    cairo_select_font_face(m_pCairo, "Noto Sans", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+void CStatusBar::drawText(Vector2D pos, std::string text, uint32_t color, std::string font) {
+    cairo_select_font_face(m_pCairo, font.c_str(), CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
     cairo_set_font_size(m_pCairo, 12);
     cairo_set_source_rgba(m_pCairo, RED(color), GREEN(color), BLUE(color), ALPHA(color));
     cairo_move_to(m_pCairo, pos.x, pos.y);
@@ -311,8 +311,8 @@ int CStatusBar::drawWorkspacesModule(SBarModule* mod, int off) {
 
         drawCairoRectangle(Vector2D(off + m_vecSize.y * drawnWorkspaces, 0), Vector2D(m_vecSize.y, m_vecSize.y), WORKSPACE == MOUSEWORKSPACEID ? ConfigManager::getInt("bar:col.high") : ConfigManager::getInt("bar:col.bg"));
 
-        drawText(Vector2D(off + m_vecSize.y * drawnWorkspaces + m_vecSize.y / 2.f - getTextWidth(workspaceName) / 2.f, getTextHalfY()),
-                 workspaceName, WORKSPACE == MOUSEWORKSPACEID ? 0xFF111111 : 0xFFFFFFFF);
+        drawText(Vector2D(off + m_vecSize.y * drawnWorkspaces + m_vecSize.y / 2.f - getTextWidth(workspaceName, ConfigManager::getString("bar:font.main")) / 2.f, getTextHalfY()),
+                 workspaceName, WORKSPACE == MOUSEWORKSPACEID ? 0xFF111111 : 0xFFFFFFFF, ConfigManager::getString("bar:font.main"));
 
         drawnWorkspaces++;
     }
@@ -325,7 +325,7 @@ int CStatusBar::drawModule(SBarModule* mod, int off) {
     if (mod->isPad)
         return mod->pad;
 
-    const int PAD = 4;
+    const int PAD = ConfigManager::getInt("bar:mod_pad_in");
 
     // check if we need to update
     if (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - mod->updateLast).count() > mod->updateEveryMs) {
@@ -337,7 +337,8 @@ int CStatusBar::drawModule(SBarModule* mod, int off) {
 
     // We have the value, draw the module!
 
-    const auto MODULEWIDTH = getTextWidth(mod->valueCalculated) + PAD;
+    const auto MODULEWIDTH = getTextWidth(mod->valueCalculated, ConfigManager::getString("bar:font.main")) + PAD;
+    const auto ICONWIDTH = getTextWidth(mod->icon, ConfigManager::getString("bar:font.secondary"));
 
     if (!MODULEWIDTH || mod->valueCalculated == "")
         return 0; // empty module
@@ -348,16 +349,17 @@ int CStatusBar::drawModule(SBarModule* mod, int off) {
             position = Vector2D(off, 0);
             break;
         case RIGHT:
-            position = Vector2D(m_vecSize.x - off - MODULEWIDTH, 0);
+            position = Vector2D(m_vecSize.x - off - MODULEWIDTH - ICONWIDTH, 0);
             break;
         case CENTER:
-            position = Vector2D(m_vecSize.x / 2.f - MODULEWIDTH / 2.f, 0);
+            position = Vector2D(m_vecSize.x / 2.f - (MODULEWIDTH + ICONWIDTH) / 2.f, 0);
             break;
     }
 
-    drawCairoRectangle(position, Vector2D(MODULEWIDTH, m_vecSize.y), mod->bgcolor);
+    drawCairoRectangle(position, Vector2D(MODULEWIDTH + ICONWIDTH, m_vecSize.y), mod->bgcolor);
 
-    drawText(position + Vector2D(PAD / 2, getTextHalfY()), mod->valueCalculated, mod->color);
+    drawText(position + Vector2D(PAD / 2, getTextHalfY()), mod->icon, mod->color, ConfigManager::getString("bar:font.secondary"));
+    drawText(position + Vector2D(PAD / 2 + ICONWIDTH, getTextHalfY()), mod->valueCalculated, mod->color, ConfigManager::getString("bar:font.main"));
 
-    return MODULEWIDTH;
+    return MODULEWIDTH + ICONWIDTH;
 }
