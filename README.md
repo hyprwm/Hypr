@@ -30,7 +30,7 @@ Hypr is a Linux tiling window manager for Xorg. It's written in XCB with modern 
 - [x] Rounded corners ~ meh
 - [x] Replace default X11 cursor with the pointer
 - [x] Fix ghost windows once and for all
-- [ ] Fix windows minimizing themselves to tray not being able to come back without pkill
+- [x] Fix windows minimizing themselves to tray not being able to come back without pkill
 - [x] Moving windows between workspaces without floating
 - [x] EWMH ~ Basic, idk if i'll add more.
 - [x] Docks / Fullscreen Apps etc. auto-detection
