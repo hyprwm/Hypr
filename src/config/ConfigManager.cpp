@@ -115,7 +115,12 @@ void handleBind(const std::string& command, const std::string& value) {
 }
 
 void handleRawExec(const std::string& command, const std::string& args) {
-    exec(args.c_str());
+    // Exec in the background dont wait for it.
+    if (fork() == 0) {
+        execl("/bin/sh", "/bin/sh", "-c", args.c_str(), nullptr);
+
+        _exit(0);
+    }
 }
 
 void handleStatusCommand(const std::string& command, const std::string& args) {
