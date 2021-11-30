@@ -223,6 +223,10 @@ bool CWindowManager::handleEvent() {
                 Events::eventDestroy(ev);
                 Debug::log(LOG, "Event dispatched DESTROY");
                 break;
+            case XCB_UNMAP_NOTIFY:
+                Events::eventUnmapWindow(ev);
+                Debug::log(LOG, "Event dispatched UNMAP");
+                break;
             case XCB_MAP_REQUEST:
                 Events::eventMapWindow(ev);
                 Debug::log(LOG, "Event dispatched MAP");

@@ -77,11 +77,14 @@ void Events::eventLeave(xcb_generic_event_t* event) {
 
 void Events::eventDestroy(xcb_generic_event_t* event) {
     const auto E = reinterpret_cast<xcb_destroy_notify_event_t*>(event);
-    xcb_kill_client(g_pWindowManager->DisplayConnection, E->window);
 
     g_pWindowManager->closeWindowAllChecks(E->window);
+}
 
-    // Can someone tell me why the fuck some dialogs do not report they are closed and still respond to XCB even after they disappear???
+void Events::eventUnmapWindow(xcb_generic_event_t* event) {
+    const auto E = reinterpret_cast<xcb_unmap_notify_event_t*>(event);
+
+    g_pWindowManager->closeWindowAllChecks(E->window);
 }
 
 CWindow* Events::remapFloatingWindow(int windowID, int forcemonitor) {

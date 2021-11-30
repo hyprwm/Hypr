@@ -9,6 +9,7 @@ namespace Events {
     EVENT(Leave);
     EVENT(Destroy);
     EVENT(MapWindow);
+    EVENT(UnmapWindow);
     EVENT(ButtonPress);
     EVENT(ButtonRelease);
     EVENT(Expose);
