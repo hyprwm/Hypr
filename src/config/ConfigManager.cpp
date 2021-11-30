@@ -35,6 +35,10 @@ void ConfigManager::init() {
     configValues["anim.speed"].floatValue = 1;
     configValues["anim.enabled"].intValue = 1;
 
+    if (!g_pWindowManager->statusBar) {
+        isFirstLaunch = true;
+    }
+
     loadConfigLoadVars();
     applyKeybindsToX();
 }
@@ -257,6 +261,9 @@ void parseLine(std::string& line) {
     } else if (COMMAND == "exec") {
         handleRawExec(COMMAND, VALUE);
         return;
+    } else if (COMMAND == "exec-once" && ConfigManager::isFirstLaunch) {
+        handleRawExec(COMMAND, VALUE);
+        return;
     } else if (COMMAND == "status_command") {
         handleStatusCommand(COMMAND, VALUE);
         return;
@@ -315,6 +322,7 @@ void ConfigManager::loadConfigLoadVars() {
     }
 
     loadBar = true;
+    isFirstLaunch = false;
 }
 
 void ConfigManager::applyKeybindsToX() {

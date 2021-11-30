@@ -17,6 +17,8 @@ namespace ConfigManager {
 
     inline bool         isBar = false;  // If true we send the command to the bar parser
 
+    inline bool         isFirstLaunch = false;
+
     void                init();
     void                loadConfigLoadVars();
     void                tick();
