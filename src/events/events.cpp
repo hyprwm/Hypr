@@ -132,7 +132,7 @@ CWindow* Events::remapFloatingWindow(int windowID, int forcemonitor) {
     if (nextWindowCentered) {
         nextWindowCentered = false;
 
-        window.setDefaultPosition(g_pWindowManager->monitors[CURRENTSCREEN].vecSize / 2.f - window.getDefaultSize() / 2.f);
+        window.setDefaultPosition(g_pWindowManager->monitors[CURRENTSCREEN].vecPosition + g_pWindowManager->monitors[CURRENTSCREEN].vecSize / 2.f - window.getDefaultSize() / 2.f);
     }
 
     //
