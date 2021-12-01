@@ -67,16 +67,12 @@ void IPCSendMessage(const std::string path, SIPCMessageMainToBar smessage) {
 
         message += IPC_MESSAGE_SEPARATOR + "barfullscreenwindow" + IPC_MESSAGE_EQUALITY + (smessage.fullscreenOnBar ? "1" : "0");
 
-        message += IPC_MESSAGE_SEPARATOR + "lastwindowname" + IPC_MESSAGE_EQUALITY;
+        message += IPC_MESSAGE_SEPARATOR + "lastwindowname" + IPC_MESSAGE_EQUALITY + smessage.lastWindowName;
 
-        if (const auto PLASTWINDOW = g_pWindowManager->getWindowFromDrawable(g_pWindowManager->LastWindow); PLASTWINDOW) {
-            message += PLASTWINDOW->getName() + IPC_MESSAGE_SEPARATOR;
-        } else {
-            message += IPC_MESSAGE_SEPARATOR;
-        }
+        message += IPC_MESSAGE_SEPARATOR + "lastwindowclass" + IPC_MESSAGE_EQUALITY + smessage.lastWindowClass;
 
         // append the EOF
-        message += IPC_END_OF_FILE;
+        message += IPC_MESSAGE_SEPARATOR + IPC_END_OF_FILE;
 
         // Send
         writeToIPCChannel(path, message);
@@ -137,6 +133,8 @@ void IPCRecieveMessageB(const std::string path) {
                 std::sort(g_pWindowManager->statusBar->openWorkspaces.begin(), g_pWindowManager->statusBar->openWorkspaces.end());
             } else if (PROPNAME == "lastwindowname") {
                 g_pWindowManager->statusBar->setLastWindowName(PROPVALUE);
+            } else if (PROPNAME == "lastwindowclass") {
+                g_pWindowManager->statusBar->setLastWindowClass(PROPVALUE);
             } else if (PROPNAME == "barfullscreenwindow") {
                 g_pWindowManager->statusBar->setIsCovered(PROPVALUE == "1" ? true : false);
             }

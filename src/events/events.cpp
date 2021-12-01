@@ -105,6 +105,10 @@ CWindow* Events::remapFloatingWindow(int windowID, int forcemonitor) {
     Debug::log(LOG, "New window got name: " + WINNAME);
     window.setName(WINNAME);
 
+    const auto WINCLASSNAME = getClassName(windowID);
+    Debug::log(LOG, "New window got class: " + WINCLASSNAME.second);
+    window.setClassName(WINCLASSNAME.second);
+
     // For all floating windows, get their default size
     const auto GEOMETRYCOOKIE   = xcb_get_geometry(g_pWindowManager->DisplayConnection, windowID);
     const auto GEOMETRY         = xcb_get_geometry_reply(g_pWindowManager->DisplayConnection, GEOMETRYCOOKIE, 0);
@@ -204,6 +208,10 @@ CWindow* Events::remapWindow(int windowID, bool wasfloating, int forcemonitor) {
     const auto WINNAME = getWindowName(windowID);
     Debug::log(LOG, "New window got name: " + WINNAME);
     window.setName(WINNAME);
+
+    const auto WINCLASSNAME = getClassName(windowID);
+    Debug::log(LOG, "New window got class: " + WINCLASSNAME.second);
+    window.setClassName(WINCLASSNAME.second);
 
     // For all floating windows, get their default size
     const auto GEOMETRYCOOKIE = xcb_get_geometry(g_pWindowManager->DisplayConnection, windowID);

@@ -1191,7 +1191,9 @@ void CWindowManager::updateBarInfo() {
 
     message.activeWorkspace = activeWorkspaces[getMonitorFromCursor()->ID];
 
+
     auto winname = getWindowFromDrawable(LastWindow) ? getWindowFromDrawable(LastWindow)->getName() : "";
+    auto winclassname = getWindowFromDrawable(LastWindow) ? getWindowFromDrawable(LastWindow)->getClassName() : "";
 
     for (auto& c : winname) {
         // Remove illegal chars
@@ -1201,7 +1203,17 @@ void CWindowManager::updateBarInfo() {
             c = ' ';
     }
 
+    for (auto& c : winclassname) {
+        // Remove illegal chars
+        if (c == '=')
+            c = ' ';
+        else if (c == '\t')
+            c = ' ';
+    }
+
     message.lastWindowName = winname;
+
+    message.lastWindowClass = winclassname;
 
     message.fullscreenOnBar = getWorkspaceByID(activeWorkspaces[ConfigManager::getInt("bar:monitor") > monitors.size() ? 0 : ConfigManager::getInt("bar:monitor")])->getHasFullscreenWindow();
 

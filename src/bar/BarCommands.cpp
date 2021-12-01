@@ -108,12 +108,17 @@ std::string getCurrentWindowName() {
     return g_pWindowManager->statusBar->getLastWindowName();
 }
 
+std::string getCurrentWindowClass() {
+    return g_pWindowManager->statusBar->getLastWindowClass();
+}
+
 std::string BarCommands::parsePercent(std::string token) {
     // check what the token is and act accordingly.
 
     if (token == "RAM") return getRamString();
     else if (token == "CPU") return getCpuString();
     else if (token == "WINNAME") return getCurrentWindowName();
+    else if (token == "WINCLASS") return getCurrentWindowClass();
 
     Debug::log(ERR, "Unknown token while parsing module: %" + token + "%");
 
