@@ -45,8 +45,8 @@ To use a custom config, place it in ~/.config/hypr/hypr.conf
 
 # Screenshot Gallery
 
-![One](https://i.imgur.com/5HmGM4R.png)
-![Two](https://i.imgur.com/V4lIjkC.png)
+![One](https://i.imgur.com/WJhbvij.png)
+![Two](https://i.imgur.com/Qpq1Jfk.png)
 ![Three](https://i.imgur.com/yvZVde7.png)
 
 # Building
