@@ -119,6 +119,12 @@ CWindow* Events::remapFloatingWindow(int windowID, int forcemonitor) {
         window.setDefaultSize(Vector2D(g_pWindowManager->Screen->width_in_pixels / 2.f, g_pWindowManager->Screen->height_in_pixels / 2.f));
     }
 
+    if (window.getDefaultSize().x < 20 || window.getDefaultSize().y < 20) {
+        // min size
+        window.setDefaultSize(Vector2D( std::clamp(window.getDefaultSize().x, (double)20, (double)99999),
+                                        std::clamp(window.getDefaultSize().y, (double)20, (double)99999)));
+    }
+
     if (nextWindowCentered) {
         nextWindowCentered = false;
 
