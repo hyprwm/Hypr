@@ -1379,3 +1379,14 @@ void CWindowManager::getICCCMWMProtocols(CWindow* pWindow) {
     
     xcb_icccm_get_wm_protocols_reply_wipe(&WMProtocolsReply);
 }
+
+void CWindowManager::refocusWindowOnClosed() {
+    const auto PWINDOW = findWindowAtCursor();
+
+    if (!PWINDOW)
+        return;
+
+    LastWindow = PWINDOW->getDrawable();
+
+    setFocusedWindow(PWINDOW->getDrawable());
+}

@@ -67,6 +67,7 @@ public:
     void                        refreshDirtyWindows();
 
     void                        setFocusedWindow(xcb_drawable_t);
+    void                        refocusWindowOnClosed();
 
     void                        calculateNewWindowParams(CWindow*);
     void                        fixWindowOnClose(CWindow*);

@@ -79,12 +79,18 @@ void Events::eventDestroy(xcb_generic_event_t* event) {
     const auto E = reinterpret_cast<xcb_destroy_notify_event_t*>(event);
 
     g_pWindowManager->closeWindowAllChecks(E->window);
+
+    // refocus on new window
+    g_pWindowManager->refocusWindowOnClosed();
 }
 
 void Events::eventUnmapWindow(xcb_generic_event_t* event) {
     const auto E = reinterpret_cast<xcb_unmap_notify_event_t*>(event);
 
     g_pWindowManager->closeWindowAllChecks(E->window);
+
+    // refocus on new window
+    g_pWindowManager->refocusWindowOnClosed();
 }
 
 CWindow* Events::remapFloatingWindow(int windowID, int forcemonitor) {
