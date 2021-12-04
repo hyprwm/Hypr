@@ -781,11 +781,11 @@ void CWindowManager::calculateNewFloatingWindow(CWindow* pWindow) {
         return;
 
     if (!pWindow->getNoInterventions()) {
-        pWindow->setPosition(pWindow->getDefaultPosition());
-        pWindow->setSize(pWindow->getDefaultSize());
+        pWindow->setPosition(pWindow->getEffectivePosition() + Vector2D(3,3));
+        pWindow->setSize(pWindow->getEffectiveSize() - Vector2D(6, 6));
 
         pWindow->setEffectivePosition(pWindow->getPosition() + Vector2D(10, 10));
-        pWindow->setEffectiveSize(pWindow->getDefaultSize());
+        pWindow->setEffectiveSize(pWindow->getSize());
 
         pWindow->setRealPosition(pWindow->getPosition());
         pWindow->setRealSize(pWindow->getSize());
