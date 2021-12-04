@@ -174,6 +174,8 @@ CWindow* Events::remapFloatingWindow(int windowID, int forcemonitor) {
 
     window.setSize(window.getDefaultSize());
     window.setPosition(window.getDefaultPosition());
+    window.setEffectiveSize(window.getDefaultSize());
+    window.setEffectivePosition(window.getDefaultPosition());
 
     // Also sets the old one
     g_pWindowManager->calculateNewWindowParams(&window);
