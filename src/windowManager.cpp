@@ -681,7 +681,6 @@ void CWindowManager::applyRoundedCornersToWindow(CWindow* pWindow) {
 }
 
 void CWindowManager::setEffectiveSizePosUsingConfig(CWindow* pWindow) {
-
     if (!pWindow || pWindow->getIsFloating())
         return;
 
@@ -906,6 +905,10 @@ void CWindowManager::calculateNewFloatingWindow(CWindow* pWindow) {
     if (!pWindow->getNoInterventions()) {
         pWindow->setPosition(pWindow->getEffectivePosition() + Vector2D(3,3));
         pWindow->setSize(pWindow->getEffectiveSize() - Vector2D(6, 6));
+
+        // min size
+        pWindow->setSize(Vector2D(std::clamp(pWindow->getSize().x, (double)40, (double)99999),
+                                  std::clamp(pWindow->getSize().y, (double)40, (double)99999)));
 
         pWindow->setEffectivePosition(pWindow->getPosition() + Vector2D(10, 10));
         pWindow->setEffectiveSize(pWindow->getSize());
