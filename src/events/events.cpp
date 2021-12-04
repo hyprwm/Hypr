@@ -280,17 +280,28 @@ CWindow* Events::remapWindow(int windowID, bool wasfloating, int forcemonitor) {
         window.setParentNodeID(0);
     }
 
-    // Also sets the old one
-    g_pWindowManager->calculateNewWindowParams(&window);
+    // For master layout, add the index
+    window.setMasterChildIndex(g_pWindowManager->getWindowsOnWorkspace(g_pWindowManager->activeWorkspaces[CURRENTSCREEN]) - 1);
+    // and set master if needed
+    if (g_pWindowManager->getWindowsOnWorkspace(g_pWindowManager->activeWorkspaces[CURRENTSCREEN]) == 0) 
+        window.setMaster(true);
 
-    // Set real size. No animations in the beginning. Maybe later. TODO?
-    window.setRealPosition(window.getEffectivePosition());
-    window.setRealSize(window.getEffectiveSize());
 
     // Add to arr
     g_pWindowManager->addWindowToVectorSafe(window);
 
-    Debug::log(LOG, "Created a new tiled window! X: " + std::to_string(window.getPosition().x) + ", Y: " + std::to_string(window.getPosition().y) + ", W: " + std::to_string(window.getSize().x) + ", H:" + std::to_string(window.getSize().y) + " ID: " + std::to_string(windowID));
+    // Now we need to modify the copy in the array.
+    const auto PWINDOWINARR = g_pWindowManager->getWindowFromDrawable(windowID);
+
+
+    // Also sets the old one
+    g_pWindowManager->calculateNewWindowParams(PWINDOWINARR);
+
+    // Set real size. No animations in the beginning. Maybe later. TODO?
+    PWINDOWINARR->setRealPosition(PWINDOWINARR->getEffectivePosition());
+    PWINDOWINARR->setRealSize(PWINDOWINARR->getEffectiveSize());
+
+    Debug::log(LOG, "Created a new tiled window! X: " + std::to_string(PWINDOWINARR->getPosition().x) + ", Y: " + std::to_string(PWINDOWINARR->getPosition().y) + ", W: " + std::to_string(PWINDOWINARR->getSize().x) + ", H:" + std::to_string(PWINDOWINARR->getSize().y) + " ID: " + std::to_string(windowID));
 
     // Set map values
     g_pWindowManager->Values[0] = XCB_EVENT_MASK_ENTER_WINDOW | XCB_EVENT_MASK_FOCUS_CHANGE;
@@ -301,7 +312,7 @@ CWindow* Events::remapWindow(int windowID, bool wasfloating, int forcemonitor) {
     // Make all floating windows above
     g_pWindowManager->setAllFloatingWindowsTop();
 
-    return g_pWindowManager->getWindowFromDrawable(windowID);
+    return PWINDOWINARR;
 }
 
 void Events::eventMapWindow(xcb_generic_event_t* event) {

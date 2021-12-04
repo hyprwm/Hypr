@@ -732,50 +732,171 @@ void CWindowManager::calculateNewTileSetOldTile(CWindow* pWindow) {
     // Get the parent and both children, one of which will be pWindow
     const auto PPARENT = getWindowFromDrawable(pWindow->getParentNodeID());
 
+    const auto PMONITOR = getMonitorFromWindow(pWindow);
+    if (!PMONITOR) {
+        Debug::log(ERR, "Monitor was nullptr! (calculateNewTileSetOldTile)");
+        return;
+    }
+
     if (!PPARENT) {
         // New window on this workspace.
         // Open a fullscreen window.
-        const auto MONITOR = getMonitorFromWindow(pWindow);
-        if (!MONITOR) {
-            Debug::log(ERR, "Monitor was nullptr! (calculateNewTileSetOldTile)");
-            return;
-        }
-            
-        pWindow->setSize(Vector2D(MONITOR->vecSize.x, MONITOR->vecSize.y));
-        pWindow->setPosition(Vector2D(MONITOR->vecPosition.x, MONITOR->vecPosition.y));
+
+        pWindow->setSize(Vector2D(PMONITOR->vecSize.x, PMONITOR->vecSize.y));
+        pWindow->setPosition(Vector2D(PMONITOR->vecPosition.x, PMONITOR->vecPosition.y));
 
         return;
     }
 
-    // Get the sibling
-    const auto PSIBLING = getWindowFromDrawable(PPARENT->getChildNodeAID() == pWindow->getDrawable() ? PPARENT->getChildNodeBID() : PPARENT->getChildNodeAID());
 
-    // Should NEVER be null
-    if (PSIBLING) {
-        const auto PLASTSIZE = PPARENT->getSize();
-        const auto PLASTPOS = PPARENT->getPosition();
+    switch (ConfigManager::getInt("layout"))
+    {
+    case LAYOUT_DWINDLE:
+        {
+            // Get the sibling
+            const auto PSIBLING = getWindowFromDrawable(PPARENT->getChildNodeAID() == pWindow->getDrawable() ? PPARENT->getChildNodeBID() : PPARENT->getChildNodeAID());
 
-        if (PLASTSIZE.x > PLASTSIZE.y) {
-            PSIBLING->setPosition(Vector2D(PLASTPOS.x, PLASTPOS.y));
-            PSIBLING->setSize(Vector2D(PLASTSIZE.x / 2.f, PLASTSIZE.y));
-            pWindow->setSize(Vector2D(PLASTSIZE.x / 2.f, PLASTSIZE.y));
-            pWindow->setPosition(Vector2D(PLASTPOS.x + PLASTSIZE.x / 2.f, PLASTPOS.y));
-        } else {
-            PSIBLING->setPosition(Vector2D(PLASTPOS.x, PLASTPOS.y));
-            PSIBLING->setSize(Vector2D(PLASTSIZE.x, PLASTSIZE.y / 2.f));
-            pWindow->setSize(Vector2D(PLASTSIZE.x, PLASTSIZE.y / 2.f));
-            pWindow->setPosition(Vector2D(PLASTPOS.x, PLASTPOS.y + PLASTSIZE.y / 2.f));
+            // Should NEVER be null
+            if (PSIBLING) {
+                const auto PLASTSIZE = PPARENT->getSize();
+                const auto PLASTPOS = PPARENT->getPosition();
+                if (PLASTSIZE.x > PLASTSIZE.y) {
+                    PSIBLING->setPosition(Vector2D(PLASTPOS.x, PLASTPOS.y));
+                    PSIBLING->setSize(Vector2D(PLASTSIZE.x / 2.f, PLASTSIZE.y));
+                    pWindow->setSize(Vector2D(PLASTSIZE.x / 2.f, PLASTSIZE.y));
+                    pWindow->setPosition(Vector2D(PLASTPOS.x + PLASTSIZE.x / 2.f, PLASTPOS.y));
+                } else {
+                    PSIBLING->setPosition(Vector2D(PLASTPOS.x, PLASTPOS.y));
+                    PSIBLING->setSize(Vector2D(PLASTSIZE.x, PLASTSIZE.y / 2.f));
+                    pWindow->setSize(Vector2D(PLASTSIZE.x, PLASTSIZE.y / 2.f));
+                    pWindow->setPosition(Vector2D(PLASTPOS.x, PLASTPOS.y + PLASTSIZE.y / 2.f));
+                }
+
+                PSIBLING->setDirty(true);
+            } else {
+                Debug::log(ERR, "Sibling node was null?? pWindow x,y,w,h: " + std::to_string(pWindow->getPosition().x) + " " + std::to_string(pWindow->getPosition().y) + " " + std::to_string(pWindow->getSize().x) + " " + std::to_string(pWindow->getSize().y));
+            }
         }
+        break;
+    
+    case LAYOUT_MASTER:
+        {
+            recalcEntireWorkspace(pWindow->getWorkspaceID());
+        }
+        break;
+    }
+}
 
-        PSIBLING->setDirty(true);
-    } else {
-        Debug::log(ERR, "Sibling node was null?? pWindow x,y,w,h: " + std::to_string(pWindow->getPosition().x) + " "
-                            + std::to_string(pWindow->getPosition().y) + " " + std::to_string(pWindow->getSize().x) + " "
-                            + std::to_string(pWindow->getSize().y));
+int CWindowManager::getWindowsOnWorkspace(const int& workspace) {
+    int number = 0;
+    for (auto& w : windows) {
+        if (w.getWorkspaceID() == workspace && w.getDrawable() > 0) {
+            ++number;
+        }
     }
 
-    Values[0] = XCB_STACK_MODE_BELOW;
-    xcb_configure_window(DisplayConnection, pWindow->getDrawable(), XCB_CONFIG_WINDOW_STACK_MODE, Values);
+    return number;
+}
+
+SMonitor* CWindowManager::getMonitorFromWorkspace(const int& workspace) {
+    int monitorID = -1;
+    for (auto& work : workspaces) {
+        if (work.getID() == workspace) {
+            monitorID = work.getMonitor();
+            break;
+        }
+    }
+
+    for (auto& monitor : monitors) {
+        if (monitor.ID == monitorID) {
+            return &monitor;
+        }
+    }
+
+    return nullptr;
+}
+
+void CWindowManager::recalcEntireWorkspace(const int& workspace) {
+
+    switch (ConfigManager::getInt("layout"))
+    {
+    case LAYOUT_MASTER:
+        {
+            // Get the monitor
+            const auto PMONITOR = getMonitorFromWorkspace(workspace);
+
+            // first, calc the size
+            CWindow* pMaster = nullptr;
+            for (auto& w : windows) {
+                if (w.getWorkspaceID() == workspace && w.getMaster() && !w.getDead()) {
+                    pMaster = &w;
+                    break;
+                }
+            }
+
+            if (!pMaster) {
+                Debug::log(ERR, "No master found on workspace???");
+                return;
+            }
+
+            // set the xy for master
+            pMaster->setPosition(Vector2D(0, 0) + PMONITOR->vecPosition);
+            pMaster->setSize(Vector2D(PMONITOR->vecSize.x / 2, PMONITOR->vecSize.y));
+
+            // get children sorted
+            std::vector<CWindow*> children;
+            for (auto& w : windows) {
+                if (w.getWorkspaceID() == workspace && !w.getMaster() && w.getDrawable() > 0 && !w.getDead())
+                    children.push_back(&w);
+            }
+            std::sort(children.begin(), children.end(), [](CWindow*& a, CWindow*& b) {
+                return a->getMasterChildIndex() < b->getMasterChildIndex();
+            });
+
+            // if no children, master full
+            if (children.size() == 0) {
+                pMaster->setPosition(Vector2D(0, 0) + PMONITOR->vecPosition);
+                pMaster->setSize(Vector2D(PMONITOR->vecSize.x, PMONITOR->vecSize.y));
+            }
+
+            // Children sorted, set xy
+            int yoff = 0;
+            for (const auto& child : children) {
+                child->setPosition(Vector2D(PMONITOR->vecSize.x / 2, yoff) + PMONITOR->vecPosition);
+                child->setSize(Vector2D(PMONITOR->vecSize.x / 2, PMONITOR->vecSize.y / children.size()));
+
+                yoff += PMONITOR->vecSize.y / children.size();
+            }
+
+            // done
+            setAllWorkspaceWindowsDirtyByID(workspace);
+        }
+        break;
+
+    case LAYOUT_DWINDLE:
+        {
+            // get the master on the workspace
+            CWindow* pMasterWindow = nullptr;
+            for (auto& w : windows) {
+                if (w.getWorkspaceID() == workspace && w.getParentNodeID() == 0) {
+                    pMasterWindow = &w;
+                    break;
+                }
+            }
+
+            if (!pMasterWindow) {
+                return;
+            }
+
+            pMasterWindow->recalcSizePosRecursive();
+            setAllWorkspaceWindowsDirtyByID(workspace);
+        }
+        break;
+    
+    default:
+        break;
+    }
+    
 }
 
 void CWindowManager::calculateNewFloatingWindow(CWindow* pWindow) {
@@ -906,6 +1027,45 @@ void CWindowManager::closeWindowAllChecks(int64_t id) {
     g_pWindowManager->removeWindowFromVectorSafe(id);
 }
 
+void CWindowManager::fixMasterWorkspaceOnClosed(CWindow* pWindow) {
+    // get children and master
+    CWindow* pMaster = nullptr;
+    for (auto& w : windows) {
+        if (w.getWorkspaceID() == pWindow->getWorkspaceID() && w.getMaster()) {
+            pMaster = &w;
+            break;
+        }
+    }
+
+    if (!pMaster) {
+        Debug::log(ERR, "No master found on workspace???");
+        return;
+    }
+
+    // get children sorted
+    std::vector<CWindow*> children;
+    for (auto& w : windows) {
+        if (w.getWorkspaceID() == pWindow->getWorkspaceID() && !w.getMaster() && w.getDrawable() > 0 && w.getDrawable() != pWindow->getDrawable())
+            children.push_back(&w);
+    }
+    std::sort(children.begin(), children.end(), [](CWindow*& a, CWindow*& b) {
+        return a->getMasterChildIndex() < b->getMasterChildIndex();
+    });
+
+    // If closed window was master, set a new master.
+    if (pWindow->getMaster()) {
+        if (children.size() > 0) {
+            children[0]->setMaster(true);
+        }
+    } else {
+        // else fix the indices
+        for (long unsigned int i = pWindow->getMasterChildIndex() - 1; i < children.size(); ++i) {
+            // masterChildIndex = 1 for the first child
+            children[i]->setMasterChildIndex(i);
+        }
+    }
+}
+
 void CWindowManager::fixWindowOnClose(CWindow* pClosedWindow) {
     if (!pClosedWindow)
         return;
@@ -924,13 +1084,16 @@ void CWindowManager::fixWindowOnClose(CWindow* pClosedWindow) {
         return;
     }
 
+    // used by master layout
+    pClosedWindow->setDead(true);
+
+    // FIX TREE ----
+    // make the sibling replace the parent
     PSIBLING->setPosition(PPARENT->getPosition());
     PSIBLING->setSize(PPARENT->getSize());
-
-    // make the sibling replace the parent
     PSIBLING->setParentNodeID(PPARENT->getParentNodeID());
 
-    if (PPARENT->getParentNodeID() != 0 
+    if (PPARENT->getParentNodeID() != 0
         && getWindowFromDrawable(PPARENT->getParentNodeID())) {
             if (getWindowFromDrawable(PPARENT->getParentNodeID())->getChildNodeAID() == PPARENT->getDrawable()) {
                 getWindowFromDrawable(PPARENT->getParentNodeID())->setChildNodeAID(PSIBLING->getDrawable());
@@ -938,11 +1101,20 @@ void CWindowManager::fixWindowOnClose(CWindow* pClosedWindow) {
                 getWindowFromDrawable(PPARENT->getParentNodeID())->setChildNodeBID(PSIBLING->getDrawable());
             }
     }
+    // TREE FIXED ----
 
-    // Make the sibling eat the closed window
-    PSIBLING->setDirtyRecursive(true);
-    PSIBLING->recalcSizePosRecursive();
+    // Fix master stuff
+    const auto WORKSPACE = pClosedWindow->getWorkspaceID();
+    fixMasterWorkspaceOnClosed(pClosedWindow);
 
+    // recalc the workspace
+    if (ConfigManager::getInt("layout") == LAYOUT_MASTER)
+        recalcEntireWorkspace(WORKSPACE);
+    else {
+        PSIBLING->recalcSizePosRecursive();
+        PSIBLING->setDirtyRecursive(true);
+    }
+        
     // Remove the parent
     removeWindowFromVectorSafe(PPARENT->getDrawable());
 
@@ -1437,4 +1609,10 @@ void CWindowManager::refocusWindowOnClosed() {
     LastWindow = PWINDOW->getDrawable();
 
     setFocusedWindow(PWINDOW->getDrawable());
+}
+
+void CWindowManager::recalcAllWorkspaces() {
+    for (auto& workspace : workspaces) {
+        recalcEntireWorkspace(workspace.getID());
+    }
 }

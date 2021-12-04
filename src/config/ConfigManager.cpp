@@ -15,6 +15,8 @@ void ConfigManager::init() {
     configValues["gaps_out"].intValue = 20;
     configValues["rounding"].intValue = 5;
 
+    configValues["layout"].intValue = LAYOUT_DWINDLE;
+
     configValues["max_fps"].intValue = 60;
 
     configValues["bar:monitor"].intValue = 0;
@@ -324,12 +326,19 @@ void ConfigManager::loadConfigLoadVars() {
         ifs.close();
     }
 
-    g_pWindowManager->setAllWindowsDirty();
+    // recalc all workspaces
+    g_pWindowManager->recalcAllWorkspaces();
 
     // Reload the bar as well, don't load it before the default is loaded.
     if (loadBar && g_pWindowManager->statusBar) {
         g_pWindowManager->statusBar->destroy();
         g_pWindowManager->statusBar->setup(configValues["bar:monitor"].intValue);
+    }
+
+    // Ensure correct layout
+    if (configValues["layout"].intValue < 0 || configValues["layout"].intValue > 1) {
+        Debug::log(ERR, "Invalid layout ID, falling back to 0.");
+        configValues["layout"].intValue = 0;
     }
 
     loadBar = true;

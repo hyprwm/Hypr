@@ -3,6 +3,11 @@
 #include <map>
 #include "../utilities/Debug.hpp"
 
+enum ELayouts {
+    LAYOUT_DWINDLE = 0,
+    LAYOUT_MASTER
+};
+
 struct SConfigValue {
     int64_t intValue = -1;
     float floatValue = -1;

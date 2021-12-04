@@ -39,6 +39,7 @@ public:
     EXPOSED_MEMBER(Dirty, bool, b);
 
     void        setDirtyRecursive(bool);
+    // ONLY for dwindle layout!
     void        recalcSizePosRecursive();
 
     EXPOSED_MEMBER(Size, Vector2D, vec);
@@ -69,6 +70,11 @@ public:
 
     // ICCCM
     EXPOSED_MEMBER(CanKill, bool, b);
+
+    // Master layout
+    EXPOSED_MEMBER(Master, bool, b);
+    EXPOSED_MEMBER(MasterChildIndex, int, i);
+    EXPOSED_MEMBER(Dead, bool, b);
     
 
 private:

@@ -106,6 +106,10 @@ public:
     void                        updateActiveWindowName();
     void                        updateBarInfo();
 
+    int                         getWindowsOnWorkspace(const int&);
+
+    void                        recalcAllWorkspaces();
+
    private:
 
     // Internal WM functions that don't have to be exposed
@@ -122,6 +126,9 @@ public:
     xcb_visualtype_t*           setupColors(const int&);
     void                        updateRootCursor();
     void                        applyRoundedCornersToWindow(CWindow* pWindow);
+    SMonitor*                   getMonitorFromWorkspace(const int&);
+    void                        recalcEntireWorkspace(const int&);
+    void                        fixMasterWorkspaceOnClosed(CWindow* pWindow);
 };
 
 inline std::unique_ptr<CWindowManager> g_pWindowManager = std::make_unique<CWindowManager>();
