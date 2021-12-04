@@ -416,13 +416,15 @@ void CWindowManager::setFocusedWindow(xcb_drawable_t window) {
         if (g_pWindowManager->getWindowFromDrawable(window) && g_pWindowManager->getWindowFromDrawable(window)->getIsFloating()) {
             values[0] = XCB_STACK_MODE_ABOVE;
             xcb_configure_window(g_pWindowManager->DisplayConnection, window, XCB_CONFIG_WINDOW_STACK_MODE, values);
-
-            // Apply rounded corners, does all the checks inside.
-            // The border changed so let's not make it rectangular maybe
-            applyRoundedCornersToWindow(g_pWindowManager->getWindowFromDrawable(window));
         }
 
+        // Apply rounded corners, does all the checks inside.
+        // The border changed so let's not make it rectangular maybe
+        applyRoundedCornersToWindow(g_pWindowManager->getWindowFromDrawable(window));
+
         LastWindow = window;
+
+        applyRoundedCornersToWindow(g_pWindowManager->getWindowFromDrawable(window));
     }
 }
 
