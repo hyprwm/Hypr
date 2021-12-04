@@ -365,6 +365,9 @@ void CWindowManager::refreshDirtyWindows() {
                 Values[1] = (int)MONITOR->vecPosition.y;
                 xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, Values);
 
+                // Apply rounded corners, does all the checks inside
+                applyRoundedCornersToWindow(&window);
+
                 continue;
             }
 
@@ -378,11 +381,11 @@ void CWindowManager::refreshDirtyWindows() {
             Values[1] = (int)window.getRealPosition().y - ConfigManager::getInt("border_size");
             xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, Values);
 
+            Values[0] = (int)ConfigManager::getInt("border_size");
+            xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_BORDER_WIDTH, Values);
+
             // Focused special border.
             if (window.getDrawable() == LastWindow) {
-                Values[0] = (int)ConfigManager::getInt("border_size");
-                xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_BORDER_WIDTH, Values);
-
                 Values[0] = ConfigManager::getInt("col.active_border");
                 xcb_change_window_attributes(DisplayConnection, window.getDrawable(), XCB_CW_BORDER_PIXEL, Values);
             } else {
@@ -413,6 +416,10 @@ void CWindowManager::setFocusedWindow(xcb_drawable_t window) {
         if (g_pWindowManager->getWindowFromDrawable(window) && g_pWindowManager->getWindowFromDrawable(window)->getIsFloating()) {
             values[0] = XCB_STACK_MODE_ABOVE;
             xcb_configure_window(g_pWindowManager->DisplayConnection, window, XCB_CONFIG_WINDOW_STACK_MODE, values);
+
+            // Apply rounded corners, does all the checks inside.
+            // The border changed so let's not make it rectangular maybe
+            applyRoundedCornersToWindow(g_pWindowManager->getWindowFromDrawable(window));
         }
 
         LastWindow = window;
@@ -580,56 +587,95 @@ void CWindowManager::applyRoundedCornersToWindow(CWindow* pWindow) {
     if (!pWindow)
         return;
 
-    const auto ROUNDING = ConfigManager::getInt("rounding");
-
-    if (!ROUNDING)
-        return;
+    const auto ROUNDING = pWindow->getFullscreen() ? 0 : ConfigManager::getInt("rounding");
 
     const auto SHAPEQUERY = xcb_get_extension_data(DisplayConnection, &xcb_shape_id);
 
-    if (!SHAPEQUERY || !SHAPEQUERY->present || pWindow->getNoInterventions() || pWindow->getFullscreen())
+    if (!SHAPEQUERY || !SHAPEQUERY->present || pWindow->getNoInterventions())
         return;
 
-    
-    const xcb_pixmap_t PIXMAPID = xcb_generate_id(DisplayConnection);
-    xcb_create_pixmap(DisplayConnection, 1, PIXMAPID, pWindow->getDrawable(), pWindow->getRealSize().x, pWindow->getRealSize().y);
+    // Prepare values
 
-    const xcb_gcontext_t BLACKPIXEL = xcb_generate_id(DisplayConnection);
-    const xcb_gcontext_t WHITEPIXEL = xcb_generate_id(DisplayConnection);
+    const auto MONITOR = getMonitorFromWindow(pWindow);
+    const uint16_t W = pWindow->getFullscreen() ? MONITOR->vecSize.x : pWindow->getRealSize().x;
+    const uint16_t H = pWindow->getFullscreen() ? MONITOR->vecSize.y : pWindow->getRealSize().y;
+    const uint16_t BORDER = pWindow->getFullscreen() ? 0 : ConfigManager::getInt("border_size");
+    const uint16_t TOTALW = W + 2 * BORDER;
+    const uint16_t TOTALH = H + 2 * BORDER;
+
+    const auto RADIUS = ROUNDING + BORDER;
+    const auto DIAMETER = RADIUS == 0 ? 0 : RADIUS * 2 - 1;
+
+    const xcb_arc_t BOUNDINGARCS[] = {
+        {-1, -1, DIAMETER, DIAMETER, 0, 360 << 6},
+        {-1, TOTALH - DIAMETER, DIAMETER, DIAMETER, 0, 360 << 6},
+        {TOTALW - DIAMETER, -1, DIAMETER, DIAMETER, 0, 360 << 6},
+        {TOTALW - DIAMETER, TOTALH - DIAMETER, DIAMETER, DIAMETER, 0, 360 << 6},
+    };
+    const xcb_rectangle_t BOUNDINGRECTS[] = {
+        {RADIUS, 0, TOTALW - DIAMETER, TOTALH},
+        {0, RADIUS, TOTALW, TOTALH - DIAMETER},
+    };
+
+    const auto DIAMETERC = ROUNDING == 0 ? 0 : 2 * ROUNDING - 1;
+
+    xcb_arc_t CLIPPINGARCS[] = {
+        {-1, -1, DIAMETERC, DIAMETERC, 0, 360 << 6},
+        {-1, H - DIAMETERC, DIAMETERC, DIAMETERC, 0, 360 << 6},
+        {W - DIAMETERC, -1, DIAMETERC, DIAMETERC, 0, 360 << 6},
+        {W - DIAMETERC, H - DIAMETERC, DIAMETERC, DIAMETERC, 0, 360 << 6},
+    };
+    xcb_rectangle_t CLIPPINGRECTS[] = {
+        {ROUNDING, 0, W - DIAMETERC, H},
+        {0, ROUNDING, W, H - DIAMETERC},
+    };
+
+    // Values done
+    
+    // XCB
+
+    const xcb_pixmap_t PIXMAP1 = xcb_generate_id(DisplayConnection);
+    const xcb_pixmap_t PIXMAP2 = xcb_generate_id(DisplayConnection);
+
+    const xcb_gcontext_t BLACK = xcb_generate_id(DisplayConnection);
+    const xcb_gcontext_t WHITE = xcb_generate_id(DisplayConnection);
+
+    xcb_create_pixmap(DisplayConnection, 1, PIXMAP1, pWindow->getDrawable(), TOTALW, TOTALH);
+    xcb_create_pixmap(DisplayConnection, 1, PIXMAP2, pWindow->getDrawable(), W, H);
 
     Values[0] = 0;
     Values[1] = 0;
-    xcb_create_gc(DisplayConnection, BLACKPIXEL, PIXMAPID, XCB_GC_FOREGROUND, Values);
+    xcb_create_gc(DisplayConnection, BLACK, PIXMAP1, XCB_GC_FOREGROUND, Values);
     Values[0] = 1;
-    xcb_create_gc(DisplayConnection, WHITEPIXEL, PIXMAPID, XCB_GC_FOREGROUND, Values);
+    xcb_create_gc(DisplayConnection, WHITE, PIXMAP1, XCB_GC_FOREGROUND, Values);
 
-    const auto R = (uint16_t)(ROUNDING);
-    const auto D = (uint16_t)(2 * ROUNDING);
-    const auto H = (uint16_t)(pWindow->getRealSize().y);
-    const auto W = (uint16_t)(pWindow->getRealSize().x);
+    // XCB done
 
-    const xcb_arc_t ARCS[] = {
-        {0, 0, D, D, 0, 360 << 6},
-        {0, H - D - 1, D, D, 0, 360 << 6},
-        {W - D - 1, 0, D, D, 0, 360 << 6},
-        {W - D - 1, H - D - 1, D, D, 0, 360 << 6}
-    };
+    // Draw
 
-    const xcb_rectangle_t RECTANGLES[] = {
-        {R, 0, W - D, H},
-        {0, R, W, H - D}
-    };
+    xcb_rectangle_t BOUNDINGRECT = {0, 0, W + 2 * BORDER, H + 2 * BORDER};
+    xcb_poly_fill_rectangle(DisplayConnection, PIXMAP1, BLACK, 1, &BOUNDINGRECT);
+    xcb_poly_fill_rectangle(DisplayConnection, PIXMAP1, WHITE, 2, BOUNDINGRECTS);
+    xcb_poly_fill_arc(DisplayConnection, PIXMAP1, WHITE, 4, BOUNDINGARCS);
 
-    const xcb_rectangle_t WINDOWRECT = {0,0,W,H};
+    xcb_rectangle_t CLIPPINGRECT = {0, 0, W, H};
+    xcb_poly_fill_rectangle(DisplayConnection, PIXMAP2, BLACK, 1, &CLIPPINGRECT);
+    xcb_poly_fill_rectangle(DisplayConnection, PIXMAP2, WHITE, 2, CLIPPINGRECTS);
+    xcb_poly_fill_arc(DisplayConnection, PIXMAP2, WHITE, 4, CLIPPINGARCS);
 
-    xcb_poly_fill_rectangle(DisplayConnection, PIXMAPID, BLACKPIXEL, 1, &WINDOWRECT);
-    xcb_poly_fill_rectangle(DisplayConnection, PIXMAPID, WHITEPIXEL, 2, RECTANGLES);
-    xcb_poly_fill_arc(DisplayConnection, PIXMAPID, WHITEPIXEL, 4, ARCS);
+    // Draw done
 
-    xcb_shape_mask(DisplayConnection, XCB_SHAPE_SO_SET, XCB_SHAPE_SK_BOUNDING, pWindow->getDrawable(), 0, 0, PIXMAPID);
-    xcb_shape_mask(DisplayConnection, XCB_SHAPE_SO_SET, XCB_SHAPE_SK_CLIP, pWindow->getDrawable(), 0, 0, PIXMAPID);
+    // Shape
 
-    xcb_free_pixmap(DisplayConnection, PIXMAPID);
+    xcb_shape_mask(DisplayConnection, XCB_SHAPE_SO_SET, XCB_SHAPE_SK_BOUNDING, pWindow->getDrawable(), -BORDER, -BORDER, PIXMAP1);
+    xcb_shape_mask(DisplayConnection, XCB_SHAPE_SO_SET, XCB_SHAPE_SK_CLIP, pWindow->getDrawable(), 0, 0, PIXMAP2);
+
+    // Shape done
+
+    // Cleanup
+
+    xcb_free_pixmap(DisplayConnection, PIXMAP1);
+    xcb_free_pixmap(DisplayConnection, PIXMAP2);
 }
 
 void CWindowManager::setEffectiveSizePosUsingConfig(CWindow* pWindow) {
