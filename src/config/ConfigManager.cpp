@@ -15,6 +15,8 @@ void ConfigManager::init() {
     configValues["gaps_out"].intValue = 20;
     configValues["rounding"].intValue = 5;
 
+    configValues["focus_when_hover"].intValue = 1;
+
     configValues["layout"].intValue = LAYOUT_DWINDLE;
 
     configValues["max_fps"].intValue = 60;
@@ -109,6 +111,7 @@ void handleBind(const std::string& command, const std::string& value) {
     if (HANDLER == "killactive") dispatcher = KeybindManager::killactive;
     if (HANDLER == "fullscreen") dispatcher = KeybindManager::toggleActiveWindowFullscreen;
     if (HANDLER == "movewindow") dispatcher = KeybindManager::movewindow;
+    if (HANDLER == "movefocus") dispatcher = KeybindManager::movefocus;
     if (HANDLER == "movetoworkspace") dispatcher = KeybindManager::movetoworkspace;
     if (HANDLER == "workspace") dispatcher = KeybindManager::changeworkspace;
     if (HANDLER == "togglefloating") dispatcher = KeybindManager::toggleActiveWindowFloating;

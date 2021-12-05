@@ -74,6 +74,7 @@ public:
     void                        closeWindowAllChecks(int64_t);
 
     void                        moveActiveWindowTo(char);
+    void                        moveActiveFocusTo(char);
     void                        moveActiveWindowToWorkspace(int);
     void                        warpCursorTo(Vector2D);
 

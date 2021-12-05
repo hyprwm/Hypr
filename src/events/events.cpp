@@ -61,12 +61,19 @@ void Events::setThread() {
 void Events::eventEnter(xcb_generic_event_t* event) {
     const auto E = reinterpret_cast<xcb_enter_notify_event_t*>(event);
 
-    // Just focus it and update.
-    g_pWindowManager->setFocusedWindow(E->event);
 
-    if(const auto PENTERWINDOW = g_pWindowManager->getWindowFromDrawable(E->event)) {
-        PENTERWINDOW->setDirty(true);
-    }
+    const auto PENTERWINDOW = g_pWindowManager->getWindowFromDrawable(E->event);
+
+    if (!PENTERWINDOW)
+        return; // wut
+
+    // Only when focus_when_hover OR floating OR last window floating
+    if (ConfigManager::getInt("focus_when_hover") == 1
+        || PENTERWINDOW->getIsFloating()
+        || (g_pWindowManager->getWindowFromDrawable(g_pWindowManager->LastWindow) && g_pWindowManager->getWindowFromDrawable(g_pWindowManager->LastWindow)->getIsFloating()))
+            g_pWindowManager->setFocusedWindow(E->event);
+
+    PENTERWINDOW->setDirty(true);
 }
 
 void Events::eventLeave(xcb_generic_event_t* event) {

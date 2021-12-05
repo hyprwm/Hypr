@@ -403,8 +403,6 @@ void CWindowManager::refreshDirtyWindows() {
 
 void CWindowManager::setFocusedWindow(xcb_drawable_t window) {
     if (window && window != Screen->root) {
-        xcb_set_input_focus(DisplayConnection, XCB_INPUT_FOCUS_POINTER_ROOT, window, XCB_CURRENT_TIME);
-
         // Fix border from the old window that was in focus.
         Values[0] = ConfigManager::getInt("col.inactive_border");
         xcb_change_window_attributes(DisplayConnection, LastWindow, XCB_CW_BORDER_PIXEL, Values);
@@ -425,6 +423,9 @@ void CWindowManager::setFocusedWindow(xcb_drawable_t window) {
         LastWindow = window;
 
         applyRoundedCornersToWindow(g_pWindowManager->getWindowFromDrawable(window));
+
+        // set focus in X11
+        xcb_set_input_focus(DisplayConnection, XCB_INPUT_FOCUS_POINTER_ROOT, window, XCB_CURRENT_TIME);
     }
 }
 
@@ -1152,10 +1153,12 @@ CWindow* CWindowManager::getNeighborInDir(char dir) {
                     return &w;
                 break;
             case 't':
+            case 'u':
                 if (STICKS(POSA.y, POSB.y + SIZEB.y))
                     return &w;
                 break;
             case 'b':
+            case 'd':
                 if (STICKS(POSA.y + SIZEA.y, POSB.y))
                     return &w;
                 break;
@@ -1254,6 +1257,24 @@ void CWindowManager::moveActiveWindowTo(char dir) {
 
     CURRENTWINDOW->setDirty(true);
     neighbor->setDirty(true);
+
+    // finish by moving the cursor to the current window
+    warpCursorTo(CURRENTWINDOW->getPosition() + CURRENTWINDOW->getSize() / 2.f);
+}
+
+void CWindowManager::moveActiveFocusTo(char dir) {
+    const auto CURRENTWINDOW = getWindowFromDrawable(LastWindow);
+
+    if (!CURRENTWINDOW)
+        return;
+
+    const auto neighbor = getNeighborInDir(dir);
+
+    if (!neighbor)
+        return;
+
+    // move the focus
+    setFocusedWindow(neighbor->getDrawable());
 
     // finish by moving the cursor to the current window
     warpCursorTo(CURRENTWINDOW->getPosition() + CURRENTWINDOW->getSize() / 2.f);
@@ -1606,7 +1627,8 @@ void CWindowManager::getICCCMWMProtocols(CWindow* pWindow) {
 void CWindowManager::refocusWindowOnClosed() {
     const auto PWINDOW = findWindowAtCursor();
 
-    if (!PWINDOW)
+    // No window or last window valid
+    if (!PWINDOW || getWindowFromDrawable(LastWindow))
         return;
 
     LastWindow = PWINDOW->getDrawable();
