@@ -50,25 +50,16 @@ uint32_t KeybindManager::getKeyCodeFromName(std::string name) {
     return 0;
 }
 
-unsigned int KeybindManager::modToMask(MODS mod) {
-    switch(mod) {
-        case MOD_NONE:
-            return 0;
-        case MOD_SUPER:
-            return XCB_MOD_MASK_4;
-        case MOD_SHIFT:
-            return XCB_MOD_MASK_SHIFT;
-        case MOD_SHIFTSUPER:
-            return XCB_MOD_MASK_4 | XCB_MOD_MASK_SHIFT;
-        case MOD_SHIFTCTRL:
-            return XCB_MOD_MASK_SHIFT | XCB_MOD_MASK_CONTROL;
-        case MOD_CTRL:
-            return XCB_MOD_MASK_CONTROL;
-        case MOD_CTRLSUPER:
-            return XCB_MOD_MASK_CONTROL | XCB_MOD_MASK_4;
-    }
+unsigned int KeybindManager::modToMask(std::string mod) {
 
-    return 0;
+    unsigned int sum = 0;
+
+    if (CONTAINS(mod, "SUPER") || CONTAINS(mod, "MOD4"))    sum |= XCB_MOD_MASK_4;
+    if (CONTAINS(mod, "SHIFT"))                             sum |= XCB_MOD_MASK_SHIFT;
+    if (CONTAINS(mod, "CTRL"))                              sum |= XCB_MOD_MASK_CONTROL;
+    if (CONTAINS(mod, "ALT") || CONTAINS(mod, "MOD1"))      sum |= XCB_MOD_MASK_1;
+
+    return sum;
 }
 
 xcb_keysym_t KeybindManager::getKeysymFromKeycode(xcb_keycode_t keycode) {

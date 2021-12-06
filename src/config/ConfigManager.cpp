@@ -97,15 +97,6 @@ void handleBind(const std::string& command, const std::string& value) {
 
     const auto COMMAND = valueCopy;
 
-    MODS mod = MOD_NONE;
-
-    if (MOD == "SUPER") mod = MOD_SUPER;
-    else if (MOD == "SHIFT") mod = MOD_SHIFT;
-    else if (MOD == "SUPERSHIFT" || MOD == "SHIFTSUPER") mod = MOD_SHIFTSUPER;
-    else if (MOD == "SUPERCTRL" || MOD == "CTRLSUPER") mod = MOD_CTRLSUPER;
-    else if (MOD == "CTRL") mod = MOD_CTRL;
-    else if (MOD == "CTRLSHIFT" || MOD == "SHIFTCTRL") mod = MOD_SHIFTCTRL;
-
     Dispatcher dispatcher = nullptr;
     if (HANDLER == "exec") dispatcher = KeybindManager::call;
     if (HANDLER == "killactive") dispatcher = KeybindManager::killactive;
@@ -117,7 +108,7 @@ void handleBind(const std::string& command, const std::string& value) {
     if (HANDLER == "togglefloating") dispatcher = KeybindManager::toggleActiveWindowFloating;
 
     if (dispatcher)
-        KeybindManager::keybinds.push_back(Keybind(mod, KEY, COMMAND, dispatcher));
+        KeybindManager::keybinds.push_back(Keybind(KeybindManager::modToMask(MOD), KEY, COMMAND, dispatcher));
 }
 
 void handleRawExec(const std::string& command, const std::string& args) {
@@ -359,7 +350,7 @@ void ConfigManager::applyKeybindsToX() {
 
     for (auto& keybind : KeybindManager::keybinds) {
         xcb_grab_key(g_pWindowManager->DisplayConnection, 1, g_pWindowManager->Screen->root,
-                     KeybindManager::modToMask(keybind.getMod()), KeybindManager::getKeycodeFromKeysym(keybind.getKeysym()),
+                     keybind.getMod(), KeybindManager::getKeycodeFromKeysym(keybind.getKeysym()),
                      XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
     }
 
@@ -369,12 +360,12 @@ void ConfigManager::applyKeybindsToX() {
     xcb_grab_button(g_pWindowManager->DisplayConnection, 0,
                     g_pWindowManager->Screen->root, XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE,
                     XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, g_pWindowManager->Screen->root, XCB_NONE,
-                    1, KeybindManager::modToMask(MOD_SUPER));
+                    1, KeybindManager::modToMask("SUPER"));
 
     xcb_grab_button(g_pWindowManager->DisplayConnection, 0,
                     g_pWindowManager->Screen->root, XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE,
                     XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, g_pWindowManager->Screen->root, XCB_NONE,
-                    3, KeybindManager::modToMask(MOD_SUPER));
+                    3, KeybindManager::modToMask("SUPER"));
 
     xcb_flush(g_pWindowManager->DisplayConnection);
 }

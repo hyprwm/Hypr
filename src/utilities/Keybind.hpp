@@ -3,22 +3,12 @@
 
 typedef void (*Dispatcher)(std::string);
 
-enum MODS {
-    MOD_NONE = 0,
-    MOD_SUPER,
-    MOD_SHIFT,
-    MOD_SHIFTSUPER,
-    MOD_SHIFTCTRL,
-    MOD_CTRL,
-    MOD_CTRLSUPER
-};
-
 class Keybind {
 public:
-    Keybind(MODS, xcb_keysym_t, std::string, Dispatcher);
+    Keybind(unsigned int, xcb_keysym_t, std::string, Dispatcher);
     ~Keybind();
 
-    EXPOSED_MEMBER(Mod, MODS, i);
+    EXPOSED_MEMBER(Mod, unsigned int, i);
     EXPOSED_MEMBER(Keysym, xcb_keysym_t,);
     EXPOSED_MEMBER(Command, std::string, sz);
     EXPOSED_MEMBER(Dispatcher, Dispatcher, p);

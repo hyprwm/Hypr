@@ -9,7 +9,7 @@
 namespace KeybindManager {
     inline std::vector<Keybind> keybinds;
 
-    unsigned int        modToMask(MODS);
+    unsigned int        modToMask(std::string);
 
     Keybind*            findKeybindByKey(int mod, xcb_keysym_t keysym);
     xcb_keysym_t        getKeysymFromKeycode(xcb_keycode_t keycode);
