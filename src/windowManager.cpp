@@ -198,19 +198,52 @@ bool CWindowManager::handleEvent() {
         return false;
 
     xcb_flush(DisplayConnection);
+    
+    // recieve the event. Blocks.
+    recieveEvent();
+
+    // refresh and apply the parameters of all dirty windows.
+    refreshDirtyWindows();
+
+    // Sanity checks
+    for (const auto active : activeWorkspaces) {
+        sanityCheckOnWorkspace(active);
+    }
+
+    // remove unused workspaces
+    cleanupUnusedWorkspaces();
+
+    // Update last window name
+    updateActiveWindowName();
+
+    // Update the bar with the freshest stuff
+    updateBarInfo();
+
+    xcb_flush(DisplayConnection);
+
+    // Restore thread state
+    mainThreadBusy = false;
+
+    return true;
+}
+
+void CWindowManager::recieveEvent() {
     const auto ev = xcb_wait_for_event(DisplayConnection);
     if (ev != NULL) {
         while (animationUtilBusy) {
-            ; // wait for it to finish
+            ;  // wait for it to finish
         }
 
         // Set thread state, halt animations until done.
         mainThreadBusy = true;
 
         // Read from the bar
-        IPCRecieveMessageM(m_sIPCBarPipeOut.szPipeName);
+        if (!g_pWindowManager->statusBar)
+            IPCRecieveMessageM(m_sIPCBarPipeOut.szPipeName);
 
-        switch (ev->response_type & ~0x80) {
+        const auto EVENTCODE = ev->response_type & ~0x80;
+
+        switch (EVENTCODE) {
             case XCB_ENTER_NOTIFY:
                 Events::eventEnter(ev);
                 Debug::log(LOG, "Event dispatched ENTER");
@@ -241,7 +274,7 @@ bool CWindowManager::handleEvent() {
                 break;
             case XCB_MOTION_NOTIFY:
                 Events::eventMotionNotify(ev);
-                //Debug::log(LOG, "Event dispatched MOTION_NOTIFY"); // Spam!!
+                // Debug::log(LOG, "Event dispatched MOTION_NOTIFY"); // Spam!!
                 break;
             case XCB_EXPOSE:
                 Events::eventExpose(ev);
@@ -251,39 +284,20 @@ bool CWindowManager::handleEvent() {
                 Events::eventKeyPress(ev);
                 Debug::log(LOG, "Event dispatched KEY_PRESS");
                 break;
+            case XCB_CLIENT_MESSAGE:
+                Events::eventClientMessage(ev);
+                Debug::log(LOG, "Event dispatched CLIENT_MESSAGE");
+                break;
 
             default:
-                if (ev->response_type & ~0x80 != 14)
+
+                if ((EVENTCODE != 14) && (EVENTCODE != 13) && (EVENTCODE != 0) && (EVENTCODE != 22))
                     Debug::log(WARN, "Unknown event: " + std::to_string(ev->response_type & ~0x80));
                 break;
         }
 
         free(ev);
     }
-
-    // refresh and apply the parameters of all dirty windows.
-    refreshDirtyWindows();
-
-    // Sanity checks
-    for (const auto active : activeWorkspaces) {
-        sanityCheckOnWorkspace(active);
-    }
-
-    // remove unused workspaces
-    cleanupUnusedWorkspaces();
-
-    // Update last window name
-    updateActiveWindowName();
-
-    // Update the bar with the freshest stuff
-    updateBarInfo();
-
-    xcb_flush(DisplayConnection);
-
-    // Restore thread state
-    mainThreadBusy = false;
-
-    return true;
 }
 
 void CWindowManager::cleanupUnusedWorkspaces() {

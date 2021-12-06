@@ -16,6 +16,7 @@
 #include "utilities/XCBProps.hpp"
 #include "ewmh/ewmh.hpp"
 #include "bar/Bar.hpp"
+#include "utilities/Tray.hpp"
 
 #include "ipc/ipc.hpp"
 
@@ -51,6 +52,8 @@ public:
     Vector2D                    lastKnownBarPosition = {-1,-1};
     uint64_t                    barWindowID = 0;
     GThread*                    barThread; /* Well right now anything but the bar but lol */
+    
+    std::vector<CTrayClient>    trayclients;
 
     std::atomic<bool>           mainThreadBusy = false;
     std::atomic<bool>           animationUtilBusy = false;
@@ -64,6 +67,7 @@ public:
 
     void                        setupManager();
     bool                        handleEvent();
+    void                        recieveEvent();
     void                        refreshDirtyWindows();
 
     void                        setFocusedWindow(xcb_drawable_t);
@@ -111,7 +115,7 @@ public:
 
     void                        recalcAllWorkspaces();
 
-   private:
+private:
 
     // Internal WM functions that don't have to be exposed
 
@@ -181,15 +185,13 @@ inline std::map<std::string, xcb_atom_t> HYPRATOMS = {
     HYPRATOM("WM_CLIENT_LEADER"),
     HYPRATOM("WM_TAKE_FOCUS"),
     HYPRATOM("WM_WINDOW_ROLE"),
-    HYPRATOM("I3_SOCKET_PATH"),
-    HYPRATOM("I3_CONFIG_PATH"),
-    HYPRATOM("I3_SYNC"),
-    HYPRATOM("I3_SHMLOG_PATH"),
-    HYPRATOM("I3_PID"),
-    HYPRATOM("I3_LOG_STREAM_SOCKET_PATH"),
-    HYPRATOM("I3_FLOATING_WINDOW"),
     HYPRATOM("_NET_REQUEST_FRAME_EXTENTS"),
     HYPRATOM("_NET_FRAME_EXTENTS"),
     HYPRATOM("_MOTIF_WM_HINTS"),
     HYPRATOM("WM_CHANGE_STATE"),
+    HYPRATOM("_NET_SYSTEM_TRAY_OPCODE"),
+    HYPRATOM("_NET_SYSTEM_TRAY_COLORS"),
+    HYPRATOM("_NET_SYSTEM_TRAY_VISUAL"),
+    HYPRATOM("_NET_SYSTEM_TRAY_ORIENTATION"),
+    HYPRATOM("_XEMBED_INFO"),
     HYPRATOM("MANAGER")};

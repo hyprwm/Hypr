@@ -11,6 +11,12 @@ bool isParentDead() {
     return PPID == 1;
 }
 
+void parseEvent() {
+    while(1) {
+        g_pWindowManager->recieveEvent();
+    }
+}
+
 int64_t barMainThread() {
     // Main already created all the pipes
 
@@ -18,14 +24,14 @@ int64_t barMainThread() {
 
     // Well now this is the init
     // it's pretty tricky because we only need to init the stuff we need
-    g_pWindowManager->DisplayConnection = xcb_connect(NULL, NULL);
+    g_pWindowManager->DisplayConnection = xcb_connect(NULL, &barScreen);
     if (const auto RET = xcb_connection_has_error(g_pWindowManager->DisplayConnection); RET != 0) {
         Debug::log(CRIT, "Connection Failed! Return: " + std::to_string(RET));
         return RET;
     }
 
     // Screen
-    g_pWindowManager->Screen = xcb_setup_roots_iterator(xcb_get_setup(g_pWindowManager->DisplayConnection)).data;
+    g_pWindowManager->Screen = xcb_aux_get_screen(g_pWindowManager->DisplayConnection, barScreen);
 
     if (!g_pWindowManager->Screen) {
         Debug::log(CRIT, "Screen was null!");
@@ -69,6 +75,11 @@ int64_t barMainThread() {
 
     Debug::log(LOG, "Bar init Phase 2 done.");
 
+    // Start the parse event thread
+    std::thread([=]() {
+        parseEvent();
+    }).detach();
+
     // Init config manager
     ConfigManager::init();
 
@@ -77,6 +88,9 @@ int64_t barMainThread() {
     Debug::log(LOG, "Bar setup finished!");
 
     int lazyUpdateCounter = 0;
+
+    // setup the tray so apps send to us
+    STATUSBAR.setupTray();
 
     while (1) {
 
@@ -130,6 +144,142 @@ void CStatusBar::destroyModule(SBarModule* module) {
         xcb_free_gc(g_pWindowManager->DisplayConnection, module->bgcontext);
 }
 
+void CStatusBar::setupTray() {
+    Debug::log(LOG, "Setting up tray!");
+
+    char atomName[strlen("_NET_SYSTEM_TRAY_S") + 11];
+
+    snprintf(atomName, strlen("_NET_SYSTEM_TRAY_S") + 11, "_NET_SYSTEM_TRAY_S%d", barScreen);
+
+    // init the atom
+    const auto TRAYCOOKIE = xcb_intern_atom(g_pWindowManager->DisplayConnection, 0, strlen(atomName), atomName);
+
+    trayWindowID = xcb_generate_id(g_pWindowManager->DisplayConnection);
+
+    uint32_t values[] = {g_pWindowManager->Screen->black_pixel, g_pWindowManager->Screen->black_pixel, 1, g_pWindowManager->Colormap};
+
+    xcb_create_window(g_pWindowManager->DisplayConnection, g_pWindowManager->Depth, trayWindowID,
+                      g_pWindowManager->Screen->root, -1, -1, 1, 1, 0,
+                      XCB_WINDOW_CLASS_INPUT_OUTPUT, g_pWindowManager->VisualType->visual_id,
+                      XCB_CW_BACK_PIXEL | XCB_CW_BORDER_PIXEL | XCB_CW_OVERRIDE_REDIRECT | XCB_CW_COLORMAP, 
+                      values);
+
+    const uint32_t ORIENTATION = 0; // Horizontal
+    xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, trayWindowID,
+                        HYPRATOMS["_NET_SYSTEM_TRAY_ORIENTATION"], XCB_ATOM_CARDINAL,
+                        32, 1, &ORIENTATION);
+
+    xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, trayWindowID,
+                        HYPRATOMS["_NET_SYSTEM_TRAY_VISUAL"], XCB_ATOM_VISUALID,
+                        32, 1, &g_pWindowManager->VisualType->visual_id);
+
+    // COLORS
+
+    // Check if the tray module is active
+    SBarModule* pBarModule = nullptr;
+    for (auto& mod : modules) {
+        if (mod.value == "tray") {
+            pBarModule = &mod;
+            break;
+        }
+    }
+
+    if (pBarModule) {
+        // init colors
+        const auto R = (uint16_t)(RED(pBarModule->bgcolor) * 255.f);
+        const auto G = (uint16_t)(GREEN(pBarModule->bgcolor) * 255.f);
+        const auto B = (uint16_t)(BLUE(pBarModule->bgcolor) * 255.f);
+
+        const unsigned short TRAYCOLORS[] = {
+            R, G, B, R, G, B, R, G, B, R, G, B // Foreground, Error, Warning, Success
+        };
+
+        xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, trayWindowID,
+                            HYPRATOMS["_NET_SYSTEM_TRAY_COLORS"], XCB_ATOM_CARDINAL, 32, 12, TRAYCOLORS);
+    }
+
+    //
+
+    const auto TRAYREPLY = xcb_intern_atom_reply(g_pWindowManager->DisplayConnection, TRAYCOOKIE, NULL);
+
+    if (!TRAYREPLY) {
+        Debug::log(ERR, "Tray reply NULL! Aborting tray...");
+        free(TRAYREPLY);
+        return;
+    }
+
+    // set the owner and check
+    xcb_set_selection_owner(g_pWindowManager->DisplayConnection, trayWindowID, TRAYREPLY->atom, XCB_CURRENT_TIME);
+
+    const auto SELCOOKIE = xcb_get_selection_owner(g_pWindowManager->DisplayConnection, TRAYREPLY->atom);
+    const auto SELREPLY = xcb_get_selection_owner_reply(g_pWindowManager->DisplayConnection, SELCOOKIE, NULL);
+
+    if (!SELREPLY) {
+        Debug::log(ERR, "Selection owner reply NULL! Aborting tray...");
+        free(SELREPLY);
+        free(TRAYREPLY);
+        return;
+    }
+
+    if (SELREPLY->owner != trayWindowID) {
+        Debug::log(ERR, "Couldn't set the Tray owner, maybe a different tray is running??");
+        free(SELREPLY);
+        free(TRAYREPLY);
+        return;
+    }
+
+    free(SELREPLY);
+    free(TRAYREPLY);
+
+    Debug::log(LOG, "Tray setup done, sending message!");
+
+    uint8_t buf[32] = {NULL};
+    xcb_client_message_event_t* event = (xcb_client_message_event_t*)buf;
+
+    event->response_type = XCB_CLIENT_MESSAGE;
+    event->window = g_pWindowManager->Screen->root;
+    event->type = HYPRATOMS["MANAGER"];
+    event->format = 32;
+    event->data.data32[0] = 0L;
+    event->data.data32[1] = TRAYREPLY->atom;
+    event->data.data32[2] = trayWindowID;
+
+    xcb_send_event(g_pWindowManager->DisplayConnection, 0, g_pWindowManager->Screen->root, 0xFFFFFF, (char*)buf);
+
+    Debug::log(LOG, "Tray message sent!");
+}
+
+void CStatusBar::fixTrayOnCreate() {
+    if (m_bHasTray) {
+        for (auto& tray : g_pWindowManager->trayclients) {
+            xcb_reparent_window(g_pWindowManager->DisplayConnection, tray.window, g_pWindowManager->statusBar->getWindowID(), 0, 0);
+            xcb_map_window(g_pWindowManager->DisplayConnection, tray.window);
+            tray.hidden = false;
+        }
+    } else {
+        uint32_t values[2];
+
+        values[0] = 0;
+        values[1] = 0;
+
+        for (auto& tray : g_pWindowManager->trayclients) {
+            tray.hidden = true;
+            values[0] = 0;
+            values[1] = 0;
+            xcb_configure_window(g_pWindowManager->DisplayConnection, tray.window, XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, values);
+            values[0] = 30000;
+            values[1] = 30000;
+            xcb_configure_window(g_pWindowManager->DisplayConnection, tray.window, XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, values);
+        }
+    }
+}
+
+void CStatusBar::saveTrayOnDestroy() {
+    for (auto& tray : g_pWindowManager->trayclients) {
+        xcb_reparent_window(g_pWindowManager->DisplayConnection, tray.window, g_pWindowManager->Screen->root, -999, -999);
+    }
+}
+
 void CStatusBar::setup(int MonitorID) {
     Debug::log(LOG, "Creating the bar!");
 
@@ -137,7 +287,15 @@ void CStatusBar::setup(int MonitorID) {
         MonitorID = 0;
         Debug::log(ERR, "Incorrect value in MonitorID for the bar. Setting to 0.");
     }
-        
+
+    m_bHasTray = false;
+    for (auto& mod : g_pWindowManager->statusBar->modules) {
+        if (mod.value == "tray") {
+            m_bHasTray = true;
+            break;
+        }
+    }
+
     const auto MONITOR = g_pWindowManager->monitors[MonitorID];
 
     m_iMonitorID = MonitorID;
@@ -191,10 +349,15 @@ void CStatusBar::setup(int MonitorID) {
                                                m_vecSize.x, m_vecSize.y);
     m_pCairo = cairo_create(m_pCairoSurface);
     cairo_surface_destroy(m_pCairoSurface);
+
+    // fix tray
+    fixTrayOnCreate();
 }
 
 void CStatusBar::destroy() {
     Debug::log(LOG, "Destroying the bar!");
+
+    saveTrayOnDestroy();
 
     xcb_close_font(g_pWindowManager->DisplayConnection, m_mContexts["HITEXT"].Font);
     xcb_destroy_window(g_pWindowManager->DisplayConnection, m_iWindowID);
@@ -285,7 +448,19 @@ void CStatusBar::draw() {
     //
     //
     //
-    
+
+    // fix the fucking tray
+    if (!m_bHasTray) {
+        uint32_t values[2];
+        for (auto& tray : g_pWindowManager->trayclients) {
+            tray.hidden = true;
+            values[0] = 30000;
+            values[1] = 30000;
+            xcb_configure_window(g_pWindowManager->DisplayConnection, tray.window, XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, values);
+        }
+    }
+
+
     cairo_surface_flush(m_pCairoSurface);
 
     xcb_copy_area(g_pWindowManager->DisplayConnection, m_iPixmap, m_iWindowID, m_mContexts["BG"].GContext, 
@@ -320,10 +495,58 @@ int CStatusBar::drawWorkspacesModule(SBarModule* mod, int off) {
     return drawnWorkspaces * m_vecSize.y;
 }
 
+int CStatusBar::drawTrayModule(SBarModule* mod, int off) {
+
+    const auto PAD = 2;
+
+    const auto ELEMENTWIDTH = (m_vecSize.y - 2 < 1 ? 1 : m_vecSize.y - 2);
+
+    const auto MODULEWIDTH = g_pWindowManager->trayclients.size() * (ELEMENTWIDTH + PAD);
+
+    Vector2D position;
+    switch (mod->alignment) {
+        case LEFT:
+            position = Vector2D(off, 0);
+            break;
+        case RIGHT:
+            position = Vector2D(m_vecSize.x - off - MODULEWIDTH, 0);
+            break;
+        case CENTER:
+            position = Vector2D(m_vecSize.x / 2.f - (MODULEWIDTH) / 2.f, 0);
+            break;
+    }
+
+    // draw tray
+
+    if (MODULEWIDTH < 1)
+        return 0;
+
+    drawCairoRectangle(position, Vector2D(MODULEWIDTH, m_vecSize.y), mod->bgcolor);
+
+    int i = 0;
+    for (auto& tray : g_pWindowManager->trayclients) {
+
+        if (tray.hidden)
+            continue;
+
+        uint32_t values[] = {(int)(position.x + (i * (ELEMENTWIDTH + PAD)) + PAD / 2.f), (int)position.y + 1, (int)XCB_STACK_MODE_ABOVE};
+
+        xcb_configure_window(g_pWindowManager->DisplayConnection, g_pWindowManager->trayclients[i].window,
+                             XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_STACK_MODE, values);
+
+        ++i;
+    }
+
+    return MODULEWIDTH;
+}
+
 int CStatusBar::drawModule(SBarModule* mod, int off) {
 
     if (mod->isPad)
         return mod->pad;
+
+    if (mod->value == "tray")
+        return drawTrayModule(mod, off);
 
     const int PAD = ConfigManager::getInt("bar:mod_pad_in");
 
@@ -362,4 +585,24 @@ int CStatusBar::drawModule(SBarModule* mod, int off) {
     drawText(position + Vector2D(PAD / 2 + ICONWIDTH, getTextHalfY()), mod->valueCalculated, mod->color, ConfigManager::getString("bar:font.main"));
 
     return MODULEWIDTH + ICONWIDTH;
+}
+
+void CStatusBar::ensureTrayClientDead(xcb_window_t window) {
+    auto temp = g_pWindowManager->trayclients;
+
+    g_pWindowManager->trayclients.clear();
+
+    for (auto& trayitem : temp) {
+        if (trayitem.window != window)
+            g_pWindowManager->trayclients.push_back(trayitem);
+    }
+
+    Debug::log(LOG, "Ensured client dead (Bar, Tray)");
+}
+
+void CStatusBar::ensureTrayClientHidden(xcb_window_t window, bool hide) {
+    for (auto& trayitem : g_pWindowManager->trayclients) {
+        if (trayitem.window == window)
+            trayitem.hidden = hide;
+    }
 }

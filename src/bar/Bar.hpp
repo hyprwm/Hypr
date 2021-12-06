@@ -7,6 +7,8 @@
 #include "BarCommands.hpp"
 #include <chrono>
 
+inline int barScreen = 0;
+
 struct SDrawingContext {
     xcb_gcontext_t      GContext;
     xcb_font_t          Font;
@@ -45,12 +47,16 @@ public:
     EXPOSED_MEMBER(LastWindowName, std::string, sz);
     EXPOSED_MEMBER(LastWindowClass, std::string, sz);
     EXPOSED_MEMBER(IsCovered, bool, b);
+    EXPOSED_MEMBER(HasTray, bool, b);
 
     void                draw();
     void                setup(int MonitorID);
     void                destroy();
     void                setupModule(SBarModule*);
     void                destroyModule(SBarModule*);
+    void                ensureTrayClientDead(xcb_window_t);
+    void                ensureTrayClientHidden(xcb_window_t, bool);
+    void                setupTray();
 
     std::vector<int>    openWorkspaces;
     EXPOSED_MEMBER(CurrentWorkspace, int, i);
@@ -77,6 +83,12 @@ private:
     int                 getTextHalfY();
 
     std::unordered_map<std::string, SDrawingContext> m_mContexts;
+
+
+    void                fixTrayOnCreate();
+    void                saveTrayOnDestroy();
+    int                 drawTrayModule(SBarModule*, int);
+    xcb_window_t        trayWindowID = 0;
 };
 
 // Main thread for the bar. Is only initted once in main.cpp so we can do this.

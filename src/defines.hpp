@@ -80,3 +80,6 @@
 #define BLUE(c) ((double)(((c)) & 0xff) / 255.0)
 
 #define CONTAINS(s, f) s.find(f) != std::string::npos
+
+#define RETURNIFBAR  if (g_pWindowManager->statusBar) return;
+#define RETURNIFMAIN if (!g_pWindowManager->statusBar) return;

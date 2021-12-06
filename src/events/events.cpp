@@ -49,17 +49,12 @@ void Events::setThread() {
         Debug::log(ERR, "Gthread failed!");
         return;
     }
-
-    /*g_pWindowManager->barThread = new std::thread([&]() {
-        for (;;) {
-            handle();
-            std::this_thread::sleep_for(std::chrono::milliseconds(1000 / ConfigManager::getInt("max_fps")));
-        }
-    });*/
 }
 
 void Events::eventEnter(xcb_generic_event_t* event) {
     const auto E = reinterpret_cast<xcb_enter_notify_event_t*>(event);
+
+    RETURNIFBAR;
 
 
     const auto PENTERWINDOW = g_pWindowManager->getWindowFromDrawable(E->event);
@@ -79,11 +74,19 @@ void Events::eventEnter(xcb_generic_event_t* event) {
 void Events::eventLeave(xcb_generic_event_t* event) {
     const auto E = reinterpret_cast<xcb_leave_notify_event_t*>(event);
 
+    RETURNIFBAR;
+
     //
 }
 
 void Events::eventDestroy(xcb_generic_event_t* event) {
     const auto E = reinterpret_cast<xcb_destroy_notify_event_t*>(event);
+
+    // let bar check if it wasnt a tray item
+    if (g_pWindowManager->statusBar)
+        g_pWindowManager->statusBar->ensureTrayClientDead(E->window);
+
+    RETURNIFBAR;
 
     g_pWindowManager->closeWindowAllChecks(E->window);
 
@@ -93,6 +96,12 @@ void Events::eventDestroy(xcb_generic_event_t* event) {
 
 void Events::eventUnmapWindow(xcb_generic_event_t* event) {
     const auto E = reinterpret_cast<xcb_unmap_notify_event_t*>(event);
+
+    // let bar check if it wasnt a tray item
+    if (g_pWindowManager->statusBar)
+        g_pWindowManager->statusBar->ensureTrayClientHidden(E->window, true);
+
+    RETURNIFBAR;
 
     g_pWindowManager->closeWindowAllChecks(E->window);
 
@@ -330,6 +339,12 @@ CWindow* Events::remapWindow(int windowID, bool wasfloating, int forcemonitor) {
 void Events::eventMapWindow(xcb_generic_event_t* event) {
     const auto E = reinterpret_cast<xcb_map_request_event_t*>(event);
 
+    // let bar check if it wasnt a tray item
+    if (g_pWindowManager->statusBar)
+        g_pWindowManager->statusBar->ensureTrayClientHidden(E->window, false);
+
+    RETURNIFBAR;
+
     // Map the window
     xcb_map_window(g_pWindowManager->DisplayConnection, E->window);
 
@@ -362,6 +377,8 @@ void Events::eventMapWindow(xcb_generic_event_t* event) {
 void Events::eventButtonPress(xcb_generic_event_t* event) {
     const auto E = reinterpret_cast<xcb_button_press_event_t*>(event);
 
+    RETURNIFBAR;
+
     // mouse down!
     g_pWindowManager->mouseKeyDown = E->detail;
     xcb_grab_pointer(g_pWindowManager->DisplayConnection, 0, g_pWindowManager->Screen->root, XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_BUTTON_MOTION | XCB_EVENT_MASK_POINTER_MOTION_HINT,
@@ -379,6 +396,8 @@ void Events::eventButtonPress(xcb_generic_event_t* event) {
 void Events::eventButtonRelease(xcb_generic_event_t* event) {
     const auto E = reinterpret_cast<xcb_button_release_event_t*>(event);
 
+    RETURNIFBAR;
+
     // ungrab the mouse ptr
     xcb_ungrab_pointer(g_pWindowManager->DisplayConnection, XCB_CURRENT_TIME);
     const auto PACTINGWINDOW = g_pWindowManager->getWindowFromDrawable(g_pWindowManager->actingOnWindowFloating);
@@ -390,6 +409,8 @@ void Events::eventButtonRelease(xcb_generic_event_t* event) {
 
 void Events::eventKeyPress(xcb_generic_event_t* event) {
     const auto E = reinterpret_cast<xcb_key_press_event_t*>(event);
+
+    RETURNIFBAR;
 
     const auto KEYSYM = KeybindManager::getKeysymFromKeycode(E->detail);
 
@@ -404,6 +425,8 @@ void Events::eventKeyPress(xcb_generic_event_t* event) {
 
 void Events::eventMotionNotify(xcb_generic_event_t* event) {
     const auto E = reinterpret_cast<xcb_motion_notify_event_t*>(event);
+
+    RETURNIFBAR;
 
     if (!g_pWindowManager->mouseKeyDown)
         return; // mouse up.
@@ -463,4 +486,89 @@ void Events::eventExpose(xcb_generic_event_t* event) {
     const auto E = reinterpret_cast<xcb_expose_event_t*>(event);
 
     // nothing
+}
+
+void Events::eventClientMessage(xcb_generic_event_t* event) {
+    const auto E = reinterpret_cast<xcb_client_message_event_t*>(event);
+
+    RETURNIFMAIN; // Only for the bar
+
+    // Tray clients
+
+    if (E->type == HYPRATOMS["_NET_SYSTEM_TRAY_OPCODE"] && E->format == 32) {
+        // Tray request!
+
+        Debug::log(LOG, "Docking a window to the tray!");
+
+        if (E->data.data32[1] == 0) { // Request dock
+            const xcb_window_t CLIENT = E->data.data32[2];
+
+            uint32_t values[3] = {0,0,0};
+
+            values[0] =  XCB_EVENT_MASK_PROPERTY_CHANGE | XCB_EVENT_MASK_STRUCTURE_NOTIFY | XCB_EVENT_MASK_RESIZE_REDIRECT;
+
+            xcb_change_window_attributes(g_pWindowManager->DisplayConnection, CLIENT,
+                                        XCB_CW_EVENT_MASK, values);
+
+            // get XEMBED
+
+            const auto XEMBEDCOOKIE = xcb_get_property(g_pWindowManager->DisplayConnection, 0, CLIENT, HYPRATOMS["_XEMBED_INFO"],
+                                                        XCB_GET_PROPERTY_TYPE_ANY, 0, 64);
+
+            xcb_generic_error_t* err;
+            const auto XEMBEDREPLY  = xcb_get_property_reply(g_pWindowManager->DisplayConnection, XEMBEDCOOKIE, &err);
+
+            if (!XEMBEDREPLY || err || XEMBEDREPLY->length == 0) {
+                Debug::log(ERR, "Tray dock opcode recieved with no XEmbed?");
+                if (err)
+                    Debug::log(ERR, "Error code: " + std::to_string(err->error_code));
+                free(XEMBEDREPLY);
+                return;
+            }
+
+            const uint32_t* XEMBEDPROP = (uint32_t*)xcb_get_property_value(XEMBEDREPLY);
+            Debug::log(LOG, "XEmbed recieved with format " + std::to_string(XEMBEDREPLY->format) + ", length " + std::to_string(XEMBEDREPLY->length)
+                                    + ", version " + std::to_string(XEMBEDPROP[0]) + ", flags " + std::to_string(XEMBEDPROP[1]));
+
+            const auto XEMBEDVERSION = XEMBEDPROP[0] > 1 ? 1 : XEMBEDPROP[0];
+
+            free(XEMBEDREPLY);
+
+            xcb_reparent_window(g_pWindowManager->DisplayConnection, CLIENT, g_pWindowManager->statusBar->getWindowID(), 0, 0);
+        
+            // icon sizes are barY - 2 - pad: 1
+            values[0] = ConfigManager::getInt("bar:height") - 2 < 1 ? 1 : ConfigManager::getInt("bar:height") - 2;
+            values[1] = values[0];
+
+            xcb_configure_window(g_pWindowManager->DisplayConnection, CLIENT, XCB_CONFIG_WINDOW_HEIGHT | XCB_CONFIG_WINDOW_WIDTH, values);
+
+
+            // Notify the thing we did it
+            uint8_t buf[32] = {NULL};
+            xcb_client_message_event_t* event = (xcb_client_message_event_t*)buf;
+            event->response_type = XCB_CLIENT_MESSAGE;
+            event->window = CLIENT;
+            event->type = HYPRATOMS["_XEMBED"];
+            event->format = 32;
+            event->data.data32[0] = XCB_CURRENT_TIME;
+            event->data.data32[1] = 0;
+            event->data.data32[2] = g_pWindowManager->statusBar->getWindowID();
+            event->data.data32[3] = XEMBEDVERSION;
+            xcb_send_event(g_pWindowManager->DisplayConnection, 0, CLIENT, XCB_EVENT_MASK_NO_EVENT, (char*)event);
+
+            // put it into the save set
+            xcb_change_save_set(g_pWindowManager->DisplayConnection, XCB_SET_MODE_INSERT, CLIENT);
+
+            // make a tray client
+            CTrayClient newTrayClient;
+            newTrayClient.window = CLIENT;
+            newTrayClient.XEVer = XEMBEDVERSION;
+
+            g_pWindowManager->trayclients.push_back(newTrayClient);
+
+            xcb_map_window(g_pWindowManager->DisplayConnection, CLIENT);
+        }
+    }
+    
+
 }
