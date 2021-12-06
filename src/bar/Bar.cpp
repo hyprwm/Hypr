@@ -531,7 +531,7 @@ int CStatusBar::drawTrayModule(SBarModule* mod, int off) {
 
         uint32_t values[] = {(int)(position.x + (i * (ELEMENTWIDTH + PAD)) + PAD / 2.f), (int)position.y + 1, (int)XCB_STACK_MODE_ABOVE};
 
-        xcb_configure_window(g_pWindowManager->DisplayConnection, g_pWindowManager->trayclients[i].window,
+        xcb_configure_window(g_pWindowManager->DisplayConnection, tray.window,
                              XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_STACK_MODE, values);
 
         ++i;
