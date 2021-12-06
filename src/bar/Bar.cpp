@@ -534,6 +534,14 @@ int CStatusBar::drawTrayModule(SBarModule* mod, int off) {
         xcb_configure_window(g_pWindowManager->DisplayConnection, tray.window,
                              XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_STACK_MODE, values);
 
+        
+        // fix the size
+        values[0] = ELEMENTWIDTH;
+        values[1] = values[0];
+
+        xcb_configure_window(g_pWindowManager->DisplayConnection, tray.window,
+                             XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, values);
+
         ++i;
     }
 
