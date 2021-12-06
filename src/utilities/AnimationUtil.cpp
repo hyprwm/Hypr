@@ -13,6 +13,7 @@ void AnimationUtil::move() {
     // Now we are (or should be, lul) thread-safe.
     for (auto& window : g_pWindowManager->windows) {
         // check if window needs an animation.
+        window.setIsAnimated(false);
 
         if (ConfigManager::getInt("anim.enabled") == 0 || window.getIsFloating()) {
             // Disabled animations. instant warps.
@@ -31,6 +32,7 @@ void AnimationUtil::move() {
 
         if (VECTORDELTANONZERO(window.getRealPosition(), window.getEffectivePosition())) {
             Debug::log(LOG, "Updating position animations for " + std::to_string(window.getDrawable()) + " delta: " + std::to_string(ANIMATIONSPEED));
+            window.setIsAnimated(true);
 
             // we need to update it.
             window.setDirty(true);
@@ -44,6 +46,7 @@ void AnimationUtil::move() {
 
         if (VECTORDELTANONZERO(window.getRealSize(), window.getEffectiveSize())) {
             Debug::log(LOG, "Updating size animations for " + std::to_string(window.getDrawable()) + " delta: " + std::to_string(ANIMATIONSPEED));
+            window.setIsAnimated(true);
 
             // we need to update it.
             window.setDirty(true);
@@ -53,6 +56,12 @@ void AnimationUtil::move() {
             const auto EFFSIZ = window.getEffectiveSize();
 
             window.setRealSize(Vector2D(parabolic(REALSIZ.x, EFFSIZ.x, ANIMATIONSPEED), parabolic(REALSIZ.y, EFFSIZ.y, ANIMATIONSPEED)));
+        }
+
+        // set not animated if already done here
+        if (!VECTORDELTANONZERO(window.getRealPosition(), window.getEffectivePosition()) 
+            && !VECTORDELTANONZERO(window.getRealSize(), window.getEffectiveSize())) {
+                window.setIsAnimated(false);
         }
     }
 

@@ -76,6 +76,9 @@ public:
     EXPOSED_MEMBER(MasterChildIndex, int, i);
     EXPOSED_MEMBER(Dead, bool, b);
     
+    // Animating cheaply
+    EXPOSED_MEMBER(IsAnimated, bool, b);
+    EXPOSED_MEMBER(FirstAnimFrame, bool, b);
 
 private:
 

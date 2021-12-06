@@ -328,6 +328,10 @@ CWindow* Events::remapWindow(int windowID, bool wasfloating, int forcemonitor) {
     g_pWindowManager->Values[0] = XCB_EVENT_MASK_ENTER_WINDOW | XCB_EVENT_MASK_FOCUS_CHANGE;
     xcb_change_window_attributes_checked(g_pWindowManager->DisplayConnection, windowID, XCB_CW_EVENT_MASK, g_pWindowManager->Values);
 
+    // make the last window top (animations look better)
+    g_pWindowManager->setAWindowTop(g_pWindowManager->LastWindow);
+
+    // Focus
     g_pWindowManager->setFocusedWindow(windowID);
 
     // Make all floating windows above

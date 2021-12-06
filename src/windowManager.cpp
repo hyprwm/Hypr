@@ -380,14 +380,10 @@ void CWindowManager::refreshDirtyWindows() {
                 xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, Values);
 
                 // Apply rounded corners, does all the checks inside
-                applyRoundedCornersToWindow(&window);
+                applyShapeToWindow(&window);
 
                 continue;
             }
-
-            Values[0] = (int)window.getRealSize().x;
-            Values[1] = (int)window.getRealSize().y;
-            xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, Values);
 
             // Update the position because the border makes the window jump
             // I have added the bordersize vec2d before in the setEffectiveSizePosUsingConfig function.
@@ -407,8 +403,25 @@ void CWindowManager::refreshDirtyWindows() {
                 xcb_change_window_attributes(DisplayConnection, window.getDrawable(), XCB_CW_BORDER_PIXEL, Values);
             }
 
-            // Apply rounded corners, does all the checks inside
-            applyRoundedCornersToWindow(&window);
+            // If it isn't animated or we have non-cheap animations, update the real size
+            if (!window.getIsAnimated() || ConfigManager::getInt("anim.cheap") == 0) {
+                Values[0] = (int)window.getRealSize().x;
+                Values[1] = (int)window.getRealSize().y;
+                xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, Values);
+                window.setFirstAnimFrame(true);
+            }
+
+            if (ConfigManager::getInt("anim.cheap") == 1 && window.getFirstAnimFrame() && window.getIsAnimated()) {
+                // first frame, fix the size if smaller
+                window.setFirstAnimFrame(false);
+                if (window.getRealSize().x < window.getEffectiveSize().x || window.getRealSize().y < window.getEffectiveSize().y) {
+                    Values[0] = (int)window.getEffectiveSize().x;
+                    Values[1] = (int)window.getEffectiveSize().y;
+                    xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, Values);
+                }
+            }
+
+            applyShapeToWindow(&window);
 
             Debug::log(LOG, "Refreshed dirty window, with an ID of " + std::to_string(window.getDrawable()));
         }
@@ -432,11 +445,11 @@ void CWindowManager::setFocusedWindow(xcb_drawable_t window) {
 
         // Apply rounded corners, does all the checks inside.
         // The border changed so let's not make it rectangular maybe
-        applyRoundedCornersToWindow(g_pWindowManager->getWindowFromDrawable(window));
+        applyShapeToWindow(g_pWindowManager->getWindowFromDrawable(window));
 
         LastWindow = window;
 
-        applyRoundedCornersToWindow(g_pWindowManager->getWindowFromDrawable(window));
+        applyShapeToWindow(g_pWindowManager->getWindowFromDrawable(window));
 
         // set focus in X11
         xcb_set_input_focus(DisplayConnection, XCB_INPUT_FOCUS_POINTER_ROOT, window, XCB_CURRENT_TIME);
@@ -600,7 +613,7 @@ void CWindowManager::removeWindowFromVectorSafe(int64_t window) {
     }
 }
 
-void CWindowManager::applyRoundedCornersToWindow(CWindow* pWindow) {
+void CWindowManager::applyShapeToWindow(CWindow* pWindow) {
     if (!pWindow)
         return;
 
@@ -1511,6 +1524,11 @@ void CWindowManager::setAllFloatingWindowsTop() {
             xcb_configure_window(g_pWindowManager->DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_STACK_MODE, Values);
         }
     }
+}
+
+void CWindowManager::setAWindowTop(xcb_window_t window) {
+    Values[0] = XCB_STACK_MODE_ABOVE;
+    xcb_configure_window(g_pWindowManager->DisplayConnection, window, XCB_CONFIG_WINDOW_STACK_MODE, Values);
 }
 
 bool CWindowManager::shouldBeFloatedOnInit(int64_t window) {

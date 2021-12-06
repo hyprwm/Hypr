@@ -38,7 +38,8 @@ void ConfigManager::init() {
 
     // animations
     configValues["anim.speed"].floatValue = 1;
-    configValues["anim.enabled"].intValue = 1;
+    configValues["anim.enabled"].intValue = 0;
+    configValues["anim.cheap"].intValue = 1;
 
     if (!g_pWindowManager->statusBar) {
         isFirstLaunch = true;

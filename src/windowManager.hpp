@@ -90,6 +90,7 @@ public:
 
     void                        setAllWindowsDirty();
     void                        setAllFloatingWindowsTop();
+    void                        setAWindowTop(xcb_window_t);
 
     SMonitor*                   getMonitorFromWindow(CWindow*);
     SMonitor*                   getMonitorFromCursor();
@@ -130,7 +131,7 @@ private:
     void                        cleanupUnusedWorkspaces();
     xcb_visualtype_t*           setupColors(const int&);
     void                        updateRootCursor();
-    void                        applyRoundedCornersToWindow(CWindow* pWindow);
+    void                        applyShapeToWindow(CWindow* pWindow);
     SMonitor*                   getMonitorFromWorkspace(const int&);
     void                        recalcEntireWorkspace(const int&);
     void                        fixMasterWorkspaceOnClosed(CWindow* pWindow);
