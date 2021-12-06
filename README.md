@@ -41,7 +41,8 @@ To use a custom config, place it in ~/.config/hypr/hypr.conf
 See the [Wiki](https://github.com/vaxerski/Hypr/wiki/Building) to see build instructions.
 
 # Known issues
-- Animations do tend to flicker a bit, especially with picom.
+- Picom's shadow and effects do not update for cheap animations while animating
+- Non-cheap animations are choppy (duh!)
 - The config is still pretty simple, although riceable!
 - Popups sometimes are created pretty small
 
