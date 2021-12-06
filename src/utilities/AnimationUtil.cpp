@@ -16,14 +16,15 @@ void AnimationUtil::move() {
 
         if (ConfigManager::getInt("anim.enabled") == 0 || window.getIsFloating()) {
             // Disabled animations. instant warps.
-            window.setRealPosition(window.getEffectivePosition());
-            window.setRealSize(window.getEffectiveSize());
 
             if (VECTORDELTANONZERO(window.getRealPosition(), window.getEffectivePosition())
                 || VECTORDELTANONZERO(window.getRealSize(), window.getEffectiveSize())) {
                     window.setDirty(true);
                     updateRequired = true;
                 }
+
+            window.setRealPosition(window.getEffectivePosition());
+            window.setRealSize(window.getEffectiveSize());
 
             continue;
         }
