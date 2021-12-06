@@ -525,11 +525,15 @@ int CStatusBar::drawTrayModule(SBarModule* mod, int off) {
 
     int i = 0;
     for (auto& tray : g_pWindowManager->trayclients) {
-
-        if (tray.hidden)
-            continue;
-
         uint32_t values[] = {(int)(position.x + (i * (ELEMENTWIDTH + PAD)) + PAD / 2.f), (int)position.y + 1, (int)XCB_STACK_MODE_ABOVE};
+
+        if (tray.hidden) {
+            values[0] = -999;
+            values[1] = -999;
+            xcb_configure_window(g_pWindowManager->DisplayConnection, tray.window,
+                                 XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_STACK_MODE, values);
+            continue;
+        }
 
         xcb_configure_window(g_pWindowManager->DisplayConnection, tray.window,
                              XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_STACK_MODE, values);
