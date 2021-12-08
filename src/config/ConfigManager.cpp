@@ -311,6 +311,8 @@ void ConfigManager::loadConfigLoadVars() {
     if (!ifs.good()) {
         Debug::log(WARN, "Config reading error. (No file?)");
         ConfigManager::parseError = "The config could not be read. (No file?)";
+
+        ifs.close();
         return;
     }
 
@@ -407,11 +409,11 @@ void ConfigManager::tick() {
     struct stat fileStat;
     int err = stat(CONFIGPATH.c_str(), &fileStat);
     if (err != 0) {
-        Debug::log(WARN, "Error at ticking config, error" + std::to_string(errno));
+        Debug::log(WARN, "Error at ticking config, error " + std::to_string(errno));
     }
 
     // check if we need to reload cfg
-    if(fileStat.st_mtime > lastModifyTime) {
+    if(fileStat.st_mtime != lastModifyTime) {
         lastModifyTime = fileStat.st_mtime;
 
         ConfigManager::loadConfigLoadVars();
