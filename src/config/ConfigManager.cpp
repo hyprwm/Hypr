@@ -64,18 +64,21 @@ void configSetValueSafe(const std::string& COMMAND, const std::string& VALUE) {
                 CONFIGENTRY.intValue = stol(VALUE);
         } catch (...) {
             Debug::log(WARN, "Error reading value of " + COMMAND);
+            ConfigManager::parseError = "Error setting value <" + VALUE + "> for field <" + COMMAND + ">.";
         }
     } else if (CONFIGENTRY.floatValue != -1) {
         try {
             CONFIGENTRY.floatValue = stof(VALUE);
         } catch (...) {
             Debug::log(WARN, "Error reading value of " + COMMAND);
+            ConfigManager::parseError = "Error setting value <" + VALUE + "> for field <" + COMMAND + ">.";
         }
     } else if (CONFIGENTRY.strValue != "") {
         try {
             CONFIGENTRY.strValue = VALUE;
         } catch (...) {
             Debug::log(WARN, "Error reading value of " + COMMAND);
+            ConfigManager::parseError = "Error setting value <" + VALUE + "> for field <" + COMMAND + ">.";
         }
     }
 }
@@ -148,6 +151,7 @@ void parseModule(const std::string& COMMANDC, const std::string& VALUE) {
             module.pad = stol(PADW);
         } catch (...) {
             Debug::log(ERR, "Module creation pad error: invalid pad");
+            ConfigManager::parseError = "Module creation error in pad: invalid pad.";
             return;
         }
 
@@ -184,6 +188,7 @@ void parseModule(const std::string& COMMANDC, const std::string& VALUE) {
         module.bgcolor = stol(COL2.substr(2), nullptr, 16);
     } catch (...) {
         Debug::log(ERR, "Module creation color error: invalid color");
+        ConfigManager::parseError = "Module creation error in color: invalid color.";
         return;
     }
 
@@ -191,6 +196,7 @@ void parseModule(const std::string& COMMANDC, const std::string& VALUE) {
         module.updateEveryMs = stol(UPDATE);
     } catch (...) {
         Debug::log(ERR, "Module creation error: invalid update interval");
+        ConfigManager::parseError = "Module creation error in interval: invalid interval.";
         return;
     }
 
@@ -282,6 +288,8 @@ void parseLine(std::string& line) {
 
 void ConfigManager::loadConfigLoadVars() {
     Debug::log(LOG, "Reloading the config!");
+    ConfigManager::parseError = ""; // reset the error
+    ConfigManager::isBar = false; // reset the bar
 
     if (loadBar && g_pWindowManager->statusBar) {
         // clear modules as we overwrite them
@@ -302,10 +310,12 @@ void ConfigManager::loadConfigLoadVars() {
 
     if (!ifs.good()) {
         Debug::log(WARN, "Config reading error. (No file?)");
+        ConfigManager::parseError = "The config could not be read. (No file?)";
         return;
     }
 
     std::string line = "";
+    int linenum = 1;
     if (ifs.is_open()) {
         while (std::getline(ifs, line)) {
             // Read line by line.
@@ -314,7 +324,17 @@ void ConfigManager::loadConfigLoadVars() {
             } catch(...) {
                 Debug::log(ERR, "Error reading line from config. Line:");
                 Debug::log(NONE, line);
+
+                parseError = "Config error at line " + std::to_string(linenum) + ": Line parsing error.";
+                break;
             }
+
+            if (parseError != "") {
+                parseError = "Config error at line " + std::to_string(linenum) + ": " + parseError;
+                break;
+            }
+
+            ++linenum;
             
         }
 
@@ -325,9 +345,17 @@ void ConfigManager::loadConfigLoadVars() {
     g_pWindowManager->recalcAllWorkspaces();
 
     // Reload the bar as well, don't load it before the default is loaded.
-    if (loadBar && g_pWindowManager->statusBar) {
+    if (loadBar && g_pWindowManager->statusBar && (configValues["bar:enabled"].intValue == 1 || parseError != "")) {
         g_pWindowManager->statusBar->destroy();
+
+        // make the bar height visible
+        if (parseError != "") {
+            configValues["bar:height"].intValue = 15;
+        }
+
         g_pWindowManager->statusBar->setup(configValues["bar:monitor"].intValue);
+    } else if (g_pWindowManager->statusBar) {
+        g_pWindowManager->statusBar->destroy();
     }
 
     // Ensure correct layout

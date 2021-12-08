@@ -352,10 +352,16 @@ void CStatusBar::setup(int MonitorID) {
 
     // fix tray
     fixTrayOnCreate();
+
+
+    m_bIsDestroyed = false;
 }
 
 void CStatusBar::destroy() {
     Debug::log(LOG, "Destroying the bar!");
+
+    if (m_bIsDestroyed) 
+        return;
 
     saveTrayOnDestroy();
 
@@ -371,6 +377,8 @@ void CStatusBar::destroy() {
     // Free cairo
     cairo_destroy(m_pCairo);
     m_pCairo = nullptr;
+
+    m_bIsDestroyed = true;
 }
 
 int CStatusBar::getTextWidth(std::string text, std::string font) {
@@ -401,6 +409,20 @@ int CStatusBar::getTextHalfY() {
     return m_vecSize.y - (m_vecSize.y - 9) / 2.f;
 }
 
+void CStatusBar::drawErrorScreen() {
+    drawCairoRectangle(Vector2D(0, 0), m_vecSize, 0xFFaa1111);
+    drawText(Vector2D(1, getTextHalfY()), ConfigManager::parseError, 0xff000000, ConfigManager::getString("bar:font.main"));
+
+
+    // do all the drawing cuz we return later
+    cairo_surface_flush(m_pCairoSurface);
+
+    xcb_copy_area(g_pWindowManager->DisplayConnection, m_iPixmap, m_iWindowID, m_mContexts["BG"].GContext,
+                  0, 0, 0, 0, m_vecSize.x, m_vecSize.y);
+
+    xcb_flush(g_pWindowManager->DisplayConnection);
+}
+
 void CStatusBar::draw() {
 
     if (m_bIsCovered)
@@ -417,6 +439,12 @@ void CStatusBar::draw() {
     cairo_paint(m_pCairo);
     cairo_restore(m_pCairo);
     //
+
+    if (ConfigManager::parseError != "") {
+        // draw a special error screen
+        drawErrorScreen();
+        return;
+    }
 
     drawCairoRectangle(Vector2D(0, 0), m_vecSize, ConfigManager::getInt("bar:col.bg"));
 

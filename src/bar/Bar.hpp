@@ -64,6 +64,9 @@ public:
     std::vector<SBarModule> modules;
 
 private:
+    // for not deleting nulls
+    bool                m_bIsDestroyed = true;
+
     Vector2D            m_vecSize;
     Vector2D            m_vecPosition;
 
@@ -81,6 +84,7 @@ private:
     int                 drawModule(SBarModule*, int);
     int                 drawWorkspacesModule(SBarModule*, int);
     int                 getTextHalfY();
+    void                drawErrorScreen();
 
     std::unordered_map<std::string, SDrawingContext> m_mContexts;
 

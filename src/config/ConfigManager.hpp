@@ -24,6 +24,8 @@ namespace ConfigManager {
 
     inline bool         isFirstLaunch = false;
 
+    inline std::string  parseError = ""; // For storing a parse error to display later
+
     void                init();
     void                loadConfigLoadVars();
     void                tick();
