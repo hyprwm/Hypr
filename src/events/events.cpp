@@ -69,6 +69,12 @@ void Events::eventEnter(xcb_generic_event_t* event) {
             g_pWindowManager->setFocusedWindow(E->event);
 
     PENTERWINDOW->setDirty(true);
+
+    if (PENTERWINDOW->getIsSleeping()) {
+        // Wake it up, fixes some weird shenaningans
+        wakeUpEvent(E->event);
+        PENTERWINDOW->setIsSleeping(false);
+    }
 }
 
 void Events::eventLeave(xcb_generic_event_t* event) {
@@ -76,7 +82,16 @@ void Events::eventLeave(xcb_generic_event_t* event) {
 
     RETURNIFBAR;
 
-    //
+    const auto PENTERWINDOW = g_pWindowManager->getWindowFromDrawable(E->event);
+
+    if (!PENTERWINDOW)
+        return;
+
+    if (PENTERWINDOW->getIsSleeping()) {
+        // Wake it up, fixes some weird shenaningans
+        wakeUpEvent(E->event);
+        PENTERWINDOW->setIsSleeping(false);
+    }
 }
 
 void Events::eventDestroy(xcb_generic_event_t* event) {
@@ -190,15 +205,13 @@ CWindow* Events::remapFloatingWindow(int windowID, int forcemonitor) {
 
     window.setSize(window.getDefaultSize());
     window.setPosition(window.getDefaultPosition());
+
+    // The anim util will take care of this.
     window.setEffectiveSize(window.getDefaultSize());
     window.setEffectivePosition(window.getDefaultPosition());
 
     // Also sets the old one
     g_pWindowManager->calculateNewWindowParams(&window);
-
-    // Set real size. No animations in the beginning. Maybe later. TODO?
-    window.setRealPosition(window.getEffectivePosition());
-    window.setRealSize(window.getEffectiveSize());
 
     // Add to arr
     g_pWindowManager->addWindowToVectorSafe(window);

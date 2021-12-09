@@ -80,6 +80,9 @@ public:
     EXPOSED_MEMBER(IsAnimated, bool, b);
     EXPOSED_MEMBER(FirstAnimFrame, bool, b);
 
+    // Weird shenaningans
+    EXPOSED_MEMBER(IsSleeping, bool, b);
+
 private:
 
 };

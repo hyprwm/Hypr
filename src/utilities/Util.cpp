@@ -29,16 +29,33 @@ double parabolic(double from, double to, double incline) {
     return from + ((to - from) / incline);
 }
 
-void emptyEvent() {
+void emptyEvent(xcb_drawable_t window) {
     xcb_expose_event_t exposeEvent;
-    exposeEvent.window = 0;
+    exposeEvent.window = window;
     exposeEvent.response_type = 0;
     exposeEvent.x = 0;
     exposeEvent.y = 0;
     exposeEvent.width = g_pWindowManager->Screen->width_in_pixels;
     exposeEvent.height = g_pWindowManager->Screen->height_in_pixels;
-    xcb_send_event(g_pWindowManager->DisplayConnection, false, g_pWindowManager->Screen->root, XCB_EVENT_MASK_EXPOSURE, (char*)&exposeEvent);
+    xcb_send_event(g_pWindowManager->DisplayConnection, false, window, XCB_EVENT_MASK_EXPOSURE, (char*)&exposeEvent);
     xcb_flush(g_pWindowManager->DisplayConnection);
+}
+
+void wakeUpEvent(xcb_drawable_t window) {
+    const auto PWINDOW = g_pWindowManager->getWindowFromDrawable(window);
+
+    if (!PWINDOW)
+        return;
+
+    PWINDOW->setRealPosition(PWINDOW->getRealPosition() + Vector2D(1, 1));
+    PWINDOW->setDirty(true);
+
+    g_pWindowManager->refreshDirtyWindows();
+
+    xcb_flush(g_pWindowManager->DisplayConnection);
+
+    PWINDOW->setRealPosition(PWINDOW->getRealPosition() - Vector2D(1, 1));
+    PWINDOW->setDirty(true);
 }
 
 bool xcbContainsAtom(xcb_get_property_reply_t* PROP, xcb_atom_t ATOM) {

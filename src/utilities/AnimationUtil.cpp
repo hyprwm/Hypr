@@ -5,6 +5,7 @@ void AnimationUtil::move() {
 
     static std::chrono::time_point lastFrame = std::chrono::high_resolution_clock::now();
     const double DELTA = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - lastFrame).count();
+    lastFrame = std::chrono::high_resolution_clock::now();
 
     const double ANIMATIONSPEED = ((double)1 / (double)ConfigManager::getFloat("anim.speed")) * DELTA;
 
@@ -22,10 +23,10 @@ void AnimationUtil::move() {
                 || VECTORDELTANONZERO(window.getRealSize(), window.getEffectiveSize())) {
                     window.setDirty(true);
                     updateRequired = true;
-                }
 
-            window.setRealPosition(window.getEffectivePosition());
-            window.setRealSize(window.getEffectiveSize());
+                    window.setRealPosition(window.getEffectivePosition());
+                    window.setRealSize(window.getEffectiveSize());
+                }
 
             continue;
         }
@@ -67,6 +68,4 @@ void AnimationUtil::move() {
 
     if (updateRequired)
         emptyEvent();  // send a fake request to update dirty windows
-
-    lastFrame = std::chrono::high_resolution_clock::now();
 }
