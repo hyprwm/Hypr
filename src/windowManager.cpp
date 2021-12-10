@@ -30,6 +30,10 @@ void CWindowManager::createAndOpenAllPipes() {
     system("cat \" \" > /tmp/hypr/hyprbarout");
     system("cat \" \" > /tmp/hypr/hyprbarind");
     system("cat \" \" > /tmp/hypr/hyprbaroutd");
+
+    // open the debug file
+    const std::string DEBUGPATH = "/tmp/hypr/hypr.log";
+    DebugOfstream.open(DEBUGPATH, std::ios::out | std::ios::app);
 }
 
 void CWindowManager::updateRootCursor() {
