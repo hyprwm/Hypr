@@ -366,9 +366,6 @@ void CWindowManager::refreshDirtyWindows() {
                 Values[0] = 0;
                 xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_BORDER_WIDTH, Values);
 
-                Values[0] = window.getRealBorderColor().getAsUint32();
-                xcb_change_window_attributes(DisplayConnection, window.getDrawable(), XCB_CW_BORDER_PIXEL, Values);
-
                 const auto MONITOR = getMonitorFromWindow(&window);
 
                 Values[0] = (int)MONITOR->vecSize.x;
@@ -710,6 +707,7 @@ void CWindowManager::setEffectiveSizePosUsingConfig(CWindow* pWindow) {
         return;
 
     const auto MONITOR = getMonitorFromWindow(pWindow);
+    const auto BARHEIGHT = ConfigManager::getInt("bar:enabled") == 1 ? ConfigManager::getInt("bar:height") : ConfigManager::parseError == "" ? 0 : ConfigManager::getInt("bar:height");
 
     // set some flags.
     const bool DISPLAYLEFT          = STICKS(pWindow->getPosition().x, MONITOR->vecPosition.x);
@@ -721,9 +719,9 @@ void CWindowManager::setEffectiveSizePosUsingConfig(CWindow* pWindow) {
     pWindow->setEffectiveSize(pWindow->getSize() - (Vector2D(ConfigManager::getInt("border_size"), ConfigManager::getInt("border_size")) * 2));
 
     // do gaps, set top left
-    pWindow->setEffectivePosition(pWindow->getEffectivePosition() + Vector2D(DISPLAYLEFT ? ConfigManager::getInt("gaps_out") : ConfigManager::getInt("gaps_in"), DISPLAYTOP ? ConfigManager::getInt("gaps_out") + (MONITOR->ID == ConfigManager::getInt("bar:monitor") ? ConfigManager::getInt("bar:height") : 0) : ConfigManager::getInt("gaps_in")));
+    pWindow->setEffectivePosition(pWindow->getEffectivePosition() + Vector2D(DISPLAYLEFT ? ConfigManager::getInt("gaps_out") : ConfigManager::getInt("gaps_in"), DISPLAYTOP ? ConfigManager::getInt("gaps_out") + (MONITOR->ID == ConfigManager::getInt("bar:monitor") ? BARHEIGHT : 0) : ConfigManager::getInt("gaps_in")));
     // fix to old size bottom right
-    pWindow->setEffectiveSize(pWindow->getEffectiveSize() - Vector2D(DISPLAYLEFT ? ConfigManager::getInt("gaps_out") : ConfigManager::getInt("gaps_in"), DISPLAYTOP ? ConfigManager::getInt("gaps_out") + (MONITOR->ID == ConfigManager::getInt("bar:monitor") ? ConfigManager::getInt("bar:height") : 0) : ConfigManager::getInt("gaps_in")));
+    pWindow->setEffectiveSize(pWindow->getEffectiveSize() - Vector2D(DISPLAYLEFT ? ConfigManager::getInt("gaps_out") : ConfigManager::getInt("gaps_in"), DISPLAYTOP ? ConfigManager::getInt("gaps_out") + (MONITOR->ID == ConfigManager::getInt("bar:monitor") ? BARHEIGHT : 0) : ConfigManager::getInt("gaps_in")));
     // set bottom right
     pWindow->setEffectiveSize(pWindow->getEffectiveSize() - Vector2D(DISPLAYRIGHT ? ConfigManager::getInt("gaps_out") : ConfigManager::getInt("gaps_in"), DISPLAYBOTTOM ? ConfigManager::getInt("gaps_out") : ConfigManager::getInt("gaps_in")));
 }
@@ -1448,6 +1446,10 @@ void CWindowManager::updateBarInfo() {
     // - Workspace data
     // - Active Workspace
 
+    // If bar disabled, ignore
+    if (ConfigManager::getInt("bar:enabled") == 0)
+        return;
+
     SIPCMessageMainToBar message;
 
     if (!getMonitorFromCursor()) {
@@ -1455,10 +1457,7 @@ void CWindowManager::updateBarInfo() {
         return;
     }
 
-    
-
     message.activeWorkspace = activeWorkspaces[getMonitorFromCursor()->ID];
-
 
     auto winname = getWindowFromDrawable(LastWindow) ? getWindowFromDrawable(LastWindow)->getName() : "";
     auto winclassname = getWindowFromDrawable(LastWindow) ? getWindowFromDrawable(LastWindow)->getClassName() : "";

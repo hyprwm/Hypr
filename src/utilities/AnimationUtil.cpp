@@ -33,7 +33,7 @@ void AnimationUtil::move() {
             }
         }
 
-        if (ConfigManager::getInt("anim:enabled") == 0 || window.getIsFloating()) {
+        if (ConfigManager::getInt("anim:enabled") == 0 || window.getIsFloating() || window.getFullscreen()) {
             // Disabled animations. instant warps.
 
             if (VECTORDELTANONZERO(window.getRealPosition(), window.getEffectivePosition())

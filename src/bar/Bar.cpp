@@ -428,6 +428,9 @@ void CStatusBar::draw() {
     if (m_bIsCovered)
         return; // Do not draw a bar on a fullscreen window.
 
+    if (m_bIsDestroyed)
+        return;
+
     if (!m_pCairo) {
         Debug::log(ERR, "Cairo is null but attempted to draw!");
         return;
