@@ -366,7 +366,7 @@ void CWindowManager::refreshDirtyWindows() {
                 Values[0] = 0;
                 xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_BORDER_WIDTH, Values);
 
-                Values[0] = 0x555555;  // GRAY :)
+                Values[0] = window.getRealBorderColor().getAsUint32();
                 xcb_change_window_attributes(DisplayConnection, window.getDrawable(), XCB_CW_BORDER_PIXEL, Values);
 
                 const auto MONITOR = getMonitorFromWindow(&window);
@@ -394,14 +394,10 @@ void CWindowManager::refreshDirtyWindows() {
             Values[0] = (int)ConfigManager::getInt("border_size");
             xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_BORDER_WIDTH, Values);
 
-            // Focused special border.
-            if (window.getDrawable() == LastWindow) {
-                Values[0] = ConfigManager::getInt("col.active_border");
-                xcb_change_window_attributes(DisplayConnection, window.getDrawable(), XCB_CW_BORDER_PIXEL, Values);
-            } else {
-                Values[0] = ConfigManager::getInt("col.inactive_border");
-                xcb_change_window_attributes(DisplayConnection, window.getDrawable(), XCB_CW_BORDER_PIXEL, Values);
-            }
+
+            // do border
+            Values[0] = window.getRealBorderColor().getAsUint32();
+            xcb_change_window_attributes(DisplayConnection, window.getDrawable(), XCB_CW_BORDER_PIXEL, Values);
 
             // If it isn't animated or we have non-cheap animations, update the real size
             if (!window.getIsAnimated() || ConfigManager::getInt("anim:cheap") == 0) {
@@ -430,12 +426,13 @@ void CWindowManager::refreshDirtyWindows() {
 
 void CWindowManager::setFocusedWindow(xcb_drawable_t window) {
     if (window && window != Screen->root) {
-        // Fix border from the old window that was in focus.
-        Values[0] = ConfigManager::getInt("col.inactive_border");
-        xcb_change_window_attributes(DisplayConnection, LastWindow, XCB_CW_BORDER_PIXEL, Values);
-
-        Values[0] = ConfigManager::getInt("col.active_border");
-        xcb_change_window_attributes(DisplayConnection, window, XCB_CW_BORDER_PIXEL, Values);
+        // border color
+        if (const auto PLASTWIN = getWindowFromDrawable(LastWindow); PLASTWIN) {
+            PLASTWIN->setEffectiveBorderColor(CFloatingColor(ConfigManager::getInt("col.inactive_border")));
+        }
+        if (const auto PLASTWIN = getWindowFromDrawable(window); PLASTWIN) {
+            PLASTWIN->setEffectiveBorderColor(CFloatingColor(ConfigManager::getInt("col.active_border")));
+        }
 
         float values[1];
         if (g_pWindowManager->getWindowFromDrawable(window) && g_pWindowManager->getWindowFromDrawable(window)->getIsFloating()) {

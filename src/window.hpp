@@ -2,6 +2,7 @@
 
 #include "defines.hpp"
 #include "utilities/Workspace.hpp"
+#include "utilities/Util.hpp"
 
 class CWindow {
 public:
@@ -82,6 +83,10 @@ public:
 
     // Weird shenaningans
     EXPOSED_MEMBER(IsSleeping, bool, b);
+
+    // Animate borders
+    EXPOSED_MEMBER(RealBorderColor, CFloatingColor, c);
+    EXPOSED_MEMBER(EffectiveBorderColor, CFloatingColor, c);
 
 private:
 

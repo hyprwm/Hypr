@@ -16,6 +16,23 @@ void AnimationUtil::move() {
         // check if window needs an animation.
         window.setIsAnimated(false);
 
+        // Border animations
+        if (window.getDrawable() > 0) {
+            if (window.getEffectiveBorderColor() != window.getRealBorderColor()) {
+
+                // interp border color if enabled
+                if (ConfigManager::getInt("anim:borders") == 1) {
+                    window.setRealBorderColor(parabolicColor(window.getRealBorderColor(), window.getEffectiveBorderColor(), ANIMATIONSPEED));
+                } else {
+                    window.setRealBorderColor(window.getEffectiveBorderColor());
+                }
+
+                updateRequired = true;
+                window.setDirty(true);
+
+            }
+        }
+
         if (ConfigManager::getInt("anim:enabled") == 0 || window.getIsFloating()) {
             // Disabled animations. instant warps.
 

@@ -29,6 +29,24 @@ double parabolic(double from, double to, double incline) {
     return from + ((to - from) / incline);
 }
 
+CFloatingColor parabolicColor(CFloatingColor from, uint32_t to, double incline) {
+    from.r = parabolic(from.r, RED(to) * 255.f, incline);
+    from.g = parabolic(from.g, GREEN(to) * 255.f, incline);
+    from.b = parabolic(from.b, BLUE(to) * 255.f, incline);
+    from.a = parabolic(from.a, ALPHA(to) * 255.f, incline);
+
+    return from;
+}
+
+CFloatingColor parabolicColor(CFloatingColor from, CFloatingColor to, double incline) {
+    from.r = parabolic(from.r, to.r, incline);
+    from.g = parabolic(from.g, to.g, incline);
+    from.b = parabolic(from.b, to.b, incline);
+    from.a = parabolic(from.a, to.a, incline);
+
+    return from;
+}
+
 void emptyEvent(xcb_drawable_t window) {
     xcb_expose_event_t exposeEvent;
     exposeEvent.window = window;

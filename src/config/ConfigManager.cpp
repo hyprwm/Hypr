@@ -41,6 +41,7 @@ void ConfigManager::init() {
     configValues["anim:speed"].floatValue = 1;
     configValues["anim:enabled"].intValue = 0;
     configValues["anim:cheap"].intValue = 1;
+    configValues["anim:borders"].intValue = 1;
 
     if (!g_pWindowManager->statusBar) {
         isFirstLaunch = true;
@@ -51,8 +52,10 @@ void ConfigManager::init() {
 }
 
 void configSetValueSafe(const std::string& COMMAND, const std::string& VALUE) {
-    if (ConfigManager::configValues.find(COMMAND) == ConfigManager::configValues.end())
+    if (ConfigManager::configValues.find(COMMAND) == ConfigManager::configValues.end()) {
+        ConfigManager::parseError = "Error setting value <" + VALUE + "> for field <" + COMMAND + ">: No such field.";
         return;
+    }
 
     auto& CONFIGENTRY = ConfigManager::configValues.at(COMMAND);
     if (CONFIGENTRY.intValue != -1) {
@@ -212,10 +215,12 @@ void parseBarLine(const std::string& line) {
 
     // And parse
     // check if command
+
     const auto EQUALSPLACE = line.find_first_of('=');
 
     if (EQUALSPLACE == std::string::npos)
         return;
+
 
     const auto COMMAND = line.substr(0, EQUALSPLACE);
     const auto VALUE = line.substr(EQUALSPLACE + 1);
@@ -252,7 +257,7 @@ void parseLine(std::string& line) {
 
     // now, cut the comment off
     if (COMMENTSTART != std::string::npos)
-        line = line.substr(COMMENTSTART);
+        line = line.substr(COMMENTSTART + 1);
 
     // remove shit at the beginning
     while (line[0] == ' ' || line[0] == '\t') {
@@ -300,8 +305,9 @@ void parseLine(std::string& line) {
     } else if (COMMAND == "exec") {
         handleRawExec(COMMAND, VALUE);
         return;
-    } else if (COMMAND == "exec-once" && ConfigManager::isFirstLaunch) {
-        handleRawExec(COMMAND, VALUE);
+    } else if (COMMAND == "exec-once") {
+	if (ConfigManager::isFirstLaunch)
+        	handleRawExec(COMMAND, VALUE);
         return;
     } else if (COMMAND == "status_command") {
         handleStatusCommand(COMMAND, VALUE);
@@ -351,14 +357,14 @@ void ConfigManager::loadConfigLoadVars() {
             } catch(...) {
                 Debug::log(ERR, "Error reading line from config. Line:");
                 Debug::log(NONE, line);
-
+                
                 parseError = "Config error at line " + std::to_string(linenum) + ": Line parsing error.";
-                break;
+                //break;
             }
 
-            if (parseError != "") {
+            if (parseError != "" && parseError.find("Config error at line") != 0) {
                 parseError = "Config error at line " + std::to_string(linenum) + ": " + parseError;
-                break;
+                //break;
             }
 
             ++linenum;
