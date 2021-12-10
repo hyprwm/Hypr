@@ -83,3 +83,5 @@
 
 #define RETURNIFBAR  if (g_pWindowManager->statusBar) return;
 #define RETURNIFMAIN if (!g_pWindowManager->statusBar) return;
+
+#define COLORDELTAOVERX(c, c1, d) (abs(RED(c) - RED(c1)) > d / 255.f || abs(GREEN(c) - GREEN(c1)) > d / 255.f || abs(BLUE(c) - BLUE(c1)) > d / 255.f || abs(ALPHA(c) - ALPHA(c1)) > d / 255.f)

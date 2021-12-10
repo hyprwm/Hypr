@@ -19,17 +19,19 @@ void AnimationUtil::move() {
         // Border animations
         if (window.getDrawable() > 0) {
             if (window.getEffectiveBorderColor().getAsUint32() != window.getRealBorderColor().getAsUint32() /* As uint32 to round and not spam */) {
-
                 // interp border color if enabled
+                const auto PREVCOLOR = window.getRealBorderColor().getAsUint32();
+
                 if (ConfigManager::getInt("anim:borders") == 1) {
                     window.setRealBorderColor(parabolicColor(window.getRealBorderColor(), window.getEffectiveBorderColor(), ANIMATIONSPEED));
                 } else {
                     window.setRealBorderColor(window.getEffectiveBorderColor());
                 }
 
-                updateRequired = true;
-                window.setDirty(true);
-
+                if (COLORDELTAOVERX(PREVCOLOR, window.getRealBorderColor().getAsUint32(), 2)) {
+                    updateRequired = true;
+                    window.setDirty(true);
+                }
             }
         }
 
