@@ -257,7 +257,7 @@ void parseLine(std::string& line) {
 
     // now, cut the comment off
     if (COMMENTSTART != std::string::npos)
-        line = line.substr(COMMENTSTART + 1);
+        line = line.substr(0, COMMENTSTART);
 
     // remove shit at the beginning
     while (line[0] == ' ' || line[0] == '\t') {
@@ -359,12 +359,10 @@ void ConfigManager::loadConfigLoadVars() {
                 Debug::log(NONE, line);
                 
                 parseError = "Config error at line " + std::to_string(linenum) + ": Line parsing error.";
-                //break;
             }
 
             if (parseError != "" && parseError.find("Config error at line") != 0) {
                 parseError = "Config error at line " + std::to_string(linenum) + ": " + parseError;
-                //break;
             }
 
             ++linenum;
