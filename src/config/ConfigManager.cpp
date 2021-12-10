@@ -38,9 +38,9 @@ void ConfigManager::init() {
     configValues["col.inactive_border"].intValue = 0x77222222;
 
     // animations
-    configValues["anim.speed"].floatValue = 1;
-    configValues["anim.enabled"].intValue = 0;
-    configValues["anim.cheap"].intValue = 1;
+    configValues["anim:speed"].floatValue = 1;
+    configValues["anim:enabled"].intValue = 0;
+    configValues["anim:cheap"].intValue = 1;
 
     if (!g_pWindowManager->statusBar) {
         isFirstLaunch = true;
@@ -230,6 +230,20 @@ void parseBarLine(const std::string& line) {
     }
 }
 
+void parseAnimLine(const std::string& line) {
+    // And parse
+    // check if command
+    const auto EQUALSPLACE = line.find_first_of('=');
+
+    if (EQUALSPLACE == std::string::npos)
+        return;
+
+    const auto COMMAND = line.substr(0, EQUALSPLACE);
+    const auto VALUE = line.substr(EQUALSPLACE + 1);
+
+    configSetValueSafe("anim:" + COMMAND, VALUE);
+}
+
 void parseLine(std::string& line) {
     // first check if its not a comment
     const auto COMMENTSTART = line.find_first_of('#');
@@ -246,17 +260,27 @@ void parseLine(std::string& line) {
     }
 
     if (line.find("Bar {") != std::string::npos) {
-        ConfigManager::isBar = true;
+        ConfigManager::currentCategory = "bar";
         return;
     }
 
-    if (line.find("}") != std::string::npos && ConfigManager::isBar) {
-        ConfigManager::isBar = false;
+    if (line.find("Animations {") != std::string::npos) {
+        ConfigManager::currentCategory = "anim";
         return;
     }
 
-    if (ConfigManager::isBar) {
+    if (line.find("}") != std::string::npos && ConfigManager::currentCategory != "") {
+        ConfigManager::currentCategory = "";
+        return;
+    }
+
+    if (ConfigManager::currentCategory == "bar") {
         parseBarLine(line);
+        return;
+    }
+
+    if (ConfigManager::currentCategory == "anim") {
+        parseAnimLine(line);
         return;
     }
 
@@ -290,7 +314,7 @@ void parseLine(std::string& line) {
 void ConfigManager::loadConfigLoadVars() {
     Debug::log(LOG, "Reloading the config!");
     ConfigManager::parseError = ""; // reset the error
-    ConfigManager::isBar = false; // reset the bar
+    ConfigManager::currentCategory = ""; // reset the category
 
     if (loadBar && g_pWindowManager->statusBar) {
         // clear modules as we overwrite them

@@ -404,14 +404,14 @@ void CWindowManager::refreshDirtyWindows() {
             }
 
             // If it isn't animated or we have non-cheap animations, update the real size
-            if (!window.getIsAnimated() || ConfigManager::getInt("anim.cheap") == 0) {
+            if (!window.getIsAnimated() || ConfigManager::getInt("anim:cheap") == 0) {
                 Values[0] = (int)window.getRealSize().x;
                 Values[1] = (int)window.getRealSize().y;
                 xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, Values);
                 window.setFirstAnimFrame(true);
             }
 
-            if (ConfigManager::getInt("anim.cheap") == 1 && window.getFirstAnimFrame() && window.getIsAnimated()) {
+            if (ConfigManager::getInt("anim:cheap") == 1 && window.getFirstAnimFrame() && window.getIsAnimated()) {
                 // first frame, fix the size if smaller
                 window.setFirstAnimFrame(false);
                 if (window.getRealSize().x < window.getEffectiveSize().x || window.getRealSize().y < window.getEffectiveSize().y) {

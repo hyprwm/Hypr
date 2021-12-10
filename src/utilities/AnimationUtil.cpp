@@ -7,7 +7,7 @@ void AnimationUtil::move() {
     const double DELTA = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - lastFrame).count();
     lastFrame = std::chrono::high_resolution_clock::now();
 
-    const double ANIMATIONSPEED = ((double)1 / (double)ConfigManager::getFloat("anim.speed")) * DELTA;
+    const double ANIMATIONSPEED = ((double)1 / (double)ConfigManager::getFloat("anim:speed")) * DELTA;
 
     
     bool updateRequired = false;
@@ -16,7 +16,7 @@ void AnimationUtil::move() {
         // check if window needs an animation.
         window.setIsAnimated(false);
 
-        if (ConfigManager::getInt("anim.enabled") == 0 || window.getIsFloating()) {
+        if (ConfigManager::getInt("anim:enabled") == 0 || window.getIsFloating()) {
             // Disabled animations. instant warps.
 
             if (VECTORDELTANONZERO(window.getRealPosition(), window.getEffectivePosition())

@@ -20,7 +20,7 @@ namespace ConfigManager {
 
     inline bool         loadBar = false;
 
-    inline bool         isBar = false;  // If true we send the command to the bar parser
+    inline std::string  currentCategory = "";
 
     inline bool         isFirstLaunch = false;
 
