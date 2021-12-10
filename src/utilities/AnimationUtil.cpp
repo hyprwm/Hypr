@@ -18,7 +18,7 @@ void AnimationUtil::move() {
 
         // Border animations
         if (window.getDrawable() > 0) {
-            if (window.getEffectiveBorderColor() != window.getRealBorderColor()) {
+            if (window.getEffectiveBorderColor().getAsUint32() != window.getRealBorderColor().getAsUint32() /* As uint32 to round and not spam */) {
 
                 // interp border color if enabled
                 if (ConfigManager::getInt("anim:borders") == 1) {
