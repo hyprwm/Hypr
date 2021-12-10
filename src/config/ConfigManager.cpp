@@ -14,6 +14,7 @@ void ConfigManager::init() {
     configValues["gaps_in"].intValue = 5;
     configValues["gaps_out"].intValue = 20;
     configValues["rounding"].intValue = 5;
+    configValues["main_mod"].strValue = "SUPER";
 
     configValues["focus_when_hover"].intValue = 1;
 
@@ -378,6 +379,7 @@ void ConfigManager::applyKeybindsToX() {
         
 
     xcb_ungrab_key(g_pWindowManager->DisplayConnection, XCB_GRAB_ANY, g_pWindowManager->Screen->root, XCB_MOD_MASK_ANY);
+    xcb_ungrab_button(g_pWindowManager->DisplayConnection, XCB_GRAB_ANY, g_pWindowManager->Screen->root, XCB_MOD_MASK_ANY);
 
     for (auto& keybind : KeybindManager::keybinds) {
         xcb_grab_key(g_pWindowManager->DisplayConnection, 1, g_pWindowManager->Screen->root,
@@ -391,12 +393,12 @@ void ConfigManager::applyKeybindsToX() {
     xcb_grab_button(g_pWindowManager->DisplayConnection, 0,
                     g_pWindowManager->Screen->root, XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE,
                     XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, g_pWindowManager->Screen->root, XCB_NONE,
-                    1, KeybindManager::modToMask("SUPER"));
+                    1, KeybindManager::modToMask(configValues["main_mod"].strValue));
 
     xcb_grab_button(g_pWindowManager->DisplayConnection, 0,
                     g_pWindowManager->Screen->root, XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE,
                     XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, g_pWindowManager->Screen->root, XCB_NONE,
-                    3, KeybindManager::modToMask("SUPER"));
+                    3, KeybindManager::modToMask(configValues["main_mod"].strValue));
 
     xcb_flush(g_pWindowManager->DisplayConnection);
 }
