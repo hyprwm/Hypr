@@ -156,6 +156,12 @@ void KeybindManager::toggleActiveWindowFullscreen(std::string unusedArg) {
 
     PWINDOW->setFullscreen(!PWINDOW->getFullscreen());
     g_pWindowManager->getWorkspaceByID(PWINDOW->getWorkspaceID())->setHasFullscreenWindow(PWINDOW->getFullscreen());
+
+    // Fix windows over and below fullscreen.
+    if (PWINDOW->getFullscreen())
+        g_pWindowManager->setAllWorkspaceWindowsUnderFullscreen(g_pWindowManager->activeWorkspaces[MONITOR->ID]);
+    else
+        g_pWindowManager->setAllWorkspaceWindowsAboveFullscreen(g_pWindowManager->activeWorkspaces[MONITOR->ID]);
 }
 
 void KeybindManager::toggleActiveWindowFloating(std::string unusedArg) {

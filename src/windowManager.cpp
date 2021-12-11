@@ -345,9 +345,9 @@ void CWindowManager::refreshDirtyWindows() {
             bool bHasFullscreenWindow = getWorkspaceByID(window.getWorkspaceID())->getHasFullscreenWindow();
 
             // first and foremost, let's check if the window isn't on a hidden workspace
-            // or that it is not a non-fullscreen window in a fullscreen workspace
+            // or that it is not a non-fullscreen window in a fullscreen workspace thats under
             if (!isWorkspaceVisible(window.getWorkspaceID())
-                || (bHasFullscreenWindow && !window.getFullscreen())) {
+                || (bHasFullscreenWindow && !window.getFullscreen() && (window.getUnderFullscreen() || !window.getIsFloating()))) {
                 // Move it to hades
                 Values[0] = (int)1500000; // hmu when monitors actually have that many pixels
                 Values[1] = (int)1500000; // and we are still using xorg =)
@@ -1697,6 +1697,8 @@ void CWindowManager::moveWindowToMapped(int64_t id) {
                     unmappedWindows.push_back(t);
             }
 
+            windows[windows.size() - 1].setUnderFullscreen(false);
+
             return;
         }
     }
@@ -1710,4 +1712,20 @@ bool CWindowManager::isWindowUnmapped(int64_t id) {
     }
 
     return false;
+}
+
+void CWindowManager::setAllWorkspaceWindowsAboveFullscreen(const int& workspace) {
+    for (auto& w : windows) {
+        if (w.getWorkspaceID() == workspace && w.getIsFloating()) {
+            w.setUnderFullscreen(false);
+        }
+    }
+}
+
+void CWindowManager::setAllWorkspaceWindowsUnderFullscreen(const int& workspace) {
+    for (auto& w : windows) {
+        if (w.getWorkspaceID() == workspace && w.getIsFloating()) {
+            w.setUnderFullscreen(true);
+        }
+    }
 }

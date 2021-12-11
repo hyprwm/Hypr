@@ -121,6 +121,9 @@ public:
     void                        moveWindowToMapped(int64_t);
     bool                        isWindowUnmapped(int64_t);
 
+    void                        setAllWorkspaceWindowsAboveFullscreen(const int&);
+    void                        setAllWorkspaceWindowsUnderFullscreen(const int&);
+
 private:
 
     // Internal WM functions that don't have to be exposed
