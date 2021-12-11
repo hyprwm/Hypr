@@ -1045,11 +1045,11 @@ void CWindowManager::closeWindowAllChecks(int64_t id) {
     if (!CLOSEDWINDOW)
         return; // It's not in the vec, ignore. (weird)
 
-    if (!CLOSEDWINDOW->getIsFloating())
-        g_pWindowManager->fixWindowOnClose(CLOSEDWINDOW);
-
     if (const auto WORKSPACE = getWorkspaceByID(CLOSEDWINDOW->getWorkspaceID()); WORKSPACE && CLOSEDWINDOW->getFullscreen())
         WORKSPACE->setHasFullscreenWindow(false);
+
+    if (!CLOSEDWINDOW->getIsFloating())
+        g_pWindowManager->fixWindowOnClose(CLOSEDWINDOW);
 
     // delete off of the arr
     g_pWindowManager->removeWindowFromVectorSafe(id);
