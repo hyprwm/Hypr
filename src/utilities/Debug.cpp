@@ -24,7 +24,7 @@ void Debug::log(LogLevel level, std::string msg) {
         default:
             break;
     }
-    printf((msg + "\n").c_str());
+    printf("%s", (msg + "\n").c_str());
 
     // also log to a file
     const std::string DEBUGPATH = ISDEBUG ? "/tmp/hypr/hyprd.log" : "/tmp/hypr/hypr.log";
