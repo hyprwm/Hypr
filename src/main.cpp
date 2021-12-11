@@ -30,7 +30,6 @@ int main(int argc, char** argv) {
 
         const int BARRET = barMainThread();
         Debug::log(BARRET == 0 ? LOG : ERR, "Bar exited with code " + std::to_string(BARRET) + "!");
-        g_pWindowManager->DebugOfstream.close();
         return 0;
     }
 
@@ -73,8 +72,6 @@ int main(int argc, char** argv) {
     Debug::log(LOG, "Hypr reached the end! Exiting...");
 
     xcb_disconnect(g_pWindowManager->DisplayConnection);
-
-    g_pWindowManager->DebugOfstream.close();
 
     if (const auto err = xcb_connection_has_error(g_pWindowManager->DisplayConnection); err != 0) {
         Debug::log(CRIT, "Exiting because of error " + std::to_string(err));

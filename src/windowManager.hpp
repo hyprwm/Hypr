@@ -22,7 +22,6 @@
 
 class CWindowManager {
 public:
-    std::ofstream               DebugOfstream;
     xcb_connection_t*           DisplayConnection = nullptr;
     xcb_ewmh_connection_t*      EWMHConnection = nullptr; // Bar uses this
     xcb_screen_t*               Screen = nullptr;

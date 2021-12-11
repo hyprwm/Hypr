@@ -27,5 +27,9 @@ void Debug::log(LogLevel level, std::string msg) {
     printf((msg + "\n").c_str());
 
     // also log to a file
-    g_pWindowManager->DebugOfstream << msg << "\n";
+    const std::string DEBUGPATH = ISDEBUG ? "/tmp/hypr/hyprd.log" : "/tmp/hypr/hypr.log";
+    std::ofstream ofs;
+    ofs.open(DEBUGPATH, std::ios::out | std::ios::app);
+    ofs << msg << "\n";
+    ofs.close();
 }

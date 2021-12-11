@@ -30,10 +30,6 @@ void CWindowManager::createAndOpenAllPipes() {
     system("cat \" \" > /tmp/hypr/hyprbarout");
     system("cat \" \" > /tmp/hypr/hyprbarind");
     system("cat \" \" > /tmp/hypr/hyprbaroutd");
-
-    // open the debug file
-    const std::string DEBUGPATH = "/tmp/hypr/hypr.log";
-    DebugOfstream.open(DEBUGPATH, std::ios::out | std::ios::app);
 }
 
 void CWindowManager::updateRootCursor() {
@@ -419,10 +415,10 @@ void CWindowManager::refreshDirtyWindows() {
             }
 
             applyShapeToWindow(&window);
-
-            Debug::log(LOG, "Refreshed dirty window, with an ID of " + std::to_string(window.getDrawable()));
         }
     }
+
+    Debug::log(LOG, "Refreshed dirty windows.");
 }
 
 void CWindowManager::setFocusedWindow(xcb_drawable_t window) {
