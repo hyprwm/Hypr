@@ -1045,13 +1045,15 @@ void CWindowManager::eatWindow(CWindow* a, CWindow* toEat) {
 void CWindowManager::closeWindowAllChecks(int64_t id) {
     // fix last window if tile
     const auto CLOSEDWINDOW = g_pWindowManager->getWindowFromDrawable(id);
-    if (CLOSEDWINDOW) {
-        if (!CLOSEDWINDOW->getIsFloating())
-            g_pWindowManager->fixWindowOnClose(CLOSEDWINDOW);
 
-        if (const auto WORKSPACE = getWorkspaceByID(CLOSEDWINDOW->getWorkspaceID()); WORKSPACE && CLOSEDWINDOW->getFullscreen())
-            WORKSPACE->setHasFullscreenWindow(false);
-    }
+    if (!CLOSEDWINDOW)
+        return; // It's not in the vec, ignore. (weird)
+
+    if (!CLOSEDWINDOW->getIsFloating())
+        g_pWindowManager->fixWindowOnClose(CLOSEDWINDOW);
+
+    if (const auto WORKSPACE = getWorkspaceByID(CLOSEDWINDOW->getWorkspaceID()); WORKSPACE && CLOSEDWINDOW->getFullscreen())
+        WORKSPACE->setHasFullscreenWindow(false);
 
     // delete off of the arr
     g_pWindowManager->removeWindowFromVectorSafe(id);
@@ -1672,4 +1674,44 @@ void CWindowManager::recalcAllWorkspaces() {
     for (auto& workspace : workspaces) {
         recalcEntireWorkspace(workspace.getID());
     }
+}
+
+void CWindowManager::moveWindowToUnmapped(int64_t id) {
+    for (auto& w : windows) {
+        if (w.getDrawable() == id) {
+            // Move it
+            unmappedWindows.push_back(w);
+            removeWindowFromVectorSafe(w.getDrawable());
+            return;
+        }
+    }
+}
+
+void CWindowManager::moveWindowToMapped(int64_t id) {
+    for (auto& w : unmappedWindows) {
+        if (w.getDrawable() == id) {
+            // Move it
+            windows.push_back(w);
+            // manually remove
+            auto temp = unmappedWindows;
+            unmappedWindows.clear();
+
+            for (auto& t : temp) {
+                if (t.getDrawable() != id)
+                    unmappedWindows.push_back(t);
+            }
+
+            return;
+        }
+    }
+}
+
+bool CWindowManager::isWindowUnmapped(int64_t id) {
+    for (auto& w : unmappedWindows) {
+        if (w.getDrawable() == id) {
+            return true;
+        }
+    }
+
+    return false;
 }

@@ -41,6 +41,7 @@ public:
     xcb_colormap_t              Colormap;
 
     std::vector<CWindow>        windows; // windows never left. It has always been hiding amongst us.
+    std::vector<CWindow>        unmappedWindows;
     xcb_drawable_t              LastWindow = -1;
 
     std::vector<CWorkspace>     workspaces;
@@ -116,6 +117,10 @@ public:
     int                         getWindowsOnWorkspace(const int&);
 
     void                        recalcAllWorkspaces();
+
+    void                        moveWindowToUnmapped(int64_t);
+    void                        moveWindowToMapped(int64_t);
+    bool                        isWindowUnmapped(int64_t);
 
 private:
 

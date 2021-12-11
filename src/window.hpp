@@ -87,6 +87,7 @@ public:
     // Animate borders
     EXPOSED_MEMBER(RealBorderColor, CFloatingColor, c);
     EXPOSED_MEMBER(EffectiveBorderColor, CFloatingColor, c);
+    
 
 private:
 

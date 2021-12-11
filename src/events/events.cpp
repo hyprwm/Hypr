@@ -118,7 +118,15 @@ void Events::eventUnmapWindow(xcb_generic_event_t* event) {
 
     RETURNIFBAR;
 
-    g_pWindowManager->closeWindowAllChecks(E->window);
+    const auto PCLOSEDWINDOW = g_pWindowManager->getWindowFromDrawable(E->window);
+
+    if (!PCLOSEDWINDOW)
+        return; // bullshit window?
+
+    if (PCLOSEDWINDOW->getIsFloating())
+        g_pWindowManager->moveWindowToUnmapped(E->event);  // If it's floating, just unmap it.
+    else
+        g_pWindowManager->closeWindowAllChecks(E->window);
 
     // refocus on new window
     g_pWindowManager->refocusWindowOnClosed();
@@ -368,6 +376,12 @@ void Events::eventMapWindow(xcb_generic_event_t* event) {
     // make sure it's not the bar!
     if (E->window == g_pWindowManager->barWindowID)
         return;
+
+    // Check if it's not unmapped
+    if (g_pWindowManager->isWindowUnmapped(E->window)) {
+        g_pWindowManager->moveWindowToMapped(E->window);
+        return;
+    }
 
     // We check if the window is not on our tile-blacklist and if it is, we have a special treatment procedure for it.
     // this func also sets some stuff
