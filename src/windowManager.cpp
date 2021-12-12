@@ -1286,19 +1286,33 @@ void CWindowManager::moveActiveWindowTo(char dir) {
     warpCursorTo(CURRENTWINDOW->getPosition() + CURRENTWINDOW->getSize() / 2.f);
 }
 
+CWindow* CWindowManager::getFullscreenWindowByWorkspace(const int& id) {
+    for (auto& window : windows) {
+        if (window.getWorkspaceID() == id && window.getFullscreen())
+            return &window;
+    }
+
+    return nullptr;
+}
+
 void CWindowManager::moveActiveFocusTo(char dir) {
     const auto CURRENTWINDOW = getWindowFromDrawable(LastWindow);
 
     if (!CURRENTWINDOW)
         return;
 
-    const auto neighbor = getNeighborInDir(dir);
+    const auto PWORKSPACE = getWorkspaceByID(CURRENTWINDOW->getWorkspaceID());
 
-    if (!neighbor)
+    if (!PWORKSPACE)
+        return;
+
+    const auto NEIGHBOR = PWORKSPACE->getHasFullscreenWindow() ? getFullscreenWindowByWorkspace(PWORKSPACE->getID()) : getNeighborInDir(dir);
+
+    if (!NEIGHBOR)
         return;
 
     // move the focus
-    setFocusedWindow(neighbor->getDrawable());
+    setFocusedWindow(NEIGHBOR->getDrawable());
 
     // finish by moving the cursor to the current window
     warpCursorTo(CURRENTWINDOW->getPosition() + CURRENTWINDOW->getSize() / 2.f);
@@ -1324,11 +1338,21 @@ void CWindowManager::changeWorkspaceByID(int ID) {
 
             activeWorkspaces[workspace.getMonitor()] = workspace.getID();
 
-            // set the focus to any window on that workspace
-            for (auto& window : windows) {
-                if (window.getWorkspaceID() == ID && window.getDrawable() > 0) {
-                    g_pWindowManager->setFocusedWindow(window.getDrawable());
-                    break;
+            // if not fullscreen set the focus to any window on that workspace
+            // if fullscreen, set to the fullscreen window
+            const auto PWORKSPACE = getWorkspaceByID(ID);
+            if (PWORKSPACE) {
+                if (!PWORKSPACE->getHasFullscreenWindow()) {
+                    for (auto& window : windows) {
+                        if (window.getWorkspaceID() == ID && window.getDrawable() > 0) {
+                            setFocusedWindow(window.getDrawable());
+                            break;
+                        }
+                    }
+                } else {
+                    const auto PFULLWINDOW = getFullscreenWindowByWorkspace(ID);
+                    if (PFULLWINDOW)
+                        setFocusedWindow(PFULLWINDOW->getDrawable());
                 }
             }
 
