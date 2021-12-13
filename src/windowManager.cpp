@@ -444,13 +444,13 @@ void CWindowManager::setFocusedWindow(xcb_drawable_t window) {
         LastWindow = window;
 
         applyShapeToWindow(g_pWindowManager->getWindowFromDrawable(window));
-
-        // set focus in X11
-        xcb_set_input_focus(DisplayConnection, XCB_INPUT_FOCUS_POINTER_ROOT, window, XCB_CURRENT_TIME);
-
-        // EWMH
-        EWMH::updateCurrentWindow(LastWindow);
     }
+
+    // EWMH
+    EWMH::updateCurrentWindow(window);
+
+    // set focus in X11
+    xcb_set_input_focus(DisplayConnection, XCB_INPUT_FOCUS_POINTER_ROOT, window, XCB_CURRENT_TIME);
 }
 
 // TODO: make this executed less. It's too often imo.
@@ -1645,8 +1645,10 @@ void CWindowManager::refocusWindowOnClosed() {
     const auto PWINDOW = findWindowAtCursor();
 
     // No window or last window valid
-    if (!PWINDOW || getWindowFromDrawable(LastWindow))
+    if (!PWINDOW || getWindowFromDrawable(LastWindow)) {
+        setFocusedWindow(Screen->root);  //refocus on root
         return;
+    }
 
     LastWindow = PWINDOW->getDrawable();
 
