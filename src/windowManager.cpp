@@ -447,6 +447,9 @@ void CWindowManager::setFocusedWindow(xcb_drawable_t window) {
 
         // set focus in X11
         xcb_set_input_focus(DisplayConnection, XCB_INPUT_FOCUS_POINTER_ROOT, window, XCB_CURRENT_TIME);
+
+        // EWMH
+        EWMH::updateCurrentWindow(LastWindow);
     }
 }
 
@@ -525,46 +528,6 @@ void CWindowManager::sanityCheckOnWorkspace(int workspaceID) {
                 } else {
                     Debug::log(ERR, "Malformed node ID " + std::to_string(w.getDrawable()) + " with 2 children but one or both are nullptr.");
                 }
-            }
-
-            // Check #3: Check if the window exists with xcb
-            // Some windows do not report they are dead for w/e reason
-            if (w.getDrawable() > 0) {
-                const auto GEOMETRYCOOKIE = xcb_get_geometry(g_pWindowManager->DisplayConnection, w.getDrawable());
-                const auto GEOMETRY = xcb_get_geometry_reply(g_pWindowManager->DisplayConnection, GEOMETRYCOOKIE, 0);
-
-                if (!GEOMETRY || (GEOMETRY->width < 1 || GEOMETRY->height < 1)) {
-                    Debug::log(LOG, "Found a dead window, ID: " + std::to_string(w.getDrawable()) + ", removing it.");
-                    
-                    closeWindowAllChecks(w.getDrawable());
-                    continue;
-                }
-
-                // Type 2: is hidden.
-                const auto window = w.getDrawable();
-                PROP(wm_type_cookie, HYPRATOMS["_NET_WM_WINDOW_TYPE"], UINT32_MAX);
-
-                if (wm_type_cookiereply == NULL || xcb_get_property_value_length(wm_type_cookiereply) < 1) {
-                    Debug::log(LOG, "No preferred type found.");
-                } else {
-                    const auto ATOMS = (xcb_atom_t*)xcb_get_property_value(wm_type_cookiereply);
-                    if (!ATOMS) {
-                        Debug::log(ERR, "Atoms not found in preferred type!");
-                    } else {
-                        if (xcbContainsAtom(wm_type_cookiereply, HYPRATOMS["_NET_WM_STATE_HIDDEN"])) {
-                            // delete it
-                            // NOTE: this is NOT the cause of windows in tray not being able
-                            // to open.
-                            free(wm_type_cookiereply);
-                            
-                            Debug::log(LOG, "Found a dead window, ID: " + std::to_string(w.getDrawable()) + ", removing it.");
-
-                            closeWindowAllChecks(w.getDrawable());
-                            continue;
-                        }
-                    }
-                }
-                free(wm_type_cookiereply);
             }
         }
     }
@@ -1591,7 +1554,7 @@ bool CWindowManager::shouldBeFloatedOnInit(int64_t window) {
     xcb_atom_t TYPEATOM = NULL;
 
     if (wm_type_cookiereply == NULL || xcb_get_property_value_length(wm_type_cookiereply) < 1) {
-        Debug::log(LOG, "No preferred type found.");
+        Debug::log(LOG, "No preferred type found. (shouldBeFloatedOnInit)");
     } else {
         const auto ATOMS = (xcb_atom_t*)xcb_get_property_value(wm_type_cookiereply);
         if (!ATOMS) {
@@ -1642,7 +1605,7 @@ void CWindowManager::doPostCreationChecks(CWindow* pWindow) {
     PROP(wm_type_cookie, HYPRATOMS["_NET_WM_WINDOW_TYPE"], UINT32_MAX);
 
     if (wm_type_cookiereply == NULL || xcb_get_property_value_length(wm_type_cookiereply) < 1) {
-        Debug::log(LOG, "No preferred type found.");
+        Debug::log(LOG, "No preferred type found. (doPostCreationChecks)");
     } else {
         const auto ATOMS = (xcb_atom_t*)xcb_get_property_value(wm_type_cookiereply);
         if (!ATOMS) {

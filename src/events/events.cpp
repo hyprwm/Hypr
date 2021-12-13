@@ -107,6 +107,9 @@ void Events::eventDestroy(xcb_generic_event_t* event) {
 
     // refocus on new window
     g_pWindowManager->refocusWindowOnClosed();
+
+    // EWMH
+    EWMH::updateClientList();
 }
 
 void Events::eventUnmapWindow(xcb_generic_event_t* event) {
@@ -130,6 +133,9 @@ void Events::eventUnmapWindow(xcb_generic_event_t* event) {
 
     // refocus on new window
     g_pWindowManager->refocusWindowOnClosed();
+
+    // EWMH
+    EWMH::updateClientList();
 }
 
 CWindow* Events::remapFloatingWindow(int windowID, int forcemonitor) {
@@ -187,7 +193,7 @@ CWindow* Events::remapFloatingWindow(int windowID, int forcemonitor) {
     const auto wm_type_cookiereply = xcb_get_property_reply(g_pWindowManager->DisplayConnection, wm_type_cookie, NULL);
     xcb_atom_t TYPEATOM = NULL;
     if (wm_type_cookiereply == NULL || xcb_get_property_value_length(wm_type_cookiereply) < 1) {
-        Debug::log(LOG, "No preferred type found.");
+        Debug::log(LOG, "No preferred type found. (RemapFloatingWindow)");
     } else {
         const auto ATOMS = (xcb_atom_t*)xcb_get_property_value(wm_type_cookiereply);
         if (!ATOMS) {
@@ -405,6 +411,9 @@ void Events::eventMapWindow(xcb_generic_event_t* event) {
     // Set not under
     pNewWindow->setUnderFullscreen(false);
     pNewWindow->setDirty(true);
+
+    // EWMH
+    EWMH::updateClientList();
 }
 
 void Events::eventButtonPress(xcb_generic_event_t* event) {

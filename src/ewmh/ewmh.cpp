@@ -29,5 +29,27 @@ void EWMH::setupInitEWMH() {
 
     xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, g_pWindowManager->Screen->root, HYPRATOMS["_NET_SUPPORTED"], XCB_ATOM_ATOM, 32, sizeof(supportedAtoms) / sizeof(xcb_atom_t), supportedAtoms);
 
+    // delete workarea
+    xcb_delete_property(g_pWindowManager->DisplayConnection, g_pWindowManager->Screen->root, HYPRATOMS["_NET_WORKAREA"]);
+
     Debug::log(LOG, "EWMH init done.");
+}
+
+void EWMH::updateCurrentWindow(xcb_window_t w) {
+    xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, g_pWindowManager->Screen->root, HYPRATOMS["_NET_ACTIVE_WINDOW"], XCB_ATOM_WINDOW, 32, 1, &w);
+}
+
+void EWMH::updateClientList() {
+    std::vector<xcb_window_t> windowsList;
+    for (auto& w : g_pWindowManager->windows)
+        if (w.getDrawable() > 0)
+            windowsList.push_back(w.getDrawable());
+    for (auto& w : g_pWindowManager->unmappedWindows)
+        windowsList.push_back(w.getDrawable());
+
+    // hack
+    xcb_window_t* ArrWindowList = &windowsList[0];
+
+    xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, g_pWindowManager->Screen->root, HYPRATOMS["_NET_CLIENT_LIST"], XCB_ATOM_WINDOW,
+        32, windowsList.size(), ArrWindowList);
 }
