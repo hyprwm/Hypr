@@ -533,6 +533,9 @@ void Events::eventExpose(xcb_generic_event_t* event) {
 void Events::eventClientMessage(xcb_generic_event_t* event) {
     const auto E = reinterpret_cast<xcb_client_message_event_t*>(event);
 
+    if (!g_pWindowManager->statusBar)
+        g_pWindowManager->handleClientMessage(E); // Client message handling
+
     RETURNIFMAIN; // Only for the bar
 
     // Tray clients

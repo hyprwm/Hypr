@@ -77,3 +77,33 @@ std::string getWindowName(uint64_t window) {
 
     return stringname;
 }
+
+void removeAtom(const int& window, xcb_atom_t prop, xcb_atom_t atom) {
+    xcb_grab_server(DisplayConnection);
+
+    const auto REPLY = xcb_get_property_reply(DisplayConnection, xcb_get_property(DisplayConnection, false, window, prop, XCB_GET_PROPERTY_TYPE_ANY, 0, 4096), NULL);
+
+    if (!REPLY || xcb_get_property_value_length(REPLY) == 0) {
+        free(REPLY);
+        xcb_ungrab_server(DisplayConnection);
+    }
+
+    xcb_atom_t* atomsList = (xcb_atom_t*)xcb_get_property_value(REPLY);
+    if (!atomsList) {
+        free(REPLY);
+        xcb_ungrab_server(DisplayConnection);
+    }
+
+    int valuesnum = 0;
+    const int current_size = xcb_get_property_value_length(REPLY) / (REPLY->format / 8);
+    xcb_atom_t values[current_size];
+    for (int i = 0; i < current_size; i++) {
+        if (atomsList[i] != atom)
+            values[valuesnum++] = atomsList[i];
+    }
+
+    xcb_change_property(DisplayConnection, XCB_PROP_MODE_REPLACE, window, prop, XCB_ATOM_ATOM, 32, valuesnum, values);
+
+    free(REPLY);
+    xcb_ungrab_server(DisplayConnection);
+}

@@ -82,6 +82,7 @@ public:
     void                        moveActiveFocusTo(char);
     void                        moveActiveWindowToWorkspace(int);
     void                        warpCursorTo(Vector2D);
+    void                        toggleWindowFullscrenn(const int&);
 
     void                        changeWorkspaceByID(int);
     void                        setAllWorkspaceWindowsDirtyByID(int);
@@ -123,6 +124,8 @@ public:
 
     void                        setAllWorkspaceWindowsAboveFullscreen(const int&);
     void                        setAllWorkspaceWindowsUnderFullscreen(const int&);
+
+    void                        handleClientMessage(xcb_client_message_event_t*);
 
 private:
 

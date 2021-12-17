@@ -1718,3 +1718,60 @@ void CWindowManager::setAllWorkspaceWindowsUnderFullscreen(const int& workspace)
         }
     }
 }
+
+void CWindowManager::toggleWindowFullscrenn(const int& window) {
+    const auto PWINDOW = getWindowFromDrawable(window);
+
+    if (!PWINDOW)
+        return;
+
+    const auto MONITOR = getMonitorFromWindow(PWINDOW);
+
+    setAllWorkspaceWindowsDirtyByID(activeWorkspaces[MONITOR->ID]);
+
+    PWINDOW->setFullscreen(!PWINDOW->getFullscreen());
+    getWorkspaceByID(PWINDOW->getWorkspaceID())->setHasFullscreenWindow(PWINDOW->getFullscreen());
+
+    // Fix windows over and below fullscreen.
+    if (PWINDOW->getFullscreen())
+        setAllWorkspaceWindowsUnderFullscreen(activeWorkspaces[MONITOR->ID]);
+    else
+        setAllWorkspaceWindowsAboveFullscreen(activeWorkspaces[MONITOR->ID]);
+
+    // EWMH 
+    Values[0] = HYPRATOMS["_NET_WM_STATE_FULLSCREEN"];
+    if (PWINDOW->getFullscreen())
+        xcb_change_property(DisplayConnection, XCB_PROP_MODE_APPEND, window, HYPRATOMS["_NET_WM_STATE"], XCB_ATOM_ATOM, 32, 1, Values);
+    else
+        removeAtom(window, HYPRATOMS["_NET_WM_STATE"], HYPRATOMS["_NET_WM_STATE_FULLSCREEN"]);
+
+    Debug::log(LOG, "Set fullscreen to " + std::to_string(PWINDOW->getFullscreen()) + " for " + std::to_string(window));
+}
+
+void CWindowManager::handleClientMessage(xcb_client_message_event_t* E) {
+
+    const auto PWINDOW = getWindowFromDrawable(E->window);
+
+    if (!PWINDOW)
+        return;
+
+    if (E->type == HYPRATOMS["_NET_WM_STATE"]) {
+        // The window wants to change its' state.
+        // For now we only support FULLSCREEN
+
+        if (E->data.data32[1] == HYPRATOMS["_NET_WM_STATE_FULLSCREEN"]) {
+            // Toggle fullscreen
+            toggleWindowFullscrenn(PWINDOW->getDrawable());
+
+            Debug::log(LOG, "Message recieved to toggle fullscreen for " + std::to_string(PWINDOW->getDrawable()));
+        }
+    } else if (E->type == HYPRATOMS["_NET_ACTIVE_WINDOW"]) {
+        // Change the focused window
+        if (E->format != 32)
+            return;
+
+        setFocusedWindow(PWINDOW->getDrawable());
+
+        Debug::log(LOG, "Message recieved to set active for " + std::to_string(PWINDOW->getDrawable()));
+    }
+}
