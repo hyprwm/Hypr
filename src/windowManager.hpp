@@ -56,8 +56,8 @@ public:
     
     std::vector<CTrayClient>    trayclients;
 
-    std::atomic<bool>           mainThreadBusy = false;
-    std::atomic<bool>           animationUtilBusy = false;
+    bool                        mainThreadBusy = false;
+    bool                        animationUtilBusy = false;
 
     xcb_cursor_t                pointerCursor;
     xcb_cursor_context_t*       pointerContext;

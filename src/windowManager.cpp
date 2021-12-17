@@ -432,15 +432,15 @@ void CWindowManager::setFocusedWindow(xcb_drawable_t window) {
         }
 
         float values[1];
-        if (g_pWindowManager->getWindowFromDrawable(window)) {
-            if (g_pWindowManager->getWindowFromDrawable(window)->getIsFloating()) {
+        if (const auto PWINDOW = g_pWindowManager->getWindowFromDrawable(window); PWINDOW) {
+            if (PWINDOW->getIsFloating()) {
                 values[0] = XCB_STACK_MODE_ABOVE;
                 xcb_configure_window(g_pWindowManager->DisplayConnection, window, XCB_CONFIG_WINDOW_STACK_MODE, values);
             }
 
             // Apply rounded corners, does all the checks inside.
             // The border changed so let's not make it rectangular maybe
-            applyShapeToWindow(g_pWindowManager->getWindowFromDrawable(window));
+            applyShapeToWindow(PWINDOW);
         }
 
         LastWindow = window;
@@ -1478,17 +1478,13 @@ void CWindowManager::updateBarInfo() {
 
     for (auto& c : winname) {
         // Remove illegal chars
-        if (c == '=')
-            c = ' ';
-        else if (c == '\t')
+        if (c == '=' || c == '\t')
             c = ' ';
     }
 
     for (auto& c : winclassname) {
         // Remove illegal chars
-        if (c == '=')
-            c = ' ';
-        else if (c == '\t')
+        if (c == '=' || c == '\t')
             c = ' ';
     }
 

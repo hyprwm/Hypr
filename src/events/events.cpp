@@ -4,17 +4,17 @@ gpointer handle(gpointer data) {
     int lazyUpdateCounter = 0;
 
     while (1) {
+        // update animations. They should be thread-safe.
+        AnimationUtil::move();
+        //
+
         // wait for the main thread to be idle
         while (g_pWindowManager->mainThreadBusy) {
-            ;
+            std::this_thread::sleep_for(std::chrono::microseconds(1));
         }
 
         // set state to let the main thread know to wait.
         g_pWindowManager->animationUtilBusy = true;
-
-        // update animations.
-        AnimationUtil::move();
-        //
 
         // Don't spam these
         if (lazyUpdateCounter > 10){
