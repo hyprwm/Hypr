@@ -432,25 +432,28 @@ void CWindowManager::setFocusedWindow(xcb_drawable_t window) {
         }
 
         float values[1];
-        if (g_pWindowManager->getWindowFromDrawable(window) && g_pWindowManager->getWindowFromDrawable(window)->getIsFloating()) {
-            values[0] = XCB_STACK_MODE_ABOVE;
-            xcb_configure_window(g_pWindowManager->DisplayConnection, window, XCB_CONFIG_WINDOW_STACK_MODE, values);
-        }
+        if (g_pWindowManager->getWindowFromDrawable(window)) {
+            if (g_pWindowManager->getWindowFromDrawable(window)->getIsFloating()) {
+                values[0] = XCB_STACK_MODE_ABOVE;
+                xcb_configure_window(g_pWindowManager->DisplayConnection, window, XCB_CONFIG_WINDOW_STACK_MODE, values);
+            }
 
-        // Apply rounded corners, does all the checks inside.
-        // The border changed so let's not make it rectangular maybe
-        applyShapeToWindow(g_pWindowManager->getWindowFromDrawable(window));
+            // Apply rounded corners, does all the checks inside.
+            // The border changed so let's not make it rectangular maybe
+            applyShapeToWindow(g_pWindowManager->getWindowFromDrawable(window));
+        }
 
         LastWindow = window;
 
-        applyShapeToWindow(g_pWindowManager->getWindowFromDrawable(window));
+        if (g_pWindowManager->getWindowFromDrawable(window))
+            applyShapeToWindow(g_pWindowManager->getWindowFromDrawable(window));
+
+        // set focus in X11
+        xcb_set_input_focus(DisplayConnection, XCB_INPUT_FOCUS_POINTER_ROOT, window, XCB_CURRENT_TIME);
+
+        // EWMH
+        EWMH::updateCurrentWindow(window);
     }
-
-    // EWMH
-    EWMH::updateCurrentWindow(window);
-
-    // set focus in X11
-    xcb_set_input_focus(DisplayConnection, XCB_INPUT_FOCUS_POINTER_ROOT, window, XCB_CURRENT_TIME);
 }
 
 // TODO: make this executed less. It's too often imo.

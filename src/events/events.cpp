@@ -43,7 +43,7 @@ void Events::setThread() {
 
     // Start a GTK thread so that Cairo does not complain.
 
-    g_pWindowManager->barThread = g_thread_new("Bar", handle, nullptr);
+    g_pWindowManager->barThread = g_thread_new("HyprST", handle, nullptr);
 
     if (!g_pWindowManager->barThread) {
         Debug::log(ERR, "Gthread failed!");
