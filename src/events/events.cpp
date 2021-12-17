@@ -209,6 +209,8 @@ CWindow* Events::remapFloatingWindow(int windowID, int forcemonitor) {
 
                 Debug::log(LOG, "New dock created, setting default XYWH to: " + std::to_string(GEOMETRY->x) + ", " + std::to_string(GEOMETRY->y)
                     + ", " + std::to_string(GEOMETRY->width) + ", " + std::to_string(GEOMETRY->height));
+
+                window.setDock(true);
             }
         }
     }
@@ -238,6 +240,10 @@ CWindow* Events::remapFloatingWindow(int windowID, int forcemonitor) {
 
     // Make all floating windows above
     g_pWindowManager->setAllFloatingWindowsTop();
+
+    // Fix docks
+    if (window.getDock())
+        g_pWindowManager->recalcAllDocks();
 
     return g_pWindowManager->getWindowFromDrawable(windowID);
 }

@@ -537,11 +537,18 @@ CWindow* CWindowManager::getWindowFromDrawable(int64_t window) {
     if (!window)
         return nullptr;
 
-    for(auto& w : windows) {
+    for (auto& w : windows) {
         if (w.getDrawable() == window) {
             return &w;
         }
     }
+
+    for (auto& w : unmappedWindows) {
+        if (w.getDrawable() == window) {
+            return &w;
+        }
+    }
+
     return nullptr;
 }
 
@@ -672,6 +679,7 @@ void CWindowManager::setEffectiveSizePosUsingConfig(CWindow* pWindow) {
     const auto MONITOR = getMonitorFromWindow(pWindow);
     const auto BARHEIGHT = ConfigManager::getInt("bar:enabled") == 1 ? ConfigManager::getInt("bar:height") : ConfigManager::parseError == "" ? 0 : ConfigManager::getInt("bar:height");
 
+
     // set some flags.
     const bool DISPLAYLEFT          = STICKS(pWindow->getPosition().x, MONITOR->vecPosition.x);
     const bool DISPLAYRIGHT         = STICKS(pWindow->getPosition().x + pWindow->getSize().x, MONITOR->vecPosition.x + MONITOR->vecSize.x);
@@ -681,12 +689,18 @@ void CWindowManager::setEffectiveSizePosUsingConfig(CWindow* pWindow) {
     pWindow->setEffectivePosition(pWindow->getPosition() + Vector2D(ConfigManager::getInt("border_size"), ConfigManager::getInt("border_size")));
     pWindow->setEffectiveSize(pWindow->getSize() - (Vector2D(ConfigManager::getInt("border_size"), ConfigManager::getInt("border_size")) * 2));
 
+    const auto OFFSETTOPLEFT = Vector2D(DISPLAYLEFT ? ConfigManager::getInt("gaps_out") + MONITOR->vecReservedTopLeft.x : ConfigManager::getInt("gaps_in"),
+                                         DISPLAYTOP ? ConfigManager::getInt("gaps_out") + MONITOR->vecReservedTopLeft.y + BARHEIGHT : ConfigManager::getInt("gaps_in"));
+
+    const auto OFFSETBOTTOMRIGHT = Vector2D( DISPLAYRIGHT ? ConfigManager::getInt("gaps_out") + MONITOR->vecReservedBottomRight.x : ConfigManager::getInt("gaps_in"),
+                                            DISPLAYBOTTOM ? ConfigManager::getInt("gaps_out") + MONITOR->vecReservedBottomRight.y : ConfigManager::getInt("gaps_in"));
+
     // do gaps, set top left
-    pWindow->setEffectivePosition(pWindow->getEffectivePosition() + Vector2D(DISPLAYLEFT ? ConfigManager::getInt("gaps_out") : ConfigManager::getInt("gaps_in"), DISPLAYTOP ? ConfigManager::getInt("gaps_out") + (MONITOR->ID == ConfigManager::getInt("bar:monitor") ? BARHEIGHT : 0) : ConfigManager::getInt("gaps_in")));
+    pWindow->setEffectivePosition(pWindow->getEffectivePosition() + OFFSETTOPLEFT);
     // fix to old size bottom right
-    pWindow->setEffectiveSize(pWindow->getEffectiveSize() - Vector2D(DISPLAYLEFT ? ConfigManager::getInt("gaps_out") : ConfigManager::getInt("gaps_in"), DISPLAYTOP ? ConfigManager::getInt("gaps_out") + (MONITOR->ID == ConfigManager::getInt("bar:monitor") ? BARHEIGHT : 0) : ConfigManager::getInt("gaps_in")));
+    pWindow->setEffectiveSize(pWindow->getEffectiveSize() - OFFSETTOPLEFT);
     // set bottom right
-    pWindow->setEffectiveSize(pWindow->getEffectiveSize() - Vector2D(DISPLAYRIGHT ? ConfigManager::getInt("gaps_out") : ConfigManager::getInt("gaps_in"), DISPLAYBOTTOM ? ConfigManager::getInt("gaps_out") : ConfigManager::getInt("gaps_in")));
+    pWindow->setEffectiveSize(pWindow->getEffectiveSize() - OFFSETBOTTOMRIGHT);
 }
 
 CWindow* CWindowManager::findWindowAtCursor() {
@@ -1008,6 +1022,8 @@ void CWindowManager::closeWindowAllChecks(int64_t id) {
     if (!CLOSEDWINDOW)
         return; // It's not in the vec, ignore. (weird)
 
+    CLOSEDWINDOW->setDead(true);
+
     if (const auto WORKSPACE = getWorkspaceByID(CLOSEDWINDOW->getWorkspaceID()); WORKSPACE && CLOSEDWINDOW->getFullscreen())
         WORKSPACE->setHasFullscreenWindow(false);
 
@@ -1016,6 +1032,10 @@ void CWindowManager::closeWindowAllChecks(int64_t id) {
 
     // delete off of the arr
     g_pWindowManager->removeWindowFromVectorSafe(id);
+
+    // Fix docks
+    if (CLOSEDWINDOW->getDock())
+        g_pWindowManager->recalcAllDocks();
 }
 
 void CWindowManager::fixMasterWorkspaceOnClosed(CWindow* pWindow) {
@@ -1773,5 +1793,41 @@ void CWindowManager::handleClientMessage(xcb_client_message_event_t* E) {
         setFocusedWindow(PWINDOW->getDrawable());
 
         Debug::log(LOG, "Message recieved to set active for " + std::to_string(PWINDOW->getDrawable()));
+    }
+}
+
+void CWindowManager::recalcAllDocks() {
+    for (auto& mon : monitors) {
+        mon.vecReservedTopLeft = {0, 0};
+        mon.vecReservedBottomRight = {0, 0};
+
+        setAllWorkspaceWindowsDirtyByID(activeWorkspaces[mon.ID]);
+    }
+
+    for (auto& w : windows) {
+        if (!w.getDock() && !w.getDead())
+            continue;
+
+        const auto MONITOR = &monitors[w.getMonitor()];
+
+        const auto VERTICAL = w.getSize().x / w.getSize().y < 1;
+
+        if (VERTICAL) {
+            if (w.getPosition().x < MONITOR->vecSize.x / 2.f + MONITOR->vecPosition.x) {
+                // Left
+                MONITOR->vecReservedTopLeft = Vector2D(w.getSize().x, 0);
+            } else {
+                // Right
+                MONITOR->vecReservedBottomRight = Vector2D(w.getSize().x, 0);
+            }
+        } else {
+            if (w.getPosition().y < MONITOR->vecSize.y / 2.f + MONITOR->vecPosition.y) {
+                // Top
+                MONITOR->vecReservedTopLeft = Vector2D(0, w.getSize().y);
+            } else {
+                // Bottom
+                MONITOR->vecReservedBottomRight = Vector2D(0, w.getSize().y);
+            }
+        }
     }
 }
