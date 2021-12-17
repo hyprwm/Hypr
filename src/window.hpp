@@ -88,9 +88,6 @@ public:
     // Animate borders
     EXPOSED_MEMBER(RealBorderColor, CFloatingColor, c);
     EXPOSED_MEMBER(EffectiveBorderColor, CFloatingColor, c);
-
-    // Docks
-    EXPOSED_MEMBER(Dock, bool, b);
     
 
 private:

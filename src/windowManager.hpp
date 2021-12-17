@@ -83,7 +83,6 @@ public:
     void                        moveActiveWindowToWorkspace(int);
     void                        warpCursorTo(Vector2D);
     void                        toggleWindowFullscrenn(const int&);
-    void                        recalcAllDocks();
 
     void                        changeWorkspaceByID(int);
     void                        setAllWorkspaceWindowsDirtyByID(int);

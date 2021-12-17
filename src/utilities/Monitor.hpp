@@ -12,7 +12,4 @@ struct SMonitor {
     int         ID              = -1;
 
     std::string szName          = "";
-
-    Vector2D    vecReservedTopLeft = Vector2D(0,0);
-    Vector2D    vecReservedBottomRight = Vector2D(0,0);
 };
