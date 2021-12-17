@@ -133,7 +133,7 @@ void CWindowManager::setupRandrMonitors() {
 
     xcb_flush(DisplayConnection);
 
-    if (monitors.size() == 0 || ISDEBUG) {
+    if (monitors.size() == 0) {
         // RandR failed!
         Debug::log(WARN, "RandR failed!");
         monitors.clear();
