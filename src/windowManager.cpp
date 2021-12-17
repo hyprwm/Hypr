@@ -680,7 +680,7 @@ void CWindowManager::setEffectiveSizePosUsingConfig(CWindow* pWindow) {
         return;
 
     const auto MONITOR = getMonitorFromWindow(pWindow);
-    const auto BARHEIGHT = (MONITOR.ID == pWindow->getMonitor() ? (ConfigManager::getInt("bar:enabled") == 1 ? ConfigManager::getInt("bar:height") : ConfigManager::parseError == "" ? 0 : ConfigManager::getInt("bar:height")) : 0);
+    const auto BARHEIGHT = (MONITOR->ID == pWindow->getMonitor() ? (ConfigManager::getInt("bar:enabled") == 1 ? ConfigManager::getInt("bar:height") : ConfigManager::parseError == "" ? 0 : ConfigManager::getInt("bar:height")) : 0);
 
 
     // set some flags.
