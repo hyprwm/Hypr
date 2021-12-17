@@ -384,6 +384,11 @@ void ConfigManager::loadConfigLoadVars() {
             configValues["bar:height"].intValue = 15;
         }
 
+        if (configValues["bar:monitor"].intValue > g_pWindowManager->monitors.size()) {
+            configValues["bar:monitor"].intValue = 0;
+            Debug::log(ERR, "Incorrect value in MonitorID for the bar. Setting to 0.");
+        }
+
         g_pWindowManager->statusBar->setup(configValues["bar:monitor"].intValue);
     } else if (g_pWindowManager->statusBar) {
         g_pWindowManager->statusBar->destroy();
