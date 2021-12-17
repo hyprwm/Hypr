@@ -1782,8 +1782,12 @@ void CWindowManager::handleClientMessage(xcb_client_message_event_t* E) {
         // For now we only support FULLSCREEN
 
         if (E->data.data32[1] == HYPRATOMS["_NET_WM_STATE_FULLSCREEN"]) {
-            // Toggle fullscreen
-            toggleWindowFullscrenn(PWINDOW->getDrawable());
+            if ((PWINDOW->getFullscreen() && (E->data.data32[0] == 0 || E->data.data32[0] == 2))
+                || (!PWINDOW->getFullscreen() && (E->data.data32[0] == 1 || E->data.data32[0] == 2))) {
+
+                // Toggle fullscreen
+                toggleWindowFullscrenn(PWINDOW->getDrawable());
+            }
 
             Debug::log(LOG, "Message recieved to toggle fullscreen for " + std::to_string(PWINDOW->getDrawable()));
         }
