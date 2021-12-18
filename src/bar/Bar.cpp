@@ -164,7 +164,7 @@ void CStatusBar::setupTray() {
                       XCB_CW_BACK_PIXEL | XCB_CW_BORDER_PIXEL | XCB_CW_OVERRIDE_REDIRECT | XCB_CW_COLORMAP, 
                       values);
 
-    xcb_atom_t dockAtom[] = {HYPRATOMS["_NET_WM_WINDOW_TYPE_UTILITY"]};
+    xcb_atom_t dockAtom[] = {HYPRATOMS["_NET_WM_WINDOW_TYPE_DOCK"]};
     xcb_ewmh_set_wm_window_type(g_pWindowManager->EWMHConnection, m_iWindowID, 1, dockAtom);
 
     const uint32_t ORIENTATION = 0; // Horizontal

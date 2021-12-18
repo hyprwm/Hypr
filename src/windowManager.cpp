@@ -264,10 +264,6 @@ void CWindowManager::recieveEvent() {
                 Events::eventMapWindow(ev);
                 Debug::log(LOG, "Event dispatched MAP");
                 break;
-            case XCB_CONFIGURE_REQUEST:
-                Events::eventConfigureRequest(ev);
-                Debug::log(LOG, "Event dispatched CONFIGURE_REQUEST");
-                break;
             case XCB_BUTTON_PRESS:
                 Events::eventButtonPress(ev);
                 Debug::log(LOG, "Event dispatched BUTTON_PRESS");
@@ -1683,6 +1679,13 @@ void CWindowManager::doPostCreationChecks(CWindow* pWindow) {
         }
     }
     free(wm_type_cookiereply);
+
+    // Check if it has a name
+    const auto NAME = getClassName(window);
+    if (NAME.first == "Error" && NAME.second == "Error") {
+        closeWindowAllChecks(window);
+        Debug::log(WARN, "Window created but has a class of NULL. Removing.");
+    }
 
     Debug::log(LOG, "Post creation checks ended");
     //

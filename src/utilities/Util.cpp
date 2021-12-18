@@ -18,11 +18,10 @@ std::string exec(const char* cmd) {
 
 void clearLogs() {
     std::ofstream logs;
-    const char* const ENVHOME = getenv("HOME");
-    const std::string DEBUGPATH = ENVHOME + (std::string) "/.hypr.log";
-    logs.open(DEBUGPATH, std::ios::out | std::ios::trunc);
-    logs << " ";
-    logs.close();
+    const std::string DEBUGPATH = "/tmp/hypr/hypr.log";
+    const std::string DEBUGPATH2 = "/tmp/hypr/hyprd.log";
+    unlink(DEBUGPATH2.c_str());
+    unlink(DEBUGPATH.c_str());
 }
 
 double parabolic(double from, double to, double incline) {
