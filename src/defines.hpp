@@ -27,6 +27,7 @@
 #include <string>
 #include <algorithm>
 #include <map>
+#include <unordered_map>
 
 #include "./helpers/Vector.hpp"
 #include "./utilities/Debug.hpp"
@@ -41,8 +42,8 @@
     private: \
         type m_##prefix##var; \
     public: \
-        type get##var() { return this->m_##prefix##var; } \
-        void set##var(type value) { this->m_##prefix##var = value; }
+        inline type get##var() { return m_##prefix##var; } \
+        void set##var(type value) { m_##prefix##var = value; }
 
 
 #define EVENT(name) \

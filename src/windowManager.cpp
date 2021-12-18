@@ -331,6 +331,7 @@ void CWindowManager::cleanupUnusedWorkspaces() {
 }
 
 void CWindowManager::refreshDirtyWindows() {
+    const auto START = std::chrono::high_resolution_clock::now();
     for(auto& window : windows) {
         if (window.getDirty()) {
             window.setDirty(false);
@@ -351,12 +352,18 @@ void CWindowManager::refreshDirtyWindows() {
                 // Move it to hades
                 Values[0] = (int)1500000; // hmu when monitors actually have that many pixels
                 Values[1] = (int)1500000; // and we are still using xorg =)
-                xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, Values);
+                if (VECTORDELTANONZERO(window.getLastUpdatePosition(), Vector2D(Values[0], Values[1]))) {
+                    xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, Values);
+                    window.setLastUpdatePosition(Vector2D(Values[0], Values[1]));
+                }
 
                 // Set the size JIC.
                 Values[0] = (int)window.getEffectiveSize().x;
                 Values[1] = (int)window.getEffectiveSize().y;
-                xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, Values);
+                if (VECTORDELTANONZERO(window.getLastUpdateSize(), Vector2D(Values[0], Values[1]))) {
+                    xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, Values);
+                    window.setLastUpdateSize(Vector2D(Values[0], Values[1]));
+                }
 
                 continue;
             }
@@ -370,11 +377,17 @@ void CWindowManager::refreshDirtyWindows() {
 
                 Values[0] = (int)MONITOR->vecSize.x;
                 Values[1] = (int)MONITOR->vecSize.y;
-                xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, Values);
+                if (VECTORDELTANONZERO(window.getLastUpdateSize(), Vector2D(Values[0], Values[1]))) {
+                    xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, Values);
+                    window.setLastUpdateSize(Vector2D(Values[0], Values[1]));
+                }
 
                 Values[0] = (int)MONITOR->vecPosition.x;
                 Values[1] = (int)MONITOR->vecPosition.y;
-                xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, Values);
+                if (VECTORDELTANONZERO(window.getLastUpdatePosition(), Vector2D(Values[0], Values[1]))) {
+                    xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, Values);
+                    window.setLastUpdatePosition(Vector2D(Values[0], Values[1]));
+                }
 
                 // Apply rounded corners, does all the checks inside
                 applyShapeToWindow(&window);
@@ -386,7 +399,10 @@ void CWindowManager::refreshDirtyWindows() {
             // I have added the bordersize vec2d before in the setEffectiveSizePosUsingConfig function.
             Values[0] = (int)window.getRealPosition().x - ConfigManager::getInt("border_size");
             Values[1] = (int)window.getRealPosition().y - ConfigManager::getInt("border_size");
-            xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, Values);
+            if (VECTORDELTANONZERO(window.getLastUpdatePosition(), Vector2D(Values[0], Values[1]))) {
+                xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, Values);
+                window.setLastUpdatePosition(Vector2D(Values[0], Values[1]));
+            }
 
             Values[0] = (int)ConfigManager::getInt("border_size");
             xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_BORDER_WIDTH, Values);
@@ -400,7 +416,10 @@ void CWindowManager::refreshDirtyWindows() {
             if (!window.getIsAnimated() || ConfigManager::getInt("anim:cheap") == 0) {
                 Values[0] = (int)window.getRealSize().x;
                 Values[1] = (int)window.getRealSize().y;
-                xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, Values);
+                if (VECTORDELTANONZERO(window.getLastUpdateSize(), Vector2D(Values[0], Values[1]))) {
+                    xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, Values);
+                    window.setLastUpdateSize(Vector2D(Values[0], Values[1]));
+                }
                 window.setFirstAnimFrame(true);
             }
 
@@ -410,15 +429,19 @@ void CWindowManager::refreshDirtyWindows() {
                 if (window.getRealSize().x < window.getEffectiveSize().x || window.getRealSize().y < window.getEffectiveSize().y) {
                     Values[0] = (int)window.getEffectiveSize().x;
                     Values[1] = (int)window.getEffectiveSize().y;
-                    xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, Values);
+                    if (VECTORDELTANONZERO(window.getLastUpdateSize(), Vector2D(Values[0], Values[1]))) {
+                        xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, Values);
+                        window.setLastUpdateSize(Vector2D(Values[0], Values[1]));
+                    }
                 }
             }
 
             applyShapeToWindow(&window);
+
         }
     }
 
-    Debug::log(LOG, "Refreshed dirty windows.");
+    Debug::log(LOG, "Refreshed dirty windows in " + std::to_string(std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - START).count()) + "us.");
 }
 
 void CWindowManager::setFocusedWindow(xcb_drawable_t window) {
@@ -679,9 +702,10 @@ void CWindowManager::setEffectiveSizePosUsingConfig(CWindow* pWindow) {
     if (!pWindow || pWindow->getIsFloating())
         return;
 
+    auto START = std::chrono::high_resolution_clock::now();
+
     const auto MONITOR = getMonitorFromWindow(pWindow);
     const auto BARHEIGHT = (MONITOR->ID == ConfigManager::getInt("bar:monitor") ? (ConfigManager::getInt("bar:enabled") == 1 ? ConfigManager::getInt("bar:height") : ConfigManager::parseError == "" ? 0 : ConfigManager::getInt("bar:height")) : 0);
-
 
     // set some flags.
     const bool DISPLAYLEFT          = STICKS(pWindow->getPosition().x, MONITOR->vecPosition.x);
@@ -689,14 +713,18 @@ void CWindowManager::setEffectiveSizePosUsingConfig(CWindow* pWindow) {
     const bool DISPLAYTOP           = STICKS(pWindow->getPosition().y, MONITOR->vecPosition.y);
     const bool DISPLAYBOTTOM        = STICKS(pWindow->getPosition().y + pWindow->getSize().y, MONITOR->vecPosition.y + MONITOR->vecSize.y);
 
-    pWindow->setEffectivePosition(pWindow->getPosition() + Vector2D(ConfigManager::getInt("border_size"), ConfigManager::getInt("border_size")));
-    pWindow->setEffectiveSize(pWindow->getSize() - (Vector2D(ConfigManager::getInt("border_size"), ConfigManager::getInt("border_size")) * 2));
+    const auto BORDERSIZE = ConfigManager::getInt("border_size");
+    const auto GAPSOUT = ConfigManager::getInt("gaps_out");
+    const auto GAPSIN = ConfigManager::getInt("gaps_in");
 
-    const auto OFFSETTOPLEFT = Vector2D(DISPLAYLEFT ? ConfigManager::getInt("gaps_out") + MONITOR->vecReservedTopLeft.x : ConfigManager::getInt("gaps_in"),
-                                         DISPLAYTOP ? ConfigManager::getInt("gaps_out") + MONITOR->vecReservedTopLeft.y + BARHEIGHT : ConfigManager::getInt("gaps_in"));
+    pWindow->setEffectivePosition(pWindow->getPosition() + Vector2D(BORDERSIZE, BORDERSIZE));
+    pWindow->setEffectiveSize(pWindow->getSize() - (Vector2D(BORDERSIZE, BORDERSIZE) * 2));
 
-    const auto OFFSETBOTTOMRIGHT = Vector2D( DISPLAYRIGHT ? ConfigManager::getInt("gaps_out") + MONITOR->vecReservedBottomRight.x : ConfigManager::getInt("gaps_in"),
-                                            DISPLAYBOTTOM ? ConfigManager::getInt("gaps_out") + MONITOR->vecReservedBottomRight.y : ConfigManager::getInt("gaps_in"));
+    const auto OFFSETTOPLEFT = Vector2D(DISPLAYLEFT ? GAPSOUT + MONITOR->vecReservedTopLeft.x : GAPSIN,
+                                         DISPLAYTOP ? GAPSOUT + MONITOR->vecReservedTopLeft.y + BARHEIGHT : GAPSIN);
+
+    const auto OFFSETBOTTOMRIGHT = Vector2D( DISPLAYRIGHT ? GAPSOUT + MONITOR->vecReservedBottomRight.x : GAPSIN,
+                                            DISPLAYBOTTOM ? GAPSOUT + MONITOR->vecReservedBottomRight.y : GAPSIN);
 
     // do gaps, set top left
     pWindow->setEffectivePosition(pWindow->getEffectivePosition() + OFFSETTOPLEFT);

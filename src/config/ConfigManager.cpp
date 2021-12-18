@@ -461,14 +461,14 @@ void ConfigManager::tick() {
     }
 }
 
-int ConfigManager::getInt(std::string_view v) {
+int ConfigManager::getInt(std::string v) {
     return configValues[v].intValue;
 }
 
-float ConfigManager::getFloat(std::string_view v) {
+float ConfigManager::getFloat(std::string v) {
     return configValues[v].floatValue;
 }
 
-std::string ConfigManager::getString(std::string_view v) {
+std::string ConfigManager::getString(std::string v) {
     return configValues[v].strValue;
 }

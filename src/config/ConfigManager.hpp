@@ -2,6 +2,7 @@
 
 #include <map>
 #include "../utilities/Debug.hpp"
+#include <unordered_map>
 
 enum ELayouts {
     LAYOUT_DWINDLE = 0,
@@ -15,7 +16,7 @@ struct SConfigValue {
 };
 
 namespace ConfigManager {
-    inline std::map<std::string_view, SConfigValue> configValues;
+    inline std::unordered_map<std::string, SConfigValue> configValues;
     inline time_t       lastModifyTime = 0;
 
     inline bool         loadBar = false;
@@ -32,7 +33,7 @@ namespace ConfigManager {
 
     void                applyKeybindsToX();
 
-    int                 getInt(std::string_view);
-    float               getFloat(std::string_view);
-    std::string         getString(std::string_view);
+    int                 getInt(std::string);
+    float               getFloat(std::string);
+    std::string         getString(std::string);
 };
