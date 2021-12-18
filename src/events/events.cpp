@@ -620,6 +620,27 @@ void Events::eventClientMessage(xcb_generic_event_t* event) {
             xcb_map_window(g_pWindowManager->DisplayConnection, CLIENT);
         }
     }
-    
+}
 
+void Events::eventConfigureRequest(xcb_generic_event_t* event) {
+    const auto E = reinterpret_cast<xcb_configure_request_event_t*>(event);
+
+    RETURNIFBAR;
+
+    const auto PWINDOW = g_pWindowManager->getWindowFromDrawable(E->window);
+
+    if (!PWINDOW || !PWINDOW->getIsFloating())
+        return;
+
+    // correct delta
+    auto DELTA = PWINDOW->getDefaultSize() - Vector2D(E->width, E->height);
+
+    PWINDOW->setDefaultSize(Vector2D(E->width, E->height));
+    PWINDOW->setDefaultPosition(PWINDOW->getDefaultPosition() - (DELTA / 2.f)); // Center
+
+    PWINDOW->setPosition(PWINDOW->getDefaultPosition());
+    PWINDOW->setSize(PWINDOW->getDefaultSize());
+
+    PWINDOW->setRealPosition(PWINDOW->getDefaultPosition());
+    PWINDOW->setRealSize(PWINDOW->getDefaultSize());
 }

@@ -164,6 +164,9 @@ void CStatusBar::setupTray() {
                       XCB_CW_BACK_PIXEL | XCB_CW_BORDER_PIXEL | XCB_CW_OVERRIDE_REDIRECT | XCB_CW_COLORMAP, 
                       values);
 
+    xcb_atom_t dockAtom[] = {HYPRATOMS["_NET_WM_WINDOW_TYPE_UTILITY"]};
+    xcb_ewmh_set_wm_window_type(g_pWindowManager->EWMHConnection, m_iWindowID, 1, dockAtom);
+
     const uint32_t ORIENTATION = 0; // Horizontal
     xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, trayWindowID,
                         HYPRATOMS["_NET_SYSTEM_TRAY_ORIENTATION"], XCB_ATOM_CARDINAL,
@@ -366,6 +369,7 @@ void CStatusBar::destroy() {
     saveTrayOnDestroy();
 
     xcb_close_font(g_pWindowManager->DisplayConnection, m_mContexts["HITEXT"].Font);
+    xcb_unmap_window(g_pWindowManager->DisplayConnection, m_iWindowID);
     xcb_destroy_window(g_pWindowManager->DisplayConnection, m_iWindowID);
     xcb_destroy_window(g_pWindowManager->DisplayConnection, m_iPixmap);
 

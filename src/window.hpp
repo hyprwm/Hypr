@@ -94,6 +94,9 @@ public:
     // Docks
     EXPOSED_MEMBER(Dock, bool, b);
     
+    // Rounding
+    EXPOSED_MEMBER(Rounded, bool, b);
+    
 
 private:
 

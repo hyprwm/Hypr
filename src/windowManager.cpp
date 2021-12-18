@@ -264,6 +264,10 @@ void CWindowManager::recieveEvent() {
                 Events::eventMapWindow(ev);
                 Debug::log(LOG, "Event dispatched MAP");
                 break;
+            case XCB_CONFIGURE_REQUEST:
+                Events::eventConfigureRequest(ev);
+                Debug::log(LOG, "Event dispatched CONFIGURE_REQUEST");
+                break;
             case XCB_BUTTON_PRESS:
                 Events::eventButtonPress(ev);
                 Debug::log(LOG, "Event dispatched BUTTON_PRESS");
@@ -407,7 +411,6 @@ void CWindowManager::refreshDirtyWindows() {
             Values[0] = (int)ConfigManager::getInt("border_size");
             xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_BORDER_WIDTH, Values);
 
-
             // do border
             Values[0] = window.getRealBorderColor().getAsUint32();
             xcb_change_window_attributes(DisplayConnection, window.getDrawable(), XCB_CW_BORDER_PIXEL, Values);
@@ -437,7 +440,6 @@ void CWindowManager::refreshDirtyWindows() {
             }
 
             applyShapeToWindow(&window);
-
         }
     }
 
@@ -609,6 +611,13 @@ void CWindowManager::applyShapeToWindow(CWindow* pWindow) {
 
     const auto ROUNDING = pWindow->getFullscreen() ? 0 : ConfigManager::getInt("rounding");
 
+    if (!pWindow->getRounded() && !ROUNDING)
+        return;
+
+    if (!ROUNDING && pWindow->getRounded()) {
+        pWindow->setRounded(false);
+    }
+
     const auto SHAPEQUERY = xcb_get_extension_data(DisplayConnection, &xcb_shape_id);
 
     if (!SHAPEQUERY || !SHAPEQUERY->present || pWindow->getNoInterventions())
@@ -696,6 +705,9 @@ void CWindowManager::applyShapeToWindow(CWindow* pWindow) {
 
     xcb_free_pixmap(DisplayConnection, PIXMAP1);
     xcb_free_pixmap(DisplayConnection, PIXMAP2);
+
+    if (ROUNDING)
+        pWindow->setRounded(true);
 }
 
 void CWindowManager::setEffectiveSizePosUsingConfig(CWindow* pWindow) {

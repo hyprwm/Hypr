@@ -16,6 +16,7 @@ namespace Events {
     EVENT(KeyPress);
     EVENT(MotionNotify);
     EVENT(ClientMessage);
+    EVENT(ConfigureRequest);
 
     // Bypass some events for floating windows
     CWindow*        remapWindow(int, bool floating = false, int forcemonitor = -1);
