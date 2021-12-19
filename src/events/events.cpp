@@ -236,7 +236,7 @@ CWindow* Events::remapFloatingWindow(int windowID, int forcemonitor) {
         // update
         window.setDefaultSize(NEWSIZE);
         window.setDefaultPosition(window.getDefaultPosition() - DELTA / 2.f);
-    } else {
+    } else if (!succ) {
         Debug::log(ERR, "ICCCM Size Hints failed.");
     }
 
