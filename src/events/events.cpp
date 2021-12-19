@@ -223,9 +223,9 @@ CWindow* Events::remapFloatingWindow(int windowID, int forcemonitor) {
     const auto succ = xcb_icccm_get_wm_normal_hints_reply(g_pWindowManager->DisplayConnection, xcb_icccm_get_wm_normal_hints_unchecked(g_pWindowManager->DisplayConnection, window.getDrawable()), &sizeHints, NULL);
     if (succ && nextWindowCentered /* Basically means dialog */) {
 
-        //                          vvv gets the max value out of the geometry, size hint, size hint max and size hint base.
-        auto NEWSIZE = Vector2D(std::max(std::max(sizeHints.width, (int32_t)window.getDefaultSize().x), std::max(sizeHints.max_width, sizeHints.base_width)),
-                                std::max(std::max(sizeHints.height, (int32_t)window.getDefaultSize().y), std::max(sizeHints.max_height, sizeHints.base_height)));
+        //                          vvv gets the max value out of the geometry, size hint, (size hint max if < screen) and size hint base.
+        auto NEWSIZE = Vector2D(std::max(std::max(sizeHints.width, (int32_t)window.getDefaultSize().x), std::max(sizeHints.max_width > g_pWindowManager->monitors[CURRENTSCREEN].vecSize.x ? 0 : sizeHints.max_width, sizeHints.base_width)),
+                                std::max(std::max(sizeHints.height, (int32_t)window.getDefaultSize().y), std::max(sizeHints.max_height > g_pWindowManager->monitors[CURRENTSCREEN].vecSize.y ? 0 : sizeHints.max_height, sizeHints.base_height)));
 
         // clip the new size to max monitor size
         NEWSIZE = Vector2D(std::clamp(NEWSIZE.x, (double)40.f, g_pWindowManager->monitors[CURRENTSCREEN].vecSize.x),
