@@ -205,8 +205,49 @@ CWindow* Events::remapFloatingWindow(int windowID, int forcemonitor) {
                 window.setDefaultPosition(Vector2D(GEOMETRY->x, GEOMETRY->y));
                 window.setDefaultSize(Vector2D(GEOMETRY->width, GEOMETRY->height));
 
-                Debug::log(LOG, "New dock created, setting default XYWH to: " + std::to_string(GEOMETRY->x) + ", " + std::to_string(GEOMETRY->y)
-                    + ", " + std::to_string(GEOMETRY->width) + ", " + std::to_string(GEOMETRY->height));
+                window.setDockAlign(DOCK_TOP);
+
+                // Check reserved
+                const auto STRUTREPLY = xcb_get_property_reply(g_pWindowManager->DisplayConnection, xcb_get_property(g_pWindowManager->DisplayConnection, false, windowID, HYPRATOMS["_NET_WM_STRUT_PARTIAL"], XCB_GET_PROPERTY_TYPE_ANY, 0, (4294967295U)), NULL);
+
+                if (!STRUTREPLY || xcb_get_property_value_length(STRUTREPLY) == 0) {
+                    Debug::log(ERR, "Couldn't get strut for dock.");
+                } else {
+                    const uint32_t* STRUT = (uint32_t*)xcb_get_property_value(STRUTREPLY);
+
+                    if (!STRUT) {
+                        Debug::log(ERR, "Couldn't get strut for dock. (2)");
+                    } else {
+                        // Set the dock's align
+                        // LEFT RIGHT TOP BOTTOM
+                        //  0     1    2     3
+                        if (STRUT[2] > 0 && STRUT[3] == 0) {
+                            // top
+                            window.setDockAlign(DOCK_TOP);
+                        } else if (STRUT[2] == 0 && STRUT[3] > 0) {
+                            // bottom
+                            window.setDockAlign(DOCK_BOTTOM);
+                        }
+
+                        // little todo: support left/right docks
+                    }
+                }
+
+                free(STRUTREPLY);
+
+                switch (window.getDockAlign()) {
+                    case DOCK_TOP:
+                        window.setDefaultPosition(Vector2D(g_pWindowManager->monitors[CURRENTSCREEN].vecPosition.x, g_pWindowManager->monitors[CURRENTSCREEN].vecPosition.y));
+                        break;
+                    case DOCK_BOTTOM:
+                        window.setDefaultPosition(Vector2D(g_pWindowManager->monitors[CURRENTSCREEN].vecPosition.x, g_pWindowManager->monitors[CURRENTSCREEN].vecPosition.y + g_pWindowManager->monitors[CURRENTSCREEN].vecSize.y - window.getDefaultSize().y));
+                        break;
+                    default:
+                        break;
+                }
+
+                Debug::log(LOG, "New dock created, setting default XYWH to: " + std::to_string(window.getDefaultPosition().x) + ", " + std::to_string(window.getDefaultPosition().y)
+                    + ", " + std::to_string(window.getDefaultSize().x) + ", " + std::to_string(window.getDefaultSize().y));
 
                 window.setDock(true);
             }

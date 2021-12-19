@@ -36,6 +36,13 @@ public:
     }
 };
 
+enum EDockAlign {
+    DOCK_LEFT = 0,
+    DOCK_RIGHT,
+    DOCK_TOP,
+    DOCK_BOTTOM
+};
+
 std::string exec(const char* cmd);
 void clearLogs();
 void emptyEvent(xcb_drawable_t window = 0);

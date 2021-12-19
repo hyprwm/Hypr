@@ -337,7 +337,7 @@ void CWindowManager::refreshDirtyWindows() {
             window.setDirty(false);
 
             // Check if the window isn't a node or has the noInterventions prop
-            if (window.getChildNodeAID() != 0 || window.getNoInterventions()) 
+            if (window.getChildNodeAID() != 0 || window.getNoInterventions() || window.getDock()) 
                 continue;
                 
             setEffectiveSizePosUsingConfig(&window);
@@ -941,7 +941,7 @@ void CWindowManager::calculateNewFloatingWindow(CWindow* pWindow) {
     if (!pWindow)
         return;
 
-    if (!pWindow->getNoInterventions()) {
+    if (!pWindow->getNoInterventions() && !pWindow->getDock()) {
         pWindow->setPosition(pWindow->getEffectivePosition() + Vector2D(3,3));
         pWindow->setSize(pWindow->getEffectiveSize() - Vector2D(6, 6));
 
@@ -1877,5 +1877,14 @@ void CWindowManager::recalcAllDocks() {
                 MONITOR->vecReservedBottomRight = Vector2D(0, w.getSize().y);
             }
         }
+
+        // Move it
+        Values[0] = w.getDefaultPosition().x;
+        Values[1] = w.getDefaultPosition().y;
+        xcb_configure_window(DisplayConnection, w.getDrawable(), XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, Values);
+
+        Values[0] = w.getDefaultSize().x;
+        Values[1] = w.getDefaultSize().y;
+        xcb_configure_window(DisplayConnection, w.getDrawable(), XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, Values);
     }
 }
