@@ -6,6 +6,7 @@ namespace EWMH {
     void            setupInitEWMH();
     void            updateCurrentWindow(xcb_window_t);
     void            updateClientList();
+    void            setFrameExtents(xcb_window_t);
 
-    inline xcb_window_t EWMHwindow = 0;
+    inline xcb_window_t EWMHwindow = XCB_WINDOW_NONE;
 };  

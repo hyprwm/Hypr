@@ -53,3 +53,8 @@ void EWMH::updateClientList() {
     xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, g_pWindowManager->Screen->root, HYPRATOMS["_NET_CLIENT_LIST"], XCB_ATOM_WINDOW,
         32, windowsList.size(), ArrWindowList);
 }
+
+void EWMH::setFrameExtents(xcb_window_t w) {
+	uint32_t extents[4] = {ConfigManager::getInt("border_size"), ConfigManager::getInt("border_size"), ConfigManager::getInt("border_size"), ConfigManager::getInt("border_size")};
+	xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, w, HYPRATOMS["_NET_FRAME_EXTENTS"], XCB_ATOM_CARDINAL, 32, 4, &extents);
+}

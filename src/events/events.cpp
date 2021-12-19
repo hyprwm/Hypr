@@ -420,6 +420,7 @@ void Events::eventMapWindow(xcb_generic_event_t* event) {
 
     // EWMH
     EWMH::updateClientList();
+    EWMH::setFrameExtents(E->window);
 }
 
 void Events::eventButtonPress(xcb_generic_event_t* event) {
