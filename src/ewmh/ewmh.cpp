@@ -54,7 +54,14 @@ void EWMH::updateClientList() {
         32, windowsList.size(), ArrWindowList);
 }
 
+void EWMH::refreshAllExtents() {
+    for (auto& w : g_pWindowManager->windows)
+        if (w.getDrawable() > 0)
+	    setFrameExtents(w.getDrawable());
+}
+
 void EWMH::setFrameExtents(xcb_window_t w) {
-	uint32_t extents[4] = {ConfigManager::getInt("border_size"), ConfigManager::getInt("border_size"), ConfigManager::getInt("border_size"), ConfigManager::getInt("border_size")};
-	xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, w, HYPRATOMS["_NET_FRAME_EXTENTS"], XCB_ATOM_CARDINAL, 32, 4, &extents);
+    const auto BORDERSIZE = ConfigManager::getInt("border_size");
+    uint32_t extents[4] = {BORDERSIZE,BORDERSIZE,BORDERSIZE,BORDERSIZE};
+    xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, w, HYPRATOMS["_NET_FRAME_EXTENTS"], XCB_ATOM_CARDINAL, 32, 4, &extents);
 }

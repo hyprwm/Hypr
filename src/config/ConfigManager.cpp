@@ -318,6 +318,7 @@ void parseLine(std::string& line) {
 }
 
 void ConfigManager::loadConfigLoadVars() {
+    const auto ORIGBORDERSIZE = ConfigManager::getInt("border_size");
     Debug::log(LOG, "Reloading the config!");
     ConfigManager::parseError = ""; // reset the error
     ConfigManager::currentCategory = ""; // reset the category
@@ -402,6 +403,8 @@ void ConfigManager::loadConfigLoadVars() {
 
     loadBar = true;
     isFirstLaunch = false;
+
+    if (ORIGBORDERSIZE != ConfigManager::getInt("border_size")) EWMH::refreshAllExtents(); 
 }
 
 void ConfigManager::applyKeybindsToX() {
