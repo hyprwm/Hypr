@@ -607,13 +607,6 @@ void CWindowManager::applyShapeToWindow(CWindow* pWindow) {
 
     const auto ROUNDING = pWindow->getFullscreen() ? 0 : ConfigManager::getInt("rounding");
 
-    if (!pWindow->getRounded() && !ROUNDING)
-        return;
-
-    if (!ROUNDING && pWindow->getRounded()) {
-        pWindow->setRounded(false);
-    }
-
     const auto SHAPEQUERY = xcb_get_extension_data(DisplayConnection, &xcb_shape_id);
 
     if (!SHAPEQUERY || !SHAPEQUERY->present || pWindow->getNoInterventions())
@@ -701,9 +694,6 @@ void CWindowManager::applyShapeToWindow(CWindow* pWindow) {
 
     xcb_free_pixmap(DisplayConnection, PIXMAP1);
     xcb_free_pixmap(DisplayConnection, PIXMAP2);
-
-    if (ROUNDING)
-        pWindow->setRounded(true);
 }
 
 void CWindowManager::setEffectiveSizePosUsingConfig(CWindow* pWindow) {

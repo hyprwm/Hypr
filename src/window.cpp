@@ -1,7 +1,7 @@
 #include "window.hpp"
 #include "windowManager.hpp"
 
-CWindow::CWindow() { this->setRounded(false); this->setLastUpdatePosition(Vector2D(0,0)); this->setLastUpdateSize(Vector2D(0,0)); this->setDock(false); this->setUnderFullscreen(false); this->setIsSleeping(true); this->setFirstAnimFrame(true); this->setIsAnimated(false); this->setDead(false); this->setMasterChildIndex(0); this->setMaster(false); this->setCanKill(false); this->setImmovable(false); this->setNoInterventions(false); this->setDirty(true); this->setFullscreen(false); this->setIsFloating(false); this->setParentNodeID(0); this->setChildNodeAID(0); this->setChildNodeBID(0); this->setName(""); }
+CWindow::CWindow() { this->setLastUpdatePosition(Vector2D(0,0)); this->setLastUpdateSize(Vector2D(0,0)); this->setDock(false); this->setUnderFullscreen(false); this->setIsSleeping(true); this->setFirstAnimFrame(true); this->setIsAnimated(false); this->setDead(false); this->setMasterChildIndex(0); this->setMaster(false); this->setCanKill(false); this->setImmovable(false); this->setNoInterventions(false); this->setDirty(true); this->setFullscreen(false); this->setIsFloating(false); this->setParentNodeID(0); this->setChildNodeAID(0); this->setChildNodeBID(0); this->setName(""); }
 CWindow::~CWindow() { }
 
 void CWindow::generateNodeID() {
