@@ -181,8 +181,6 @@ CWindow* Events::remapFloatingWindow(int windowID, int forcemonitor) {
     }
 
     if (nextWindowCentered) {
-        nextWindowCentered = false;
-
         window.setDefaultPosition(g_pWindowManager->monitors[CURRENTSCREEN].vecPosition + g_pWindowManager->monitors[CURRENTSCREEN].vecSize / 2.f - window.getDefaultSize() / 2.f);
     }
 
@@ -219,6 +217,32 @@ CWindow* Events::remapFloatingWindow(int windowID, int forcemonitor) {
     //
     //
 
+    // ICCCM
+
+    xcb_size_hints_t sizeHints;
+    const auto succ = xcb_icccm_get_wm_normal_hints_reply(g_pWindowManager->DisplayConnection, xcb_icccm_get_wm_normal_hints_unchecked(g_pWindowManager->DisplayConnection, window.getDrawable()), &sizeHints, NULL);
+    if (succ && nextWindowCentered /* Basically means dialog */) {
+
+        //                          vvv gets the max value out of the geometry, size hint, size hint max and size hint base.
+        auto NEWSIZE = Vector2D(std::max(std::max(sizeHints.width, (int32_t)window.getDefaultSize().x), std::max(sizeHints.max_width, sizeHints.base_width)),
+                                std::max(std::max(sizeHints.height, (int32_t)window.getDefaultSize().y), std::max(sizeHints.max_height, sizeHints.base_height)));
+
+        // clip the new size to max monitor size
+        NEWSIZE = Vector2D(std::clamp(NEWSIZE.x, (double)40.f, g_pWindowManager->monitors[CURRENTSCREEN].vecSize.x),
+                           std::clamp(NEWSIZE.y, (double)40.f, g_pWindowManager->monitors[CURRENTSCREEN].vecSize.y));
+
+        auto DELTA = NEWSIZE - window.getDefaultSize();
+
+        // update
+        window.setDefaultSize(NEWSIZE);
+        window.setDefaultPosition(window.getDefaultPosition() - DELTA / 2.f);
+    } else {
+        Debug::log(ERR, "ICCCM Size Hints failed.");
+    }
+
+
+    //
+
     window.setSize(window.getDefaultSize());
     window.setPosition(window.getDefaultPosition());
 
@@ -244,6 +268,8 @@ CWindow* Events::remapFloatingWindow(int windowID, int forcemonitor) {
     // Fix docks
     if (window.getDock())
         g_pWindowManager->recalcAllDocks();
+
+    nextWindowCentered = false;
 
     return g_pWindowManager->getWindowFromDrawable(windowID);
 }
