@@ -28,6 +28,8 @@
 #include <algorithm>
 #include <map>
 #include <unordered_map>
+#include <regex>
+#include <vector>
 
 #include "./helpers/Vector.hpp"
 #include "./utilities/Debug.hpp"

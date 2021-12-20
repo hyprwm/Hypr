@@ -3,6 +3,7 @@
 #include <map>
 #include "../utilities/Debug.hpp"
 #include <unordered_map>
+#include <vector>
 
 enum ELayouts {
     LAYOUT_DWINDLE = 0,
@@ -13,6 +14,11 @@ struct SConfigValue {
     int64_t intValue = -1;
     float floatValue = -1;
     std::string strValue = "";
+};
+
+struct SWindowRule {
+    std::string szRule;
+    std::string szValue;
 };
 
 namespace ConfigManager {
@@ -26,6 +32,8 @@ namespace ConfigManager {
     inline bool         isFirstLaunch = false;
 
     inline std::string  parseError = ""; // For storing a parse error to display later
+
+    inline std::vector<SWindowRule> windowRules;
 
     void                init();
     void                loadConfigLoadVars();

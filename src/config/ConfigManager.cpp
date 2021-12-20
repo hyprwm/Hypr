@@ -249,6 +249,26 @@ void parseAnimLine(const std::string& line) {
     configSetValueSafe("anim:" + COMMAND, VALUE);
 }
 
+void handleWindowRule(const std::string& command, const std::string& value) {
+    const auto RULE = value.substr(0, value.find_first_of(","));
+    const auto VALUE = value.substr(value.find_first_of(",") + 1);
+
+    // check rule and value
+    if (RULE == "" || VALUE == "") {
+        return;
+    }
+
+    // verify we support a rule
+    if (RULE != "float" 
+        && RULE != "tile") {
+            Debug::log(ERR, "Invalid rule found: " + RULE);
+            ConfigManager::parseError = "Invalid rule found: " + RULE;
+            return;
+        }
+
+    ConfigManager::windowRules.push_back({RULE, VALUE});
+}
+
 void parseLine(std::string& line) {
     // first check if its not a comment
     const auto COMMENTSTART = line.find_first_of('#');
@@ -312,6 +332,9 @@ void parseLine(std::string& line) {
     } else if (COMMAND == "status_command") {
         handleStatusCommand(COMMAND, VALUE);
         return;
+    } else if (COMMAND == "windowrule") {
+        handleWindowRule(COMMAND, VALUE);
+        return;
     }
 
     configSetValueSafe(COMMAND, VALUE);
@@ -322,6 +345,7 @@ void ConfigManager::loadConfigLoadVars() {
     Debug::log(LOG, "Reloading the config!");
     ConfigManager::parseError = ""; // reset the error
     ConfigManager::currentCategory = ""; // reset the category
+    ConfigManager::windowRules.clear(); // Clear rules
 
     if (loadBar && g_pWindowManager->statusBar) {
         // clear modules as we overwrite them

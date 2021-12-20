@@ -1579,8 +1579,25 @@ bool CWindowManager::shouldBeFloatedOnInit(int64_t window) {
 
     xcb_change_property(DisplayConnection, XCB_PROP_MODE_REPLACE, window, XCB_ATOM_WM_NAME, XCB_ATOM_STRING, 8, strlen("hypr"), "hypr");
 
-    if (((std::string)CLASSNAME).find("krunner") != std::string::npos) {
-        return true;
+    // Verify the class (rules)
+    for (auto& rule : ConfigManager::windowRules) {
+        // check if we have a class rule
+        if (rule.szValue.find("class:") != 0)
+            continue;
+
+        // regex check the arg
+        std::regex classCheck(rule.szValue.substr(strlen("class:")));
+
+        if (!std::regex_search(CLASSNAME, classCheck))
+            continue;
+
+        // applies. Read the rule and behave accordingly
+        Debug::log(LOG, "Window rule " + rule.szRule + "," + rule.szValue + " matched.");
+
+        if (rule.szRule == "tile")
+            return false;
+        else if (rule.szRule == "float")
+            return true;
     }
 
 
@@ -1589,10 +1606,25 @@ bool CWindowManager::shouldBeFloatedOnInit(int64_t window) {
 
     Debug::log(LOG, "Window opened with a role of " + WINROLE);
 
-    if (WINROLE.find("pop-up") != std::string::npos || WINROLE.find("task_dialog") != std::string::npos) {
-        return true;
-    }
+    for (auto& rule : ConfigManager::windowRules) {
+        // check if we have a role rule
+        if (rule.szValue.find("role:") != 0)
+            continue;
 
+        // regex check the arg
+        std::regex roleCheck(rule.szValue.substr(strlen("role:")));
+
+        if (!std::regex_search(WINROLE, roleCheck))
+            continue;
+
+        // applies. Read the rule and behave accordingly
+        Debug::log(LOG, "Window rule " + rule.szRule + "," + rule.szValue + " matched.");
+        
+        if (rule.szRule == "tile")
+            return false;
+        else if (rule.szRule == "float")
+            return true;
+    }
 
     //
     // Type stuff
