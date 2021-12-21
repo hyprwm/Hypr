@@ -20,16 +20,20 @@ Hypr needs testers! Check it out and report suggestions or bugs!
 - A built-in status bar with modules
 - Easily expandable and readable codebase
 - Multiple tiling modes (dwindling and master)
+- Window rules
+- Intelligent transients
+- Support for EWMH-compatible bars (e.g. Polybar)
 - Keybinds config
 - Tiling windows
 - Floating windows
 - Workspaces
 - Moving / Fullscreening windows
+- Mostly EWMH and ICCCM compliant
 
 # Configuring
 See the [Wiki Page](https://github.com/vaxerski/Hypr/wiki/Configuring-Hypr) for a detailed overview on the config, or refer to the example config in examples/hypr.conf.
 
-To use a custom config, place it in ~/.config/hypr/hypr.conf
+You have to use a config, place it in ~/.config/hypr/hypr.conf
 
 # Screenshot Gallery
 
