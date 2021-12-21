@@ -175,6 +175,8 @@ void KeybindManager::toggleActiveWindowFloating(std::string unusedArg) {
             PNEWWINDOW->setDefaultSize(RESTOREACSIZE);
             PNEWWINDOW->setCanKill(RESTORECANKILL);
         }
-        
+
+        // EWMH to let everyone know
+        EWMH::updateClientList();git
     }
 }
