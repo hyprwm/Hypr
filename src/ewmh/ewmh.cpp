@@ -124,7 +124,7 @@ void EWMH::updateWindow(xcb_window_t win) {
     xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, win, HYPRATOMS["_NET_WM_DESKTOP"], XCB_ATOM_CARDINAL, 32, 1, &WORKSPACE);
 
     // ICCCM State Normal
-    if (!PWINDOW->getIsFloating()) {
+    if (!PWINDOW->getDock()) {
         long data[] = {XCB_ICCCM_WM_STATE_NORMAL, XCB_NONE};
         xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, win, HYPRATOMS["WM_STATE"], HYPRATOMS["WM_STATE"], 32, 2, data);
     }
