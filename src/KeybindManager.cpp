@@ -97,6 +97,9 @@ void KeybindManager::killactive(std::string args) {
         event.data.data32[1] = 0;
 
         xcb_send_event(g_pWindowManager->DisplayConnection, 0, PLASTWINDOW->getDrawable(), XCB_EVENT_MASK_NO_EVENT, (const char*)&event);
+
+        return; // Do not remove it yet. The user might've cancelled the operation or something. We will get
+                // an unmap event.
     } else 
         xcb_kill_client(g_pWindowManager->DisplayConnection, g_pWindowManager->LastWindow);
 
