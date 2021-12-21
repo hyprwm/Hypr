@@ -94,7 +94,8 @@ public:
     // Docks
     EXPOSED_MEMBER(Dock, bool, b);
     EXPOSED_MEMBER(DockAlign, EDockAlign, e);
-    
+
+    // todo: Transients
 
 private:
 
