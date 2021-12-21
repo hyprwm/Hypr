@@ -1770,6 +1770,9 @@ void CWindowManager::moveWindowToMapped(int64_t id) {
             }
 
             windows[windows.size() - 1].setUnderFullscreen(false);
+            windows[windows.size() - 1].setDirty(true);
+            windows[windows.size() - 1].setLastUpdatePosition(Vector2D(0,0));
+            windows[windows.size() - 1].setLastUpdateSize(Vector2D(0,0));
 
             return;
         }

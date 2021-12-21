@@ -86,12 +86,16 @@ void removeAtom(const int& window, xcb_atom_t prop, xcb_atom_t atom) {
     if (!REPLY || xcb_get_property_value_length(REPLY) == 0) {
         free(REPLY);
         xcb_ungrab_server(DisplayConnection);
+
+        return;
     }
 
     xcb_atom_t* atomsList = (xcb_atom_t*)xcb_get_property_value(REPLY);
     if (!atomsList) {
         free(REPLY);
         xcb_ungrab_server(DisplayConnection);
+
+        return;
     }
 
     int valuesnum = 0;
