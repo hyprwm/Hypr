@@ -177,6 +177,6 @@ void KeybindManager::toggleActiveWindowFloating(std::string unusedArg) {
         }
 
         // EWMH to let everyone know
-        EWMH::updateClientList();git
+        EWMH::updateClientList();
     }
 }
