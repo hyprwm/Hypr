@@ -37,7 +37,7 @@ You have to use a config, place it in ~/.config/hypr/hypr.conf
 
 # Screenshot Gallery
 
-![One](https://i.imgur.com/WJhbvij.png)
+![One](https://i.imgur.com/HLukmeA.png)
 ![Two](https://i.imgur.com/B0MDTu2.png)
 ![Three](https://i.imgur.com/yvZVde7.png)
 
