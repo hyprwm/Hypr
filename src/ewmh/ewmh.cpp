@@ -129,3 +129,42 @@ void EWMH::updateWindow(xcb_window_t win) {
         xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, win, HYPRATOMS["WM_STATE"], HYPRATOMS["WM_STATE"], 32, 2, data);
     }
 }
+
+void EWMH::checkTransient(xcb_window_t window) {
+
+    const auto PWINDOW = g_pWindowManager->getWindowFromDrawable(window);
+
+    if (!PWINDOW)
+        return;
+
+    // Check if it's a transient
+    const auto TRANSIENTCOOKIE = xcb_get_property(g_pWindowManager->DisplayConnection, false, window, 68 /* TRANSIENT_FOR */, XCB_GET_PROPERTY_TYPE_ANY, 0, UINT32_MAX);
+    const auto TRANSIENTREPLY = xcb_get_property_reply(g_pWindowManager->DisplayConnection, TRANSIENTCOOKIE, NULL);
+
+    if (!TRANSIENTREPLY || xcb_get_property_value_length(TRANSIENTREPLY) == 0) {
+        Debug::log(WARN, "Transient check failed.");
+        return;
+    }
+
+    xcb_window_t transientWindow;
+    if (!xcb_icccm_get_wm_transient_for_from_reply(&transientWindow, TRANSIENTREPLY)) {
+        Debug::log(WARN, "Transient reply failed.");
+        free(TRANSIENTREPLY);
+        return;
+    }
+
+    // set the flags
+    const auto PPARENTWINDOW = g_pWindowManager->getWindowFromDrawable(transientWindow);
+
+    if (!PPARENTWINDOW) {
+        free(TRANSIENTREPLY);
+        Debug::log(LOG, "Transient set for a nonexistent window, ignoring.");
+        return;
+    }
+
+    PPARENTWINDOW->addTransientChild(window);
+
+    Debug::log(LOG, "Added a transient child to " + std::to_string(transientWindow) + ".");
+
+    free(TRANSIENTREPLY);
+}

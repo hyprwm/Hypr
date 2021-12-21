@@ -1,7 +1,7 @@
 #include "window.hpp"
 #include "windowManager.hpp"
 
-CWindow::CWindow() { this->setLastUpdatePosition(Vector2D(0,0)); this->setLastUpdateSize(Vector2D(0,0)); this->setDock(false); this->setUnderFullscreen(false); this->setIsSleeping(true); this->setFirstAnimFrame(true); this->setIsAnimated(false); this->setDead(false); this->setMasterChildIndex(0); this->setMaster(false); this->setCanKill(false); this->setImmovable(false); this->setNoInterventions(false); this->setDirty(true); this->setFullscreen(false); this->setIsFloating(false); this->setParentNodeID(0); this->setChildNodeAID(0); this->setChildNodeBID(0); this->setName(""); }
+CWindow::CWindow() { this->setTransient(false); this->setLastUpdatePosition(Vector2D(0,0)); this->setLastUpdateSize(Vector2D(0,0)); this->setDock(false); this->setUnderFullscreen(false); this->setIsSleeping(true); this->setFirstAnimFrame(true); this->setIsAnimated(false); this->setDead(false); this->setMasterChildIndex(0); this->setMaster(false); this->setCanKill(false); this->setImmovable(false); this->setNoInterventions(false); this->setDirty(true); this->setFullscreen(false); this->setIsFloating(false); this->setParentNodeID(0); this->setChildNodeAID(0); this->setChildNodeBID(0); this->setName(""); }
 CWindow::~CWindow() { }
 
 void CWindow::generateNodeID() {
@@ -45,4 +45,30 @@ void CWindow::recalcSizePosRecursive() {
             g_pWindowManager->getWindowFromDrawable(m_iChildNodeBID)->recalcSizePosRecursive();
         }
     }
+}
+
+void CWindow::bringTopRecursiveTransients() {
+    // check if its enabled
+    if (ConfigManager::getInt("intelligent_transients") != 1)
+        return;
+
+    // first top all the children if floating
+    for (auto& c : m_vecChildren) {
+        if (const auto PWINDOW = g_pWindowManager->getWindowFromDrawable(c); PWINDOW) {
+            if (PWINDOW->getIsFloating())
+                g_pWindowManager->setAWindowTop(c);
+        }
+    }
+
+    // THEN top their children
+    for (auto& c : m_vecChildren) {
+        if (const auto PCHILD = g_pWindowManager->getWindowFromDrawable(c); PCHILD) {
+            // recurse
+            PCHILD->bringTopRecursiveTransients();
+        }
+    }
+}
+
+void CWindow::addTransientChild(xcb_window_t w) {
+    m_vecChildren.push_back(w);
 }

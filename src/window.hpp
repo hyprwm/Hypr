@@ -39,7 +39,9 @@ public:
     // Tells the window manager to reload the window's params
     EXPOSED_MEMBER(Dirty, bool, b);
 
+    void        bringTopRecursiveTransients();
     void        setDirtyRecursive(bool);
+    void        addTransientChild(xcb_drawable_t);
     // ONLY for dwindle layout!
     void        recalcSizePosRecursive();
 
@@ -95,7 +97,9 @@ public:
     EXPOSED_MEMBER(Dock, bool, b);
     EXPOSED_MEMBER(DockAlign, EDockAlign, e);
 
-    // todo: Transients
+    // Transient
+    EXPOSED_MEMBER(Children, std::vector<int64_t>, vec);
+    EXPOSED_MEMBER(Transient, bool, b);
 
 private:
 

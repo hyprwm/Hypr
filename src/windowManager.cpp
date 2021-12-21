@@ -460,11 +460,6 @@ void CWindowManager::setFocusedWindow(xcb_drawable_t window) {
 
         float values[1];
         if (const auto PWINDOW = g_pWindowManager->getWindowFromDrawable(window); PWINDOW) {
-            if (PWINDOW->getIsFloating()) {
-                values[0] = XCB_STACK_MODE_ABOVE;
-                xcb_configure_window(g_pWindowManager->DisplayConnection, window, XCB_CONFIG_WINDOW_STACK_MODE, values);
-            }
-
             // Apply rounded corners, does all the checks inside.
             // The border changed so let's not make it rectangular maybe
             applyShapeToWindow(PWINDOW);
@@ -472,8 +467,14 @@ void CWindowManager::setFocusedWindow(xcb_drawable_t window) {
 
         LastWindow = window;
 
-        if (g_pWindowManager->getWindowFromDrawable(window))
+        const auto PNEWFOCUS = g_pWindowManager->getWindowFromDrawable(window);
+
+        if (PNEWFOCUS) {
             applyShapeToWindow(g_pWindowManager->getWindowFromDrawable(window));
+
+            // Transients
+            PNEWFOCUS->bringTopRecursiveTransients();
+        }
 
         // set focus in X11
         xcb_set_input_focus(DisplayConnection, XCB_INPUT_FOCUS_POINTER_ROOT, window, XCB_CURRENT_TIME);
@@ -1557,9 +1558,13 @@ void CWindowManager::updateBarInfo() {
 
 void CWindowManager::setAllFloatingWindowsTop() {
     for (auto& window : windows) {
-        if (window.getIsFloating()) {
+        if (window.getIsFloating() && !window.getTransient()) {
             Values[0] = XCB_STACK_MODE_ABOVE;
             xcb_configure_window(g_pWindowManager->DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_STACK_MODE, Values);
+
+            window.bringTopRecursiveTransients();
+        } else if (window.getChildren().size() > 0) {
+            window.bringTopRecursiveTransients();
         }
     }
 }

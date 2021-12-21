@@ -303,9 +303,6 @@ CWindow* Events::remapFloatingWindow(int windowID, int forcemonitor) {
     g_pWindowManager->Values[0] = XCB_EVENT_MASK_ENTER_WINDOW | XCB_EVENT_MASK_FOCUS_CHANGE;
     xcb_change_window_attributes_checked(g_pWindowManager->DisplayConnection, windowID, XCB_CW_EVENT_MASK, g_pWindowManager->Values);
 
-    // Make all floating windows above
-    g_pWindowManager->setAllFloatingWindowsTop();
-
     // Fix docks
     if (window.getDock())
         g_pWindowManager->recalcAllDocks();
@@ -432,9 +429,6 @@ CWindow* Events::remapWindow(int windowID, bool wasfloating, int forcemonitor) {
     // Focus
     g_pWindowManager->setFocusedWindow(windowID);
 
-    // Make all floating windows above
-    g_pWindowManager->setAllFloatingWindowsTop();
-
     return PWINDOWINARR;
 }
 
@@ -480,6 +474,12 @@ void Events::eventMapWindow(xcb_generic_event_t* event) {
     
     // Do ICCCM
     g_pWindowManager->getICCCMWMProtocols(pNewWindow);
+
+    // Do transient checks
+    EWMH::checkTransient(E->window);
+
+    // Make all floating windows above
+    g_pWindowManager->setAllFloatingWindowsTop();
 
     // Set not under
     pNewWindow->setUnderFullscreen(false);

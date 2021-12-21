@@ -10,6 +10,7 @@ namespace EWMH {
     void            setFrameExtents(xcb_window_t);
     void 	        refreshAllExtents();
     void            updateDesktops();
+    void            checkTransient(xcb_window_t);
 
     namespace DesktopInfo {
         inline int lastid = 0;

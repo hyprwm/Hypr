@@ -15,6 +15,7 @@ void ConfigManager::init() {
     configValues["gaps_out"].intValue = 20;
     configValues["rounding"].intValue = 5;
     configValues["main_mod"].strValue = "SUPER";
+    configValues["intelligent_transients"].intValue = 1;
 
     configValues["focus_when_hover"].intValue = 1;
 
