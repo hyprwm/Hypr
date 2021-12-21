@@ -452,7 +452,7 @@ CWindow* Events::remapWindow(int windowID, bool wasfloating, int forcemonitor) {
             }
         }
 
-        if (PLASTWINDOW) {
+        if (PLASTWINDOW && PLASTWINDOW->getDrawable() != windowID) {
             CWindow newWindowSplitNode;
             newWindowSplitNode.setPosition(PLASTWINDOW->getPosition());
             newWindowSplitNode.setSize(PLASTWINDOW->getSize());
