@@ -126,6 +126,6 @@ void EWMH::updateWindow(xcb_window_t win) {
     // ICCCM State Normal
     if (!PWINDOW->getIsFloating()) {
         long data[] = {XCB_ICCCM_WM_STATE_NORMAL, XCB_NONE};
-        xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, win, HYPRATOMS["_NET_WM_STATE"], HYPRATOMS["_NET_WM_STATE"], 32, 2, data);
+        xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, win, HYPRATOMS["WM_STATE"], HYPRATOMS["WM_STATE"], 32, 2, data);
     }
 }
