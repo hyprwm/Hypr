@@ -439,6 +439,9 @@ void CWindowManager::refreshDirtyWindows() {
             }
 
             applyShapeToWindow(&window);
+
+            // EWMH
+            EWMH::updateWindow(window.getDrawable());
         }
     }
 
@@ -1833,6 +1836,8 @@ void CWindowManager::toggleWindowFullscrenn(const int& window) {
         xcb_change_property(DisplayConnection, XCB_PROP_MODE_APPEND, window, HYPRATOMS["_NET_WM_STATE"], XCB_ATOM_ATOM, 32, 1, Values);
     else
         removeAtom(window, HYPRATOMS["_NET_WM_STATE"], HYPRATOMS["_NET_WM_STATE_FULLSCREEN"]);
+
+    EWMH::updateWindow(window);
 
     Debug::log(LOG, "Set fullscreen to " + std::to_string(PWINDOW->getFullscreen()) + " for " + std::to_string(window));
 }

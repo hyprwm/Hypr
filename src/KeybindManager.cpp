@@ -178,5 +178,7 @@ void KeybindManager::toggleActiveWindowFloating(std::string unusedArg) {
 
         // EWMH to let everyone know
         EWMH::updateClientList();
+
+        EWMH::updateWindow(PWINDOW->getDrawable());
     }
 }

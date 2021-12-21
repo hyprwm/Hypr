@@ -5,6 +5,7 @@
 namespace EWMH {
     void            setupInitEWMH();
     void            updateCurrentWindow(xcb_window_t);
+    void            updateWindow(xcb_window_t);
     void            updateClientList();
     void            setFrameExtents(xcb_window_t);
     void 	        refreshAllExtents();
