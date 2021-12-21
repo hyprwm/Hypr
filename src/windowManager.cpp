@@ -762,6 +762,16 @@ CWindow* CWindowManager::findWindowAtCursor() {
     return nullptr;
 }
 
+CWindow* CWindowManager::findFirstWindowOnWorkspace(const int& work) {
+    for (auto& w : windows) {
+        if (w.getWorkspaceID() == work && !w.getIsFloating() && !w.getNoInterventions() && w.getDrawable() > 0) {
+            return &w;
+        }
+    }
+
+    return nullptr;
+}
+
 void CWindowManager::calculateNewTileSetOldTile(CWindow* pWindow) {
     
     // Get the parent and both children, one of which will be pWindow
@@ -1268,6 +1278,10 @@ void CWindowManager::moveActiveWindowToWorkspace(int workspace) {
         setFocusedWindow(newLastWindow);
     }
 
+    CWindow newWindow;
+    newWindow.setDrawable(SAVEDDRAWABLE);
+    newWindow.setFirstOpen(false);
+    addWindowToVectorSafe(newWindow);
 
     CWindow* PNEWWINDOW = nullptr;
     if (SAVEDFLOATSTATUS)
@@ -1576,11 +1590,13 @@ void CWindowManager::setAWindowTop(xcb_window_t window) {
 
 bool CWindowManager::shouldBeFloatedOnInit(int64_t window) {
     // Should be floated also sets some properties
-    
-    // get stuffza
 
-    // floating for krunner
-    // TODO: config this
+    const auto PWINDOW = getWindowFromDrawable(window);
+
+    if (!PWINDOW) {
+        Debug::log(ERR, "shouldBeFloatedOnInit with an invalid window!");
+        return true;
+    }
     
     const auto WINCLASS = getClassName(window);
     const auto CLASSNAME = WINCLASS.second;
@@ -1590,52 +1606,14 @@ bool CWindowManager::shouldBeFloatedOnInit(int64_t window) {
 
     xcb_change_property(DisplayConnection, XCB_PROP_MODE_REPLACE, window, XCB_ATOM_WM_NAME, XCB_ATOM_STRING, 8, strlen("hypr"), "hypr");
 
-    // Verify the class (rules)
-    for (auto& rule : ConfigManager::windowRules) {
-        // check if we have a class rule
-        if (rule.szValue.find("class:") != 0)
-            continue;
-
-        // regex check the arg
-        std::regex classCheck(rule.szValue.substr(strlen("class:")));
-
-        if (!std::regex_search(CLASSNAME, classCheck))
-            continue;
-
-        // applies. Read the rule and behave accordingly
-        Debug::log(LOG, "Window rule " + rule.szRule + "," + rule.szValue + " matched.");
-
-        if (rule.szRule == "tile")
-            return false;
-        else if (rule.szRule == "float")
-            return true;
-    }
-
-
     // Role stuff
     const auto WINROLE = getRoleName(window);
 
     Debug::log(LOG, "Window opened with a role of " + WINROLE);
 
-    for (auto& rule : ConfigManager::windowRules) {
-        // check if we have a role rule
-        if (rule.szValue.find("role:") != 0)
-            continue;
-
-        // regex check the arg
-        std::regex roleCheck(rule.szValue.substr(strlen("role:")));
-
-        if (!std::regex_search(WINROLE, roleCheck))
-            continue;
-
-        // applies. Read the rule and behave accordingly
-        Debug::log(LOG, "Window rule " + rule.szRule + "," + rule.szValue + " matched.");
-        
-        if (rule.szRule == "tile")
-            return false;
-        else if (rule.szRule == "float")
-            return true;
-    }
+    // Set it in the pwindow
+    PWINDOW->setClassName(CLASSNAME);
+    PWINDOW->setRoleName(WINROLE);
 
     //
     // Type stuff
@@ -1669,6 +1647,14 @@ bool CWindowManager::shouldBeFloatedOnInit(int64_t window) {
     //
     //
     //
+
+    // Verify the rules.
+    for (auto& rule : ConfigManager::getMatchingRules(window)) {
+        if (rule.szRule == "tile")
+            return false;
+        else if (rule.szRule == "float")
+            return true;
+    }
 
     return false;
 }

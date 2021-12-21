@@ -27,6 +27,14 @@ public:
         ;
     }
 
+    CFloatingColor& operator=(uint32_t c) {
+        r = RED(c) * 255.f;
+        g = GREEN(c) * 255.f;
+        b = BLUE(c) * 255.f;
+        a = ALPHA(c) * 255.f;
+        return *this;
+    }
+
     bool operator==(CFloatingColor B) {
         return r == B.r && g == B.g && b == B.b && a == B.a;
     }

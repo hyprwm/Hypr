@@ -139,49 +139,77 @@ void Events::eventUnmapWindow(xcb_generic_event_t* event) {
 }
 
 CWindow* Events::remapFloatingWindow(int windowID, int forcemonitor) {
-    CWindow window;
-    window.setDrawable(windowID);
-    window.setIsFloating(true);
-    window.setDirty(true);
+    // The array is not realloc'd in this method we can make this const
+    const auto PWINDOWINARR = g_pWindowManager->getWindowFromDrawable(windowID);
+
+    if (!PWINDOWINARR) {
+        Debug::log(ERR, "remapWindow called with an invalid window!");
+        return nullptr;
+    }
+
+    PWINDOWINARR->setIsFloating(true);
+    PWINDOWINARR->setDirty(true);
     if (!g_pWindowManager->getMonitorFromCursor()) {
         Debug::log(ERR, "Monitor was null! (remapWindow)");
         // rip! we cannot continue.
     }
+
+    // Check the monitor rule
+    for (auto& rule : ConfigManager::getMatchingRules(windowID)) {
+        if (!PWINDOWINARR->getFirstOpen())
+            break;
+
+        if (rule.szRule.find("monitor") == 0) {
+            try {
+                const auto MONITOR = stoi(rule.szRule.substr(rule.szRule.find(" ") + 1));
+
+                Debug::log(LOG, "Rule monitor, applying to window " + std::to_string(windowID));
+
+                if (MONITOR > g_pWindowManager->monitors.size() || MONITOR < 0)
+                    forcemonitor = -1;
+                else
+                    forcemonitor = MONITOR;
+            } catch(...) {
+                Debug::log(LOG, "Rule monitor failed, rule: " + rule.szRule + "=" + rule.szValue);
+            }
+        }
+    }
+
     const auto CURRENTSCREEN = forcemonitor != -1 ? forcemonitor : g_pWindowManager->getMonitorFromCursor()->ID;
-    window.setWorkspaceID(g_pWindowManager->activeWorkspaces[CURRENTSCREEN]);
-    window.setMonitor(CURRENTSCREEN);
+    PWINDOWINARR->setWorkspaceID(g_pWindowManager->activeWorkspaces[CURRENTSCREEN]);
+    PWINDOWINARR->setMonitor(CURRENTSCREEN);
 
     // Window name
     const auto WINNAME = getWindowName(windowID);
     Debug::log(LOG, "New window got name: " + WINNAME);
-    window.setName(WINNAME);
+    PWINDOWINARR->setName(WINNAME);
 
     const auto WINCLASSNAME = getClassName(windowID);
     Debug::log(LOG, "New window got class: " + WINCLASSNAME.second);
-    window.setClassName(WINCLASSNAME.second);
+    PWINDOWINARR->setClassName(WINCLASSNAME.second);
 
     // For all floating windows, get their default size
     const auto GEOMETRYCOOKIE   = xcb_get_geometry(g_pWindowManager->DisplayConnection, windowID);
     const auto GEOMETRY         = xcb_get_geometry_reply(g_pWindowManager->DisplayConnection, GEOMETRYCOOKIE, 0);
 
     if (GEOMETRY) {
-        window.setDefaultPosition(g_pWindowManager->monitors[CURRENTSCREEN].vecPosition);
-        window.setDefaultSize(Vector2D(GEOMETRY->width, GEOMETRY->height));
+        PWINDOWINARR->setDefaultPosition(g_pWindowManager->monitors[CURRENTSCREEN].vecPosition);
+        PWINDOWINARR->setDefaultSize(Vector2D(GEOMETRY->width, GEOMETRY->height));
     } else {
         Debug::log(ERR, "Geometry failed in remap.");
 
-        window.setDefaultPosition(g_pWindowManager->monitors[CURRENTSCREEN].vecPosition);
-        window.setDefaultSize(Vector2D(g_pWindowManager->Screen->width_in_pixels / 2.f, g_pWindowManager->Screen->height_in_pixels / 2.f));
+        PWINDOWINARR->setDefaultPosition(g_pWindowManager->monitors[CURRENTSCREEN].vecPosition);
+        PWINDOWINARR->setDefaultSize(Vector2D(g_pWindowManager->Screen->width_in_pixels / 2.f, g_pWindowManager->Screen->height_in_pixels / 2.f));
     }
 
-    if (window.getDefaultSize().x < 40 || window.getDefaultSize().y < 40) {
+    if (PWINDOWINARR->getDefaultSize().x < 40 || PWINDOWINARR->getDefaultSize().y < 40) {
         // min size
-        window.setDefaultSize(Vector2D(std::clamp(window.getDefaultSize().x, (double)40, (double)99999),
-                                       std::clamp(window.getDefaultSize().y, (double)40, (double)99999)));
+        PWINDOWINARR->setDefaultSize(Vector2D(std::clamp(PWINDOWINARR->getDefaultSize().x, (double)40, (double)99999),
+                                       std::clamp(PWINDOWINARR->getDefaultSize().y, (double)40, (double)99999)));
     }
 
     if (nextWindowCentered) {
-        window.setDefaultPosition(g_pWindowManager->monitors[CURRENTSCREEN].vecPosition + g_pWindowManager->monitors[CURRENTSCREEN].vecSize / 2.f - window.getDefaultSize() / 2.f);
+        PWINDOWINARR->setDefaultPosition(g_pWindowManager->monitors[CURRENTSCREEN].vecPosition + g_pWindowManager->monitors[CURRENTSCREEN].vecSize / 2.f - PWINDOWINARR->getDefaultSize() / 2.f);
     }
 
     //
@@ -199,13 +227,13 @@ CWindow* Events::remapFloatingWindow(int windowID, int forcemonitor) {
         } else {
             if (xcbContainsAtom(wm_type_cookiereply, HYPRATOMS["_NET_WM_WINDOW_TYPE_DOCK"])) {
                 // set to floating and set the immovable and nointerventions flag
-                window.setImmovable(true);
-                window.setNoInterventions(true);
+                PWINDOWINARR->setImmovable(true);
+                PWINDOWINARR->setNoInterventions(true);
 
-                window.setDefaultPosition(Vector2D(GEOMETRY->x, GEOMETRY->y));
-                window.setDefaultSize(Vector2D(GEOMETRY->width, GEOMETRY->height));
+                PWINDOWINARR->setDefaultPosition(Vector2D(GEOMETRY->x, GEOMETRY->y));
+                PWINDOWINARR->setDefaultSize(Vector2D(GEOMETRY->width, GEOMETRY->height));
 
-                window.setDockAlign(DOCK_TOP);
+                PWINDOWINARR->setDockAlign(DOCK_TOP);
 
                 // Check reserved
                 const auto STRUTREPLY = xcb_get_property_reply(g_pWindowManager->DisplayConnection, xcb_get_property(g_pWindowManager->DisplayConnection, false, windowID, HYPRATOMS["_NET_WM_STRUT_PARTIAL"], XCB_GET_PROPERTY_TYPE_ANY, 0, (4294967295U)), NULL);
@@ -223,10 +251,10 @@ CWindow* Events::remapFloatingWindow(int windowID, int forcemonitor) {
                         //  0     1    2     3
                         if (STRUT[2] > 0 && STRUT[3] == 0) {
                             // top
-                            window.setDockAlign(DOCK_TOP);
+                            PWINDOWINARR->setDockAlign(DOCK_TOP);
                         } else if (STRUT[2] == 0 && STRUT[3] > 0) {
                             // bottom
-                            window.setDockAlign(DOCK_BOTTOM);
+                            PWINDOWINARR->setDockAlign(DOCK_BOTTOM);
                         }
 
                         // little todo: support left/right docks
@@ -235,21 +263,21 @@ CWindow* Events::remapFloatingWindow(int windowID, int forcemonitor) {
 
                 free(STRUTREPLY);
 
-                switch (window.getDockAlign()) {
+                switch (PWINDOWINARR->getDockAlign()) {
                     case DOCK_TOP:
-                        window.setDefaultPosition(Vector2D(g_pWindowManager->monitors[CURRENTSCREEN].vecPosition.x, g_pWindowManager->monitors[CURRENTSCREEN].vecPosition.y));
+                        PWINDOWINARR->setDefaultPosition(Vector2D(g_pWindowManager->monitors[CURRENTSCREEN].vecPosition.x, g_pWindowManager->monitors[CURRENTSCREEN].vecPosition.y));
                         break;
                     case DOCK_BOTTOM:
-                        window.setDefaultPosition(Vector2D(g_pWindowManager->monitors[CURRENTSCREEN].vecPosition.x, g_pWindowManager->monitors[CURRENTSCREEN].vecPosition.y + g_pWindowManager->monitors[CURRENTSCREEN].vecSize.y - window.getDefaultSize().y));
+                        PWINDOWINARR->setDefaultPosition(Vector2D(g_pWindowManager->monitors[CURRENTSCREEN].vecPosition.x, g_pWindowManager->monitors[CURRENTSCREEN].vecPosition.y + g_pWindowManager->monitors[CURRENTSCREEN].vecSize.y - PWINDOWINARR->getDefaultSize().y));
                         break;
                     default:
                         break;
                 }
 
-                Debug::log(LOG, "New dock created, setting default XYWH to: " + std::to_string(window.getDefaultPosition().x) + ", " + std::to_string(window.getDefaultPosition().y)
-                    + ", " + std::to_string(window.getDefaultSize().x) + ", " + std::to_string(window.getDefaultSize().y));
+                Debug::log(LOG, "New dock created, setting default XYWH to: " + std::to_string(PWINDOWINARR->getDefaultPosition().x) + ", " + std::to_string(PWINDOWINARR->getDefaultPosition().y)
+                    + ", " + std::to_string(PWINDOWINARR->getDefaultSize().x) + ", " + std::to_string(PWINDOWINARR->getDefaultSize().y));
 
-                window.setDock(true);
+                PWINDOWINARR->setDock(true);
             }
         }
     }
@@ -261,102 +289,167 @@ CWindow* Events::remapFloatingWindow(int windowID, int forcemonitor) {
     // ICCCM
 
     xcb_size_hints_t sizeHints;
-    const auto succ = xcb_icccm_get_wm_normal_hints_reply(g_pWindowManager->DisplayConnection, xcb_icccm_get_wm_normal_hints_unchecked(g_pWindowManager->DisplayConnection, window.getDrawable()), &sizeHints, NULL);
+    const auto succ = xcb_icccm_get_wm_normal_hints_reply(g_pWindowManager->DisplayConnection, xcb_icccm_get_wm_normal_hints_unchecked(g_pWindowManager->DisplayConnection, PWINDOWINARR->getDrawable()), &sizeHints, NULL);
     if (succ && nextWindowCentered /* Basically means dialog */) {
 
         //                          vvv gets the max value out of the geometry, size hint, (size hint max if < screen) and size hint base.
-        auto NEWSIZE = Vector2D(std::max(std::max(sizeHints.width, (int32_t)window.getDefaultSize().x), std::max(sizeHints.max_width > g_pWindowManager->monitors[CURRENTSCREEN].vecSize.x ? 0 : sizeHints.max_width, sizeHints.base_width)),
-                                std::max(std::max(sizeHints.height, (int32_t)window.getDefaultSize().y), std::max(sizeHints.max_height > g_pWindowManager->monitors[CURRENTSCREEN].vecSize.y ? 0 : sizeHints.max_height, sizeHints.base_height)));
+        auto NEWSIZE = Vector2D(std::max(std::max(sizeHints.width, (int32_t)PWINDOWINARR->getDefaultSize().x), std::max(sizeHints.max_width > g_pWindowManager->monitors[CURRENTSCREEN].vecSize.x ? 0 : sizeHints.max_width, sizeHints.base_width)),
+                                std::max(std::max(sizeHints.height, (int32_t)PWINDOWINARR->getDefaultSize().y), std::max(sizeHints.max_height > g_pWindowManager->monitors[CURRENTSCREEN].vecSize.y ? 0 : sizeHints.max_height, sizeHints.base_height)));
 
         // clip the new size to max monitor size
         NEWSIZE = Vector2D(std::clamp(NEWSIZE.x, (double)40.f, g_pWindowManager->monitors[CURRENTSCREEN].vecSize.x),
                            std::clamp(NEWSIZE.y, (double)40.f, g_pWindowManager->monitors[CURRENTSCREEN].vecSize.y));
 
-        auto DELTA = NEWSIZE - window.getDefaultSize();
+        auto DELTA = NEWSIZE - PWINDOWINARR->getDefaultSize();
 
         // update
-        window.setDefaultSize(NEWSIZE);
-        window.setDefaultPosition(window.getDefaultPosition() - DELTA / 2.f);
+        PWINDOWINARR->setDefaultSize(NEWSIZE);
+        PWINDOWINARR->setDefaultPosition(PWINDOWINARR->getDefaultPosition() - DELTA / 2.f);
     } else if (!succ) {
         Debug::log(ERR, "ICCCM Size Hints failed.");
     }
 
+    // Check the size and pos rules
+    for (auto& rule : ConfigManager::getMatchingRules(windowID)) {
+        if (!PWINDOWINARR->getFirstOpen())
+            break;
+
+        if (rule.szRule.find("size") == 0) {
+            try {
+                const auto VALUE = rule.szRule.substr(rule.szRule.find(" ") + 1);
+                const auto SIZEX = stoi(VALUE.substr(0, VALUE.find(" ")));
+                const auto SIZEY = stoi(VALUE.substr(VALUE.find(" ") + 1));
+
+                Debug::log(LOG, "Rule size, applying to window " + std::to_string(windowID));
+
+                PWINDOWINARR->setDefaultSize(Vector2D(SIZEX, SIZEY));
+            } catch (...) {
+                Debug::log(LOG, "Rule size failed, rule: " + rule.szRule + "=" + rule.szValue);
+            }
+        } else if (rule.szRule.find("move") == 0) {
+            try {
+                const auto VALUE = rule.szRule.substr(rule.szRule.find(" ") + 1);
+                const auto POSX = stoi(VALUE.substr(0, VALUE.find(" ")));
+                const auto POSY = stoi(VALUE.substr(VALUE.find(" ") + 1));
+
+                Debug::log(LOG, "Rule move, applying to window " + std::to_string(windowID));
+
+                PWINDOWINARR->setDefaultPosition(Vector2D(POSX, POSY) + g_pWindowManager->monitors[CURRENTSCREEN].vecPosition);
+            } catch (...) {
+                Debug::log(LOG, "Rule move failed, rule: " + rule.szRule + "=" + rule.szValue);
+            }
+        }
+    }
 
     //
 
-    window.setSize(window.getDefaultSize());
-    window.setPosition(window.getDefaultPosition());
+    PWINDOWINARR->setSize(PWINDOWINARR->getDefaultSize());
+    PWINDOWINARR->setPosition(PWINDOWINARR->getDefaultPosition());
 
     // The anim util will take care of this.
-    window.setEffectiveSize(window.getDefaultSize());
-    window.setEffectivePosition(window.getDefaultPosition());
+    PWINDOWINARR->setEffectiveSize(PWINDOWINARR->getDefaultSize());
+    PWINDOWINARR->setEffectivePosition(PWINDOWINARR->getDefaultPosition());
 
     // Also sets the old one
-    g_pWindowManager->calculateNewWindowParams(&window);
+    g_pWindowManager->calculateNewWindowParams(PWINDOWINARR);
 
-    // Add to arr
-    g_pWindowManager->addWindowToVectorSafe(window);
-
-    Debug::log(LOG, "Created a new floating window! X: " + std::to_string(window.getPosition().x) + ", Y: " + std::to_string(window.getPosition().y) + ", W: " + std::to_string(window.getSize().x) + ", H:" + std::to_string(window.getSize().y) + " ID: " + std::to_string(windowID));
+    Debug::log(LOG, "Created a new floating window! X: " + std::to_string(PWINDOWINARR->getPosition().x) + ", Y: " + std::to_string(PWINDOWINARR->getPosition().y) + ", W: " + std::to_string(PWINDOWINARR->getSize().x) + ", H:" + std::to_string(PWINDOWINARR->getSize().y) + " ID: " + std::to_string(windowID));
 
     // Set map values
     g_pWindowManager->Values[0] = XCB_EVENT_MASK_ENTER_WINDOW | XCB_EVENT_MASK_FOCUS_CHANGE;
     xcb_change_window_attributes_checked(g_pWindowManager->DisplayConnection, windowID, XCB_CW_EVENT_MASK, g_pWindowManager->Values);
 
     // Fix docks
-    if (window.getDock())
+    if (PWINDOWINARR->getDock())
         g_pWindowManager->recalcAllDocks();
 
     nextWindowCentered = false;
 
-    return g_pWindowManager->getWindowFromDrawable(windowID);
+    // Reset flags
+    PWINDOWINARR->setConstructed(true);
+    PWINDOWINARR->setFirstOpen(false);
+
+    return PWINDOWINARR;
 }
 
 CWindow* Events::remapWindow(int windowID, bool wasfloating, int forcemonitor) {
-    // Do the setup of the window's params and stuf
-    CWindow window;
-    window.setDrawable(windowID);
-    window.setIsFloating(false);
-    window.setDirty(true);
+
+    // Not const because we realloc the array later
+    auto PWINDOWINARR = g_pWindowManager->getWindowFromDrawable(windowID);
+
+    if (!PWINDOWINARR) {
+        Debug::log(ERR, "remapWindow called with an invalid window!");
+        return nullptr;
+    }
+
+    PWINDOWINARR->setIsFloating(false);
+    PWINDOWINARR->setDirty(true);
     if (!g_pWindowManager->getMonitorFromCursor()) {
         Debug::log(ERR, "Monitor was null! (remapWindow)");
         // rip! we cannot continue.
     }
+
+    // Check the monitor rule
+    for (auto& rule : ConfigManager::getMatchingRules(windowID)) {
+        if (!PWINDOWINARR->getFirstOpen())
+            break;
+
+        if (rule.szRule.find("monitor") == 0) {
+            try {
+                const auto MONITOR = stoi(rule.szRule.substr(rule.szRule.find(" ") + 1));
+
+                Debug::log(LOG, "Rule monitor, applying to window " + std::to_string(windowID));
+
+                if (MONITOR > g_pWindowManager->monitors.size() || MONITOR < 0)
+                    forcemonitor = -1;
+                else
+                    forcemonitor = MONITOR;
+            } catch (...) {
+                Debug::log(LOG, "Rule monitor failed, rule: " + rule.szRule + "=" + rule.szValue);
+            }
+        }
+    }
+
     const auto CURRENTSCREEN = forcemonitor != -1 ? forcemonitor : g_pWindowManager->getMonitorFromCursor()->ID;
-    window.setWorkspaceID(g_pWindowManager->activeWorkspaces[CURRENTSCREEN]);
-    window.setMonitor(CURRENTSCREEN);
+    PWINDOWINARR->setWorkspaceID(g_pWindowManager->activeWorkspaces[CURRENTSCREEN]);
+    PWINDOWINARR->setMonitor(CURRENTSCREEN);
 
     // Window name
     const auto WINNAME = getWindowName(windowID);
     Debug::log(LOG, "New window got name: " + WINNAME);
-    window.setName(WINNAME);
+    PWINDOWINARR->setName(WINNAME);
 
     const auto WINCLASSNAME = getClassName(windowID);
     Debug::log(LOG, "New window got class: " + WINCLASSNAME.second);
-    window.setClassName(WINCLASSNAME.second);
+    PWINDOWINARR->setClassName(WINCLASSNAME.second);
 
     // For all floating windows, get their default size
     const auto GEOMETRYCOOKIE = xcb_get_geometry(g_pWindowManager->DisplayConnection, windowID);
     const auto GEOMETRY = xcb_get_geometry_reply(g_pWindowManager->DisplayConnection, GEOMETRYCOOKIE, 0);
 
     if (GEOMETRY) {
-        window.setDefaultPosition(Vector2D(GEOMETRY->x, GEOMETRY->y));
-        window.setDefaultSize(Vector2D(GEOMETRY->width, GEOMETRY->height));
+        PWINDOWINARR->setDefaultPosition(Vector2D(GEOMETRY->x, GEOMETRY->y));
+        PWINDOWINARR->setDefaultSize(Vector2D(GEOMETRY->width, GEOMETRY->height));
     } else {
         Debug::log(ERR, "Geometry failed in remap.");
 
-        window.setDefaultPosition(Vector2D(0, 0));
-        window.setDefaultSize(Vector2D(g_pWindowManager->Screen->width_in_pixels / 2.f, g_pWindowManager->Screen->height_in_pixels / 2.f));
+        PWINDOWINARR->setDefaultPosition(Vector2D(0, 0));
+        PWINDOWINARR->setDefaultSize(Vector2D(g_pWindowManager->Screen->width_in_pixels / 2.f, g_pWindowManager->Screen->height_in_pixels / 2.f));
     }
 
     // Set the parent
     // check if lastwindow is on our workspace
-    if (auto PLASTWINDOW = g_pWindowManager->getWindowFromDrawable(g_pWindowManager->LastWindow); (PLASTWINDOW && PLASTWINDOW->getWorkspaceID() == g_pWindowManager->activeWorkspaces[CURRENTSCREEN]) || wasfloating) {
+    if (auto PLASTWINDOW = g_pWindowManager->getWindowFromDrawable(g_pWindowManager->LastWindow); (PLASTWINDOW && PLASTWINDOW->getWorkspaceID() == g_pWindowManager->activeWorkspaces[CURRENTSCREEN]) || wasfloating || (forcemonitor != -1 && forcemonitor != g_pWindowManager->getMonitorFromCursor()->ID)) {
         // LastWindow is on our workspace, let's make a new split node
 
-        if (wasfloating || PLASTWINDOW->getIsFloating()) {
-            // find a window manually
-            PLASTWINDOW = g_pWindowManager->findWindowAtCursor();
+        if (wasfloating || (forcemonitor != -1 && forcemonitor != g_pWindowManager->getMonitorFromCursor()->ID) || PLASTWINDOW->getIsFloating()) {
+            // if it's force monitor, find the first on a workspace.
+            if (forcemonitor != -1 && forcemonitor != g_pWindowManager->getMonitorFromCursor()->ID) {
+                PLASTWINDOW = g_pWindowManager->findFirstWindowOnWorkspace(g_pWindowManager->activeWorkspaces[CURRENTSCREEN]);
+            } else {
+                // find a window manually by the cursor
+                PLASTWINDOW = g_pWindowManager->findWindowAtCursor();
+            }
         }
 
         if (PLASTWINDOW) {
@@ -369,8 +462,8 @@ CWindow* Events::remapWindow(int windowID, bool wasfloating, int forcemonitor) {
 
             newWindowSplitNode.setParentNodeID(PLASTWINDOW->getParentNodeID());
 
-            newWindowSplitNode.setWorkspaceID(window.getWorkspaceID());
-            newWindowSplitNode.setMonitor(window.getMonitor());
+            newWindowSplitNode.setWorkspaceID(PWINDOWINARR->getWorkspaceID());
+            newWindowSplitNode.setMonitor(PWINDOWINARR->getMonitor());
 
             // generates a negative node ID
             newWindowSplitNode.generateNodeID();
@@ -384,31 +477,27 @@ CWindow* Events::remapWindow(int windowID, bool wasfloating, int forcemonitor) {
                 }
             }
 
-            window.setParentNodeID(newWindowSplitNode.getDrawable());
+            PWINDOWINARR->setParentNodeID(newWindowSplitNode.getDrawable());
             PLASTWINDOW->setParentNodeID(newWindowSplitNode.getDrawable());
 
             g_pWindowManager->addWindowToVectorSafe(newWindowSplitNode);
+
+            // The array got reallocated, let's update the pointer
+            PWINDOWINARR = g_pWindowManager->getWindowFromDrawable(windowID);
         } else {
-            window.setParentNodeID(0);
+            PWINDOWINARR->setParentNodeID(0);
         }
     } else {
         // LastWindow is not on our workspace, so set the parent to 0.
-        window.setParentNodeID(0);
+        PWINDOWINARR->setParentNodeID(0);
     }
 
     // For master layout, add the index
-    window.setMasterChildIndex(g_pWindowManager->getWindowsOnWorkspace(g_pWindowManager->activeWorkspaces[CURRENTSCREEN]) - 1);
+    PWINDOWINARR->setMasterChildIndex(g_pWindowManager->getWindowsOnWorkspace(g_pWindowManager->activeWorkspaces[CURRENTSCREEN]) - 1);
     // and set master if needed
     if (g_pWindowManager->getWindowsOnWorkspace(g_pWindowManager->activeWorkspaces[CURRENTSCREEN]) == 0) 
-        window.setMaster(true);
-
-
-    // Add to arr
-    g_pWindowManager->addWindowToVectorSafe(window);
-
-    // Now we need to modify the copy in the array.
-    const auto PWINDOWINARR = g_pWindowManager->getWindowFromDrawable(windowID);
-
+        PWINDOWINARR->setMaster(true);
+    
 
     // Also sets the old one
     g_pWindowManager->calculateNewWindowParams(PWINDOWINARR);
@@ -428,6 +517,10 @@ CWindow* Events::remapWindow(int windowID, bool wasfloating, int forcemonitor) {
 
     // Focus
     g_pWindowManager->setFocusedWindow(windowID);
+
+    // Reset flags
+    PWINDOWINARR->setConstructed(true);
+    PWINDOWINARR->setFirstOpen(false);
 
     return PWINDOWINARR;
 }
@@ -456,6 +549,10 @@ void Events::eventMapWindow(xcb_generic_event_t* event) {
 
     // We check if the window is not on our tile-blacklist and if it is, we have a special treatment procedure for it.
     // this func also sets some stuff
+
+    CWindow window;
+    window.setDrawable(E->window);
+    g_pWindowManager->addWindowToVectorSafe(window);
 
     CWindow* pNewWindow = nullptr;
     if (g_pWindowManager->shouldBeFloatedOnInit(E->window)) {

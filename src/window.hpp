@@ -35,6 +35,9 @@ public:
 
     EXPOSED_MEMBER(Name, std::string, sz);
     EXPOSED_MEMBER(ClassName, std::string, sz);
+    EXPOSED_MEMBER(RoleName, std::string, sz);
+    EXPOSED_MEMBER(Constructed, bool, b);
+    EXPOSED_MEMBER(FirstOpen, bool, b);
 
     // Tells the window manager to reload the window's params
     EXPOSED_MEMBER(Dirty, bool, b);

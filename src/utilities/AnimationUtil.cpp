@@ -16,6 +16,9 @@ void AnimationUtil::move() {
         // check if window needs an animation.
         window.setIsAnimated(false);
 
+        if (!window.getConstructed())
+            continue;
+
         // Border animations
         if (window.getDrawable() > 0) {
             if (window.getEffectiveBorderColor().getAsUint32() != window.getRealBorderColor().getAsUint32() /* As uint32 to round and not spam */) {

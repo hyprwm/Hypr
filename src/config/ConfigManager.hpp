@@ -3,6 +3,7 @@
 #include <map>
 #include "../utilities/Debug.hpp"
 #include <unordered_map>
+#include "../defines.hpp"
 #include <vector>
 
 enum ELayouts {
@@ -40,6 +41,8 @@ namespace ConfigManager {
     void                tick();
 
     void                applyKeybindsToX();
+
+    std::vector<SWindowRule> getMatchingRules(xcb_window_t);
 
     int                 getInt(std::string);
     float               getFloat(std::string);

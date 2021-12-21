@@ -261,7 +261,10 @@ void handleWindowRule(const std::string& command, const std::string& value) {
 
     // verify we support a rule
     if (RULE != "float" 
-        && RULE != "tile") {
+        && RULE != "tile"
+        && RULE.find("move") != 0
+        && RULE.find("size") != 0
+        && RULE.find("monitor") != 0) {
             Debug::log(ERR, "Invalid rule found: " + RULE);
             ConfigManager::parseError = "Invalid rule found: " + RULE;
             return;
@@ -499,4 +502,37 @@ float ConfigManager::getFloat(std::string v) {
 
 std::string ConfigManager::getString(std::string v) {
     return configValues[v].strValue;
+}
+
+std::vector<SWindowRule> ConfigManager::getMatchingRules(xcb_window_t w) {
+    const auto PWINDOW = g_pWindowManager->getWindowFromDrawable(w);
+
+    if (!PWINDOW)
+        return std::vector<SWindowRule>();
+
+    std::vector<SWindowRule> returns;
+
+    for (auto& rule : ConfigManager::windowRules) {
+        // check if we have a matching rule
+        if (rule.szValue.find("class:") == 0) {
+            std::regex classCheck(rule.szValue.substr(strlen("class:")));
+
+            if (!std::regex_search(PWINDOW->getClassName(), classCheck))
+                continue;
+        } else if (rule.szValue.find("role:") == 0) {
+            std::regex roleCheck(rule.szValue.substr(strlen("role:")));
+
+            if (!std::regex_search(PWINDOW->getRoleName(), roleCheck))
+                continue;
+        } else {
+            continue;
+        }
+
+        // applies. Read the rule and behave accordingly
+        Debug::log(LOG, "Window rule " + rule.szRule + "," + rule.szValue + " matched.");
+
+        returns.push_back(rule);
+    }
+
+    return returns;
 }

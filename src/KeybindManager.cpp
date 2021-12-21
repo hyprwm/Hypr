@@ -172,6 +172,12 @@ void KeybindManager::toggleActiveWindowFloating(std::string unusedArg) {
             const auto RESTORECANKILL = PWINDOW->getCanKill();
 
             g_pWindowManager->removeWindowFromVectorSafe(PWINDOW->getDrawable());
+
+            CWindow newWindow;
+            newWindow.setDrawable(RESTOREWINID);
+            newWindow.setFirstOpen(false);
+            g_pWindowManager->addWindowToVectorSafe(newWindow);
+
             const auto PNEWWINDOW = Events::remapWindow(RESTOREWINID, true);
 
             PNEWWINDOW->setDefaultPosition(RESTOREACPOS);

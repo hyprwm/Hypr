@@ -103,6 +103,8 @@ public:
     // finds a window that's tiled at cursor.
     CWindow*                    findWindowAtCursor();
 
+    CWindow*                    findFirstWindowOnWorkspace(const int&);
+
     bool                        shouldBeFloatedOnInit(int64_t);
     void                        doPostCreationChecks(CWindow*);
     void                        getICCCMWMProtocols(CWindow*);

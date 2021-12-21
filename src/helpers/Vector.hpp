@@ -14,6 +14,11 @@ class Vector2D {
     // returns the scale
     double          normalize();
 
+    Vector2D& operator=(Vector2D a) {
+        this->x = a.x; this->y = a.y;
+
+        return *this;
+    }
     Vector2D operator+(Vector2D a) {
         return Vector2D(this->x + a.x, this->y + a.y);
     }
