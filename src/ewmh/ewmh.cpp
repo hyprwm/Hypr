@@ -65,3 +65,43 @@ void EWMH::setFrameExtents(xcb_window_t w) {
     uint32_t extents[4] = {BORDERSIZE,BORDERSIZE,BORDERSIZE,BORDERSIZE};
     xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, w, HYPRATOMS["_NET_FRAME_EXTENTS"], XCB_ATOM_CARDINAL, 32, 4, &extents);
 }
+
+void EWMH::updateDesktops() {
+
+    if (!g_pWindowManager->getMonitorFromCursor()) {
+        Debug::log(ERR, "Monitor was null! (updateDesktops EWMH)");
+        return;
+    }
+
+    const auto ACTIVEWORKSPACE = g_pWindowManager->activeWorkspaces[g_pWindowManager->getMonitorFromCursor()->ID];
+    if (DesktopInfo::lastid != ACTIVEWORKSPACE) {
+        // Update the current workspace
+        DesktopInfo::lastid = ACTIVEWORKSPACE;
+        xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, g_pWindowManager->Screen->root, HYPRATOMS["_NET_CURRENT_DESKTOP"], XCB_ATOM_CARDINAL, 32, 1, &ACTIVEWORKSPACE);
+
+
+        // Update all desktops
+        const auto ALLDESKTOPS = g_pWindowManager->workspaces.size();
+        xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, g_pWindowManager->Screen->root, HYPRATOMS["_NET_NUMBER_OF_DESKTOPS"], XCB_ATOM_CARDINAL, 32, 1, &ALLDESKTOPS);
+
+        // Update desktop names, create a sorted workspaces vec
+        auto workspacesVec = g_pWindowManager->workspaces;
+        std::sort(workspacesVec.begin(), workspacesVec.end(), [](CWorkspace& a, CWorkspace& b) { return a.getID() < b.getID(); });
+
+        int msglen = 0;
+        for (auto& work : workspacesVec) {
+            msglen += strlen(std::to_string(work.getID()).c_str()) + 1;
+        }
+
+        char names[msglen];
+        int curpos = 0;
+        for (auto& work : workspacesVec) {
+            for (int i = 0; i < strlen(std::to_string(work.getID()).c_str()) + 1; ++i) {
+                names[curpos] = std::to_string(work.getID())[i];
+                ++curpos;
+            }
+        }
+
+        xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, g_pWindowManager->Screen->root, HYPRATOMS["_NET_DESKTOP_NAMES"], HYPRATOMS["UTF8_STRING"], 8, msglen, names);
+    }
+}

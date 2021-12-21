@@ -219,6 +219,9 @@ bool CWindowManager::handleEvent() {
     // Update the bar with the freshest stuff
     updateBarInfo();
 
+    // Update EWMH workspace info
+    EWMH::updateDesktops();
+
     xcb_flush(DisplayConnection);
 
     // Restore thread state

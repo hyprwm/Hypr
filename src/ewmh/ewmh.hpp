@@ -7,7 +7,12 @@ namespace EWMH {
     void            updateCurrentWindow(xcb_window_t);
     void            updateClientList();
     void            setFrameExtents(xcb_window_t);
-    void 	    refreshAllExtents();
+    void 	        refreshAllExtents();
+    void            updateDesktops();
+
+    namespace DesktopInfo {
+        inline int lastid = 0;
+    };
 
     inline xcb_window_t EWMHwindow = XCB_WINDOW_NONE;
 };  
