@@ -127,7 +127,7 @@ void Events::eventUnmapWindow(xcb_generic_event_t* event) {
         return; // bullshit window?
 
     if (PCLOSEDWINDOW->getIsFloating())
-        g_pWindowManager->moveWindowToUnmapped(E->event);  // If it's floating, just unmap it.
+        g_pWindowManager->moveWindowToUnmapped(E->window);  // If it's floating, just unmap it.
     else
         g_pWindowManager->closeWindowAllChecks(E->window);
 
