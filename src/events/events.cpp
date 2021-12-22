@@ -149,9 +149,17 @@ CWindow* Events::remapFloatingWindow(int windowID, int forcemonitor) {
 
     PWINDOWINARR->setIsFloating(true);
     PWINDOWINARR->setDirty(true);
-    if (!g_pWindowManager->getMonitorFromCursor()) {
-        Debug::log(ERR, "Monitor was null! (remapWindow)");
-        // rip! we cannot continue.
+
+    auto PMONITOR = g_pWindowManager->getMonitorFromCursor();
+    if (!PMONITOR) {
+        Debug::log(ERR, "Monitor was null! (remapWindow) Using 0.");
+        PMONITOR = &g_pWindowManager->monitors[0];
+
+        if (g_pWindowManager->monitors.size() == 0) {
+            Debug::log(ERR, "Not continuing. Monitors size 0.");
+            return nullptr;
+        }
+            
     }
 
     // Check the monitor rule
@@ -175,7 +183,7 @@ CWindow* Events::remapFloatingWindow(int windowID, int forcemonitor) {
         }
     }
 
-    const auto CURRENTSCREEN = forcemonitor != -1 ? forcemonitor : g_pWindowManager->getMonitorFromCursor()->ID;
+    const auto CURRENTSCREEN = forcemonitor != -1 ? forcemonitor : PMONITOR->ID;
     PWINDOWINARR->setWorkspaceID(g_pWindowManager->activeWorkspaces[CURRENTSCREEN]);
     PWINDOWINARR->setMonitor(CURRENTSCREEN);
 
@@ -384,9 +392,16 @@ CWindow* Events::remapWindow(int windowID, bool wasfloating, int forcemonitor) {
 
     PWINDOWINARR->setIsFloating(false);
     PWINDOWINARR->setDirty(true);
-    if (!g_pWindowManager->getMonitorFromCursor()) {
-        Debug::log(ERR, "Monitor was null! (remapWindow)");
-        // rip! we cannot continue.
+
+    auto PMONITOR = g_pWindowManager->getMonitorFromCursor();
+    if (!PMONITOR) {
+        Debug::log(ERR, "Monitor was null! (remapWindow) Using 0.");
+        PMONITOR = &g_pWindowManager->monitors[0];
+
+        if (g_pWindowManager->monitors.size() == 0) {
+            Debug::log(ERR, "Not continuing. Monitors size 0.");
+            return nullptr;
+        }
     }
 
     // Check the monitor rule
@@ -410,7 +425,7 @@ CWindow* Events::remapWindow(int windowID, bool wasfloating, int forcemonitor) {
         }
     }
 
-    const auto CURRENTSCREEN = forcemonitor != -1 ? forcemonitor : g_pWindowManager->getMonitorFromCursor()->ID;
+    const auto CURRENTSCREEN = forcemonitor != -1 ? forcemonitor : PMONITOR->ID;
     PWINDOWINARR->setWorkspaceID(g_pWindowManager->activeWorkspaces[CURRENTSCREEN]);
     PWINDOWINARR->setMonitor(CURRENTSCREEN);
 
@@ -439,12 +454,12 @@ CWindow* Events::remapWindow(int windowID, bool wasfloating, int forcemonitor) {
 
     // Set the parent
     // check if lastwindow is on our workspace
-    if (auto PLASTWINDOW = g_pWindowManager->getWindowFromDrawable(g_pWindowManager->LastWindow); (PLASTWINDOW && PLASTWINDOW->getWorkspaceID() == g_pWindowManager->activeWorkspaces[CURRENTSCREEN]) || wasfloating || (forcemonitor != -1 && forcemonitor != g_pWindowManager->getMonitorFromCursor()->ID)) {
+    if (auto PLASTWINDOW = g_pWindowManager->getWindowFromDrawable(g_pWindowManager->LastWindow); (PLASTWINDOW && PLASTWINDOW->getWorkspaceID() == g_pWindowManager->activeWorkspaces[CURRENTSCREEN]) || wasfloating || (forcemonitor != -1 && forcemonitor != PMONITOR->ID)) {
         // LastWindow is on our workspace, let's make a new split node
 
-        if (wasfloating || (forcemonitor != -1 && forcemonitor != g_pWindowManager->getMonitorFromCursor()->ID) || PLASTWINDOW->getIsFloating()) {
+        if (wasfloating || (forcemonitor != -1 && forcemonitor != PMONITOR->ID) || PLASTWINDOW->getIsFloating()) {
             // if it's force monitor, find the first on a workspace.
-            if (forcemonitor != -1 && forcemonitor != g_pWindowManager->getMonitorFromCursor()->ID) {
+            if (forcemonitor != -1 && forcemonitor != PMONITOR->ID) {
                 PLASTWINDOW = g_pWindowManager->findFirstWindowOnWorkspace(g_pWindowManager->activeWorkspaces[CURRENTSCREEN]);
             } else {
                 // find a window manually by the cursor
@@ -675,7 +690,7 @@ void Events::eventMotionNotify(xcb_generic_event_t* event) {
             const auto WORKSPACE = g_pWindowManager->activeWorkspaces[g_pWindowManager->getMonitorFromCursor()->ID];
             PACTINGWINDOW->setWorkspaceID(WORKSPACE);
         } else {
-            PACTINGWINDOW->setWorkspaceID(-1);
+            Debug::log(WARN, "Monitor was nullptr! Ignoring workspace change in MouseMoveEvent.");
         } 
 
         PACTINGWINDOW->setDirty(true);
@@ -786,4 +801,45 @@ void Events::eventClientMessage(xcb_generic_event_t* event) {
             xcb_map_window(g_pWindowManager->DisplayConnection, CLIENT);
         }
     }
+}
+
+void Events::eventRandRScreenChange(xcb_generic_event_t* event) {
+
+    // redetect screens
+    g_pWindowManager->monitors.clear();
+    g_pWindowManager->setupRandrMonitors();
+
+    // Detect monitors that are incorrect
+    // Orphaned workspaces
+    for (auto& w : g_pWindowManager->workspaces) {
+        if (w.getMonitor() >= g_pWindowManager->monitors.size())
+            w.setMonitor(0);
+    }
+
+    // Empty monitors
+    bool fineMonitors[g_pWindowManager->monitors.size()];
+    for (int i = 0; i < g_pWindowManager->monitors.size(); ++i)
+        fineMonitors[i] = false;
+
+    for (auto& w : g_pWindowManager->workspaces) {
+        fineMonitors[w.getMonitor()] = true;
+    }
+
+    for (int i = 0; i < g_pWindowManager->monitors.size(); ++i) {
+        if (!fineMonitors[i]) {
+            // add a workspace
+            CWorkspace newWorkspace;
+            newWorkspace.setMonitor(i);
+            newWorkspace.setID(g_pWindowManager->getHighestWorkspaceID() + 1);
+            newWorkspace.setHasFullscreenWindow(false);
+            newWorkspace.setLastWindow(0);
+            g_pWindowManager->workspaces.push_back(newWorkspace);
+        }
+    }
+
+    // reload the config to update the bar too
+    ConfigManager::loadConfigLoadVars();
+
+    // Make all windows dirty and recalc all workspaces
+    g_pWindowManager->recalcAllWorkspaces();
 }

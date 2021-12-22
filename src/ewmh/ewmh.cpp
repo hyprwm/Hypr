@@ -75,13 +75,19 @@ void EWMH::setFrameExtents(xcb_window_t w) {
 }
 
 void EWMH::updateDesktops() {
+    
+    int ACTIVEWORKSPACE = -1;
 
     if (!g_pWindowManager->getMonitorFromCursor()) {
-        Debug::log(ERR, "Monitor was null! (updateDesktops EWMH)");
-        return;
+        Debug::log(ERR, "Monitor was null! (updateDesktops EWMH) Using LastWindow");
+        if (const auto PWINDOW = g_pWindowManager->getWindowFromDrawable(g_pWindowManager->LastWindow); PWINDOW)
+            ACTIVEWORKSPACE = g_pWindowManager->activeWorkspaces[PWINDOW->getWorkspaceID()];
+        else
+            ACTIVEWORKSPACE = 0;
+    } else {
+       ACTIVEWORKSPACE = g_pWindowManager->activeWorkspaces[g_pWindowManager->getMonitorFromCursor()->ID];
     }
-
-    const auto ACTIVEWORKSPACE = g_pWindowManager->activeWorkspaces[g_pWindowManager->getMonitorFromCursor()->ID];
+    
     if (DesktopInfo::lastid != ACTIVEWORKSPACE) {
         // Update the current workspace
         DesktopInfo::lastid = ACTIVEWORKSPACE;

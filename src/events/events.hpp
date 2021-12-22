@@ -17,6 +17,8 @@ namespace Events {
     EVENT(MotionNotify);
     EVENT(ClientMessage);
 
+    EVENT(RandRScreenChange);
+
     // Bypass some events for floating windows
     CWindow*        remapWindow(int, bool floating = false, int forcemonitor = -1);
     CWindow*        remapFloatingWindow(int, int forcemonitor = -1);

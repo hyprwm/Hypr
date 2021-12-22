@@ -129,16 +129,25 @@ void CWindowManager::setupRandrMonitors() {
     else {
         //listen for screen change events
         xcb_randr_select_input(DisplayConnection, Screen->root, XCB_RANDR_NOTIFY_MASK_SCREEN_CHANGE);
+        RandREventBase = EXTENSIONREPLY->first_event;
     }
 
     xcb_flush(DisplayConnection);
+}
+
+void CWindowManager::setupManager() {
+    setupColormapAndStuff();
+    EWMH::setupInitEWMH();
+
+    // ---- RANDR ----- //
+    setupRandrMonitors();
 
     if (monitors.size() == 0) {
         // RandR failed!
         Debug::log(WARN, "RandR failed!");
         monitors.clear();
 
-        #define TESTING_MON_AMOUNT 3
+#define TESTING_MON_AMOUNT 3
         for (int i = 0; i < TESTING_MON_AMOUNT /* Testing on 3 monitors, RandR shouldnt fail on a real desktop */; ++i) {
             monitors.push_back(SMonitor());
             monitors[i].vecPosition = Vector2D(i * Screen->width_in_pixels / TESTING_MON_AMOUNT, 0);
@@ -147,14 +156,11 @@ void CWindowManager::setupRandrMonitors() {
             monitors[i].szName = "Screen" + std::to_string(i);
         }
     }
-}
-
-void CWindowManager::setupManager() {
-    setupColormapAndStuff();
-    EWMH::setupInitEWMH();
-    setupRandrMonitors();
 
     Debug::log(LOG, "RandR done.");
+
+    //
+    //
 
     Values[0] = XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_STRUCTURE_NOTIFY | XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY | XCB_EVENT_MASK_PROPERTY_CHANGE;
     xcb_change_window_attributes_checked(DisplayConnection, Screen->root,
@@ -244,6 +250,7 @@ void CWindowManager::recieveEvent() {
         if (!g_pWindowManager->statusBar)
             IPCRecieveMessageM(m_sIPCBarPipeOut.szPipeName);
 
+        const uint8_t TYPE = XCB_EVENT_RESPONSE_TYPE(ev);
         const auto EVENTCODE = ev->response_type & ~0x80;
 
         switch (EVENTCODE) {
@@ -297,6 +304,11 @@ void CWindowManager::recieveEvent() {
                 if ((EVENTCODE != 14) && (EVENTCODE != 13) && (EVENTCODE != 0) && (EVENTCODE != 22))
                     Debug::log(WARN, "Unknown event: " + std::to_string(ev->response_type & ~0x80));
                 break;
+        }
+
+        if (TYPE - RandREventBase == XCB_RANDR_SCREEN_CHANGE_NOTIFY) {
+            Events::eventRandRScreenChange(ev);
+            Debug::log(LOG, "Event dispatched RANDR_SCREEN_CHANGE");
         }
 
         free(ev);
@@ -777,10 +789,15 @@ void CWindowManager::calculateNewTileSetOldTile(CWindow* pWindow) {
     // Get the parent and both children, one of which will be pWindow
     const auto PPARENT = getWindowFromDrawable(pWindow->getParentNodeID());
 
-    const auto PMONITOR = getMonitorFromWindow(pWindow);
+    auto PMONITOR = getMonitorFromWindow(pWindow);
     if (!PMONITOR) {
-        Debug::log(ERR, "Monitor was nullptr! (calculateNewTileSetOldTile)");
-        return;
+        Debug::log(ERR, "Monitor was nullptr! (calculateNewTileSetOldTile) using 0.");
+        PMONITOR = &monitors[0];
+
+        if (monitors.size() == 0) {
+            Debug::log(ERR, "Not continuing. Monitors size 0.");
+            return;
+        } 
     }
 
     if (!PPARENT) {
@@ -929,9 +946,18 @@ void CWindowManager::recalcEntireWorkspace(const int& workspace) {
                 }
             }
 
-            if (!pMasterWindow) {
+            if (!pMasterWindow)
                 return;
-            }
+
+            const auto PMONITOR = getMonitorFromWorkspace(workspace);
+
+            if (!PMONITOR)
+                return;
+
+            Debug::log(LOG, "Recalc for workspace " + std::to_string(workspace));
+
+            pMasterWindow->setSize(PMONITOR->vecSize);
+            pMasterWindow->setPosition(PMONITOR->vecPosition);
 
             pMasterWindow->recalcSizePosRecursive();
             setAllWorkspaceWindowsDirtyByID(workspace);
@@ -1355,11 +1381,11 @@ void CWindowManager::moveActiveFocusTo(char dir) {
 
 void CWindowManager::changeWorkspaceByID(int ID) {
 
-    const auto MONITOR = getMonitorFromCursor();
+    auto MONITOR = getMonitorFromCursor();
 
     if (!MONITOR) {
-        Debug::log(ERR, "Monitor was nullptr! (changeWorkspaceByID)");
-        return;
+        Debug::log(ERR, "Monitor was nullptr! (changeWorkspaceByID) Using monitor 0.");
+        MONITOR = &monitors[0];
     }
 
     // mark old workspace dirty
@@ -1513,12 +1539,18 @@ void CWindowManager::updateBarInfo() {
 
     SIPCMessageMainToBar message;
 
-    if (!getMonitorFromCursor()) {
-        Debug::log(ERR, "Monitor was null! (updateBarInfo)");
-        return;
+    auto PMONITOR = getMonitorFromCursor();
+    if (!PMONITOR) {
+        Debug::log(ERR, "Monitor was null! (updateBarInfo) Using 0.");
+        PMONITOR = &monitors[0];
+
+        if (monitors.size() == 0) {
+            Debug::log(ERR, "Not continuing. Monitors size 0.");
+            return;
+        }
     }
 
-    message.activeWorkspace = activeWorkspaces[getMonitorFromCursor()->ID];
+    message.activeWorkspace = activeWorkspaces[PMONITOR->ID];
 
     auto winname = getWindowFromDrawable(LastWindow) ? getWindowFromDrawable(LastWindow)->getName() : "";
     auto winclassname = getWindowFromDrawable(LastWindow) ? getWindowFromDrawable(LastWindow)->getClassName() : "";

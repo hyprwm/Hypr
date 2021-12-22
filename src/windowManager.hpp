@@ -26,6 +26,7 @@ public:
     xcb_ewmh_connection_t*      EWMHConnection = nullptr; // Bar uses this
     xcb_screen_t*               Screen = nullptr;
     xcb_drawable_t              Drawable;
+    int                         RandREventBase = -1;
     uint32_t                    Values[3];
 
     std::vector<SMonitor>       monitors;
