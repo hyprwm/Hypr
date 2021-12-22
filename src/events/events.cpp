@@ -381,9 +381,7 @@ CWindow* Events::remapFloatingWindow(int windowID, int forcemonitor) {
 }
 
 CWindow* Events::remapWindow(int windowID, bool wasfloating, int forcemonitor) {
-
-    // Not const because we realloc the array later
-    auto PWINDOWINARR = g_pWindowManager->getWindowFromDrawable(windowID);
+    const auto PWINDOWINARR = g_pWindowManager->getWindowFromDrawable(windowID);
 
     if (!PWINDOWINARR) {
         Debug::log(ERR, "remapWindow called with an invalid window!");
@@ -496,9 +494,6 @@ CWindow* Events::remapWindow(int windowID, bool wasfloating, int forcemonitor) {
             PLASTWINDOW->setParentNodeID(newWindowSplitNode.getDrawable());
 
             g_pWindowManager->addWindowToVectorSafe(newWindowSplitNode);
-
-            // The array got reallocated, let's update the pointer
-            PWINDOWINARR = g_pWindowManager->getWindowFromDrawable(windowID);
         } else {
             PWINDOWINARR->setParentNodeID(0);
         }

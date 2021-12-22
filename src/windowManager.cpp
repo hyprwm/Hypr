@@ -316,7 +316,7 @@ void CWindowManager::recieveEvent() {
 }
 
 void CWindowManager::cleanupUnusedWorkspaces() {
-    std::vector<CWorkspace> temp = workspaces;
+    std::deque<CWorkspace> temp = workspaces;
 
     workspaces.clear();
 
@@ -608,7 +608,7 @@ void CWindowManager::removeWindowFromVectorSafe(int64_t window) {
     if (!window)
         return;
 
-    std::vector<CWindow> temp = windows;
+    std::deque<CWindow> temp = windows;
 
     windows.clear();
     

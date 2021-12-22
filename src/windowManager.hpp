@@ -6,6 +6,7 @@
 #include <vector>
 #include <thread>
 #include <xcb/xcb.h>
+#include <deque>
 
 #include "KeybindManager.hpp"
 #include "utilities/Workspace.hpp"
@@ -40,12 +41,12 @@ public:
     xcb_visualtype_t*           VisualType;
     xcb_colormap_t              Colormap;
 
-    std::vector<CWindow>        windows; // windows never left. It has always been hiding amongst us.
-    std::vector<CWindow>        unmappedWindows;
+    std::deque<CWindow>         windows; // windows never left. It has always been hiding amongst us.
+    std::deque<CWindow>         unmappedWindows;
     xcb_drawable_t              LastWindow = -1;
 
-    std::vector<CWorkspace>     workspaces;
-    std::vector<int>            activeWorkspaces;
+    std::deque<CWorkspace>      workspaces;
+    std::deque<int>             activeWorkspaces;
 
     // Pipes
     SIPCPipe                    m_sIPCBarPipeIn = {ISDEBUG ? "/tmp/hypr/hyprbarind" : "/tmp/hypr/hyprbarin", 0};
@@ -55,7 +56,7 @@ public:
     uint64_t                    barWindowID = 0;
     GThread*                    barThread; /* Well right now anything but the bar but lol */
     
-    std::vector<CTrayClient>    trayclients;
+    std::deque<CTrayClient>     trayclients;
 
     bool                        mainThreadBusy = false;
     bool                        animationUtilBusy = false;
