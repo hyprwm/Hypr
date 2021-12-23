@@ -48,7 +48,9 @@ void ConfigManager::init() {
         isFirstLaunch = true;
     }
 
-    loadConfigLoadVars();
+    lastModifyTime = 0;
+
+    tick();
     applyKeybindsToX();
 }
 
@@ -122,6 +124,8 @@ void handleBind(const std::string& command, const std::string& value) {
 
 void handleRawExec(const std::string& command, const std::string& args) {
     // Exec in the background dont wait for it.
+    RETURNIFBAR;
+
     if (fork() == 0) {
         execl("/bin/sh", "/bin/sh", "-c", args.c_str(), nullptr);
 

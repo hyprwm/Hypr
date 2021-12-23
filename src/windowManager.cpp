@@ -166,9 +166,11 @@ void CWindowManager::setupManager() {
     xcb_change_window_attributes_checked(DisplayConnection, Screen->root,
                                          XCB_CW_EVENT_MASK, Values);
 
+    Debug::log(LOG, "Root done.");
+
     ConfigManager::init();
 
-    Debug::log(LOG, "Keys done.");
+    Debug::log(LOG, "Config done.");
 
     // Add workspaces to the monitors
     for (long unsigned int i = 0; i < monitors.size(); ++i) {
@@ -189,8 +191,6 @@ void CWindowManager::setupManager() {
     Events::setThread();
 
     Debug::log(LOG, "Thread (Parent) done.");
-
-    ConfigManager::loadConfigLoadVars();
 
     updateRootCursor();
 
