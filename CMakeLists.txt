@@ -6,7 +6,7 @@ project(Hypr
 
 set(CMAKE_MESSAGE_LOG_LEVEL "STATUS")
 
-message(STATUS "Building Hypr!")
+message(STATUS "Configuring Hypr!")
 
 add_compile_options(-std=c++17)
 add_compile_options(-Wall -Wextra)
@@ -20,11 +20,11 @@ file(GLOB_RECURSE SRCFILES "src/*.cpp")
 add_executable(Hypr ${SRCFILES})
 
 IF(CMAKE_BUILD_TYPE MATCHES Debug OR CMAKE_BUILD_TYPE MATCHES DEBUG)
-    message(STATUS "Building Hypr in Debug with CMake!")
+    message(STATUS "Configuring Hypr in Debug with CMake!")
 ELSE()
     add_compile_options(-Ofast)
-    message(STATUS "Building Hypr in Release with CMake!")
-ENDIF(CMAKE_BUILD_TYPE MATCHES DEBUG)
+    message(STATUS "Configuring Hypr in Release with CMake!")
+ENDIF(CMAKE_BUILD_TYPE MATCHES Debug OR CMAKE_BUILD_TYPE MATCHES DEBUG)
 
 target_link_libraries(Hypr rt)
 
@@ -51,4 +51,4 @@ IF(CMAKE_BUILD_TYPE MATCHES Debug OR CMAKE_BUILD_TYPE MATCHES DEBUG)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg -no-pie -fno-builtin")
     SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pg -no-pie -fno-builtin")
     SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -pg -no-pie -fno-builtin")
-ENDIF(CMAKE_BUILD_TYPE MATCHES DEBUG OR CMAKE_BUILD_TYPE MATCHES DEBUG)
+ENDIF(CMAKE_BUILD_TYPE MATCHES Debug OR CMAKE_BUILD_TYPE MATCHES DEBUG)
