@@ -40,26 +40,20 @@ void EWMH::updateCurrentWindow(xcb_window_t w) {
 }
 
 void EWMH::updateClientList() {
-    std::vector<xcb_window_t> tiledWindowsList;
-    std::vector<xcb_window_t> floatedWindowsList;
+    std::vector<xcb_window_t> windowsList;
 
     for (auto& w : g_pWindowManager->windows)
         if (w.getDrawable() > 0 && !w.getIsFloating())
-            tiledWindowsList.push_back(w.getDrawable());
-        else if (w.getDrawable() > 0)
-            floatedWindowsList.push_back(w.getDrawable());
-    for (auto& w : g_pWindowManager->unmappedWindows)
-        floatedWindowsList.push_back(w.getDrawable());
+            windowsList.push_back(w.getDrawable());
 
     // hack
-    xcb_window_t* ArrTiledWindowList = &tiledWindowsList[0];
-    xcb_window_t* ArrFloatedWindowList = &floatedWindowsList[0];
+    xcb_window_t* ArrWindowList = &windowsList[0];
 
     xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, g_pWindowManager->Screen->root, HYPRATOMS["_NET_CLIENT_LIST"], XCB_ATOM_WINDOW,
-        32, tiledWindowsList.size(), ArrTiledWindowList);
+        32, windowsList.size(), ArrWindowList);
 
     xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, g_pWindowManager->Screen->root, HYPRATOMS["_NET_CLIENT_LIST_STACKING"], XCB_ATOM_WINDOW,
-        32, floatedWindowsList.size(), ArrFloatedWindowList);
+        32, windowsList.size(), ArrWindowList);
 }
 
 void EWMH::refreshAllExtents() {
