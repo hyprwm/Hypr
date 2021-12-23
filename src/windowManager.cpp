@@ -1249,9 +1249,6 @@ CWindow* CWindowManager::getNeighborInDir(char dir) {
     return nullptr;
 }
 
-// I don't know if this works, it might be an issue with my nested Xorg session I am using rn to test this.
-// Will check later.
-// TODO:
 void CWindowManager::warpCursorTo(Vector2D to) {
     const auto POINTERCOOKIE = xcb_query_pointer(DisplayConnection, Screen->root);
 
@@ -1262,7 +1259,7 @@ void CWindowManager::warpCursorTo(Vector2D to) {
         return;
     }
 
-    xcb_warp_pointer(DisplayConnection, XCB_NONE, Screen->root, 0, 0, 0, 0, (int)to.x, (int)to.y);
+    xcb_warp_pointer(DisplayConnection, XCB_NONE, Screen->root, 0, 0, Screen->width_in_pixels, Screen->height_in_pixels, (int)to.x, (int)to.y);
     free(pointerreply);
 }
 
@@ -1343,7 +1340,7 @@ void CWindowManager::moveActiveWindowTo(char dir) {
     CURRENTWINDOW->setDirty(true);
     neighbor->setDirty(true);
 
-    // finish by moving the cursor to the current window
+    // finish by moving the cursor to the new current window
     warpCursorTo(CURRENTWINDOW->getPosition() + CURRENTWINDOW->getSize() / 2.f);
 }
 
@@ -1375,8 +1372,8 @@ void CWindowManager::moveActiveFocusTo(char dir) {
     // move the focus
     setFocusedWindow(NEIGHBOR->getDrawable());
 
-    // finish by moving the cursor to the current window
-    warpCursorTo(CURRENTWINDOW->getPosition() + CURRENTWINDOW->getSize() / 2.f);
+    // finish by moving the cursor to the neighbor window
+    warpCursorTo(NEIGHBOR->getPosition() + (NEIGHBOR->getSize() / 2.f));
 }
 
 void CWindowManager::changeWorkspaceByID(int ID) {
@@ -1609,7 +1606,7 @@ void CWindowManager::setAllFloatingWindowsTop() {
             xcb_configure_window(g_pWindowManager->DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_STACK_MODE, Values);
 
             window.bringTopRecursiveTransients();
-        } else if (window.getChildren().size() > 0) {
+        } else {
             window.bringTopRecursiveTransients();
         }
     }

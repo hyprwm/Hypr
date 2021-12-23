@@ -52,6 +52,10 @@ void CWindow::bringTopRecursiveTransients() {
     if (ConfigManager::getInt("intelligent_transients") != 1)
         return;
 
+    // if this is a floating window, top
+    if (m_bIsFloating && m_iDrawable > 0)
+        g_pWindowManager->setAWindowTop(m_iDrawable);
+
     // first top all the children if floating
     for (auto& c : m_vecChildren) {
         if (const auto PWINDOW = g_pWindowManager->getWindowFromDrawable(c); PWINDOW) {

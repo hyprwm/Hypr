@@ -189,5 +189,7 @@ void KeybindManager::toggleActiveWindowFloating(std::string unusedArg) {
         EWMH::updateClientList();
 
         EWMH::updateWindow(PWINDOW->getDrawable());
+
+        g_pWindowManager->setAllFloatingWindowsTop();
     }
 }
