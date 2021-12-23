@@ -36,7 +36,7 @@ void IPCSendMessage(const std::string path, SIPCMessageBarToMain smessage) {
         std::string message = "";
 
         // write the WID
-        message += "wid" + IPC_MESSAGE_EQUALITY + std::to_string(g_pWindowManager->statusBar->getWindowID()) + IPC_MESSAGE_SEPARATOR;
+        message += "wid" + IPC_MESSAGE_EQUALITY + std::to_string(smessage.windowID) + IPC_MESSAGE_SEPARATOR;
 
         // append the EOF
         message += IPC_END_OF_FILE;

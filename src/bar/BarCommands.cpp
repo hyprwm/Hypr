@@ -134,13 +134,13 @@ std::string BarCommands::parseCommand(std::string command) {
 
     std::string result = "";
 
-    for (int i = 0; i < command.length(); ++i) {
+    for (long unsigned int i = 0; i < command.length(); ++i) {
 
         const auto c = command[i];
 
         if (c == '%') {
             // find the next one
-            for (int j = i + 1; i < command.length(); ++j) {
+            for (long unsigned int j = i + 1; i < command.length(); ++j) {
                 if (command[j] == '%') {
                     // found!
                     auto toSend = command.substr(i + 1);
@@ -157,7 +157,7 @@ std::string BarCommands::parseCommand(std::string command) {
 
         else if (c == '$') {
             // find the next one
-            for (int j = i + 1; i < command.length(); ++j) {
+            for (long unsigned int j = i + 1; i < command.length(); ++j) {
                 if (command[j] == '$') {
                     // found!
                     auto toSend = command.substr(i + 1);

@@ -470,7 +470,6 @@ void CWindowManager::setFocusedWindow(xcb_drawable_t window) {
             PLASTWIN->setEffectiveBorderColor(CFloatingColor(ConfigManager::getInt("col.active_border")));
         }
 
-        float values[1];
         if (const auto PWINDOW = g_pWindowManager->getWindowFromDrawable(window); PWINDOW) {
             // Apply rounded corners, does all the checks inside.
             // The border changed so let's not make it rectangular maybe
@@ -719,8 +718,6 @@ void CWindowManager::setEffectiveSizePosUsingConfig(CWindow* pWindow) {
     if (!pWindow || pWindow->getIsFloating())
         return;
 
-    auto START = std::chrono::high_resolution_clock::now();
-
     const auto MONITOR = getMonitorFromWindow(pWindow);
     const auto BARHEIGHT = (MONITOR->ID == ConfigManager::getInt("bar:monitor") ? (ConfigManager::getInt("bar:enabled") == 1 ? ConfigManager::getInt("bar:height") : ConfigManager::parseError == "" ? 0 : ConfigManager::getInt("bar:height")) : 0);
 
@@ -752,8 +749,6 @@ void CWindowManager::setEffectiveSizePosUsingConfig(CWindow* pWindow) {
 }
 
 CWindow* CWindowManager::findWindowAtCursor() {
-    const auto POINTERCOOKIE = xcb_query_pointer(DisplayConnection, Screen->root);
-
     Vector2D cursorPos = getCursorPos();
 
     const auto WORKSPACE = activeWorkspaces[getMonitorFromCursor()->ID];
@@ -1648,7 +1643,6 @@ bool CWindowManager::shouldBeFloatedOnInit(int64_t window) {
     // Type stuff
     //
     PROP(wm_type_cookie, HYPRATOMS["_NET_WM_WINDOW_TYPE"], UINT32_MAX);
-    xcb_atom_t TYPEATOM = NULL;
 
     if (wm_type_cookiereply == NULL || xcb_get_property_value_length(wm_type_cookiereply) < 1) {
         Debug::log(LOG, "No preferred type found. (shouldBeFloatedOnInit)");

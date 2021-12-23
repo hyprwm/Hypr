@@ -31,7 +31,7 @@ struct SBarModule {
     uint64_t        updateEveryMs;
     std::chrono::system_clock::time_point updateLast;
 
-    xcb_gcontext_t  bgcontext = NULL; // deprecated
+    xcb_gcontext_t  bgcontext = 0; // deprecated
 
     // PADS
     bool            isPad = false;
