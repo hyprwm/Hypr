@@ -1346,7 +1346,7 @@ void CWindowManager::moveActiveWindowTo(char dir) {
 
 CWindow* CWindowManager::getFullscreenWindowByWorkspace(const int& id) {
     for (auto& window : windows) {
-        if (window.getWorkspaceID() == id && window.getFullscreen())
+        if (window.getWorkspaceID() == id && window.getFullscreen() && window.getDrawable() > 0)
             return &window;
     }
 

@@ -120,6 +120,7 @@ public:
     void                        updateBarInfo();
 
     int                         getWindowsOnWorkspace(const int&);
+    CWindow*                    getFullscreenWindowByWorkspace(const int&);
 
     void                        recalcAllWorkspaces();
 
@@ -151,7 +152,6 @@ private:
     SMonitor*                   getMonitorFromWorkspace(const int&);
     void                        recalcEntireWorkspace(const int&);
     void                        fixMasterWorkspaceOnClosed(CWindow* pWindow);
-    CWindow*                    getFullscreenWindowByWorkspace(const int&);
 };
 
 inline std::unique_ptr<CWindowManager> g_pWindowManager = std::make_unique<CWindowManager>();

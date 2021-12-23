@@ -450,6 +450,19 @@ CWindow* Events::remapWindow(int windowID, bool wasfloating, int forcemonitor) {
         PWINDOWINARR->setDefaultSize(Vector2D(g_pWindowManager->Screen->width_in_pixels / 2.f, g_pWindowManager->Screen->height_in_pixels / 2.f));
     }
 
+    // Check if the workspace has a fullscreen window. if so, remove its' fullscreen status.
+    const auto PWORKSPACE = g_pWindowManager->getWorkspaceByID(g_pWindowManager->activeWorkspaces[CURRENTSCREEN]);
+    if (PWORKSPACE && PWORKSPACE->getHasFullscreenWindow()) {
+        const auto PFULLSCREENWINDOW = g_pWindowManager->getFullscreenWindowByWorkspace(PWORKSPACE->getID());
+
+        if (PFULLSCREENWINDOW) {
+            PFULLSCREENWINDOW->setFullscreen(false);
+            PFULLSCREENWINDOW->setDirty(true);
+            PWORKSPACE->setHasFullscreenWindow(false);
+            g_pWindowManager->setAllWorkspaceWindowsDirtyByID(PWORKSPACE->getID());
+        }
+    }
+
     // Set the parent
     // check if lastwindow is on our workspace
     if (auto PLASTWINDOW = g_pWindowManager->getWindowFromDrawable(g_pWindowManager->LastWindow); (PLASTWINDOW && PLASTWINDOW->getWorkspaceID() == g_pWindowManager->activeWorkspaces[CURRENTSCREEN]) || wasfloating || (forcemonitor != -1 && forcemonitor != PMONITOR->ID)) {
