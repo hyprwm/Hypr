@@ -1408,6 +1408,10 @@ void CWindowManager::changeWorkspaceByID(int ID) {
         MONITOR = &monitors[0];
     }
 
+    // Don't change if already opened
+    if (isWorkspaceVisible(ID))
+        return;
+
     // mark old workspace dirty
     setAllWorkspaceWindowsDirtyByID(activeWorkspaces[MONITOR->ID]);
 
