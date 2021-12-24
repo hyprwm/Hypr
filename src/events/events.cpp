@@ -56,6 +56,11 @@ void Events::eventEnter(xcb_generic_event_t* event) {
 
     RETURNIFBAR;
 
+    if (E->mode != XCB_NOTIFY_MODE_NORMAL)
+        return;
+
+    if (E->detail == XCB_NOTIFY_DETAIL_INFERIOR)
+        return;
 
     const auto PENTERWINDOW = g_pWindowManager->getWindowFromDrawable(E->event);
 
@@ -550,6 +555,9 @@ CWindow* Events::remapWindow(int windowID, bool wasfloating, int forcemonitor) {
 
 void Events::eventMapWindow(xcb_generic_event_t* event) {
     const auto E = reinterpret_cast<xcb_map_request_event_t*>(event);
+
+    // Ignore sequence
+    ignoredEvents.push_back(E->sequence);
 
     // let bar check if it wasnt a tray item
     if (g_pWindowManager->statusBar)

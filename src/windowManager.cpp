@@ -243,6 +243,17 @@ void CWindowManager::recieveEvent() {
             ;  // wait for it to finish
         }
 
+        for (auto& e : Events::ignoredEvents) {
+            if (e == ev->sequence) {
+                Debug::log(LOG, "Ignoring event type " + std::to_string(ev->response_type & ~0x80) + ".");
+                free(ev);
+                return;
+            }
+        }
+                
+        if (Events::ignoredEvents.size() > 20)
+            Events::ignoredEvents.pop_front();
+
         // Set thread state, halt animations until done.
         mainThreadBusy = true;
 
@@ -434,8 +445,10 @@ void CWindowManager::refreshDirtyWindows() {
             Values[0] = (int)window.getRealPosition().x - ConfigManager::getInt("border_size");
             Values[1] = (int)window.getRealPosition().y - ConfigManager::getInt("border_size");
             if (VECTORDELTANONZERO(window.getLastUpdatePosition(), Vector2D(Values[0], Values[1]))) {
-                xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, Values);
+                const auto COOKIE = xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, Values);
                 window.setLastUpdatePosition(Vector2D(Values[0], Values[1]));
+
+                Events::ignoredEvents.push_back(COOKIE.sequence);
             }
 
             Values[0] = (int)ConfigManager::getInt("border_size");
@@ -450,8 +463,10 @@ void CWindowManager::refreshDirtyWindows() {
                 Values[0] = (int)window.getRealSize().x;
                 Values[1] = (int)window.getRealSize().y;
                 if (VECTORDELTANONZERO(window.getLastUpdateSize(), Vector2D(Values[0], Values[1]))) {
-                    xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, Values);
+                    const auto COOKIE = xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, Values);
                     window.setLastUpdateSize(Vector2D(Values[0], Values[1]));
+
+                    Events::ignoredEvents.push_back(COOKIE.sequence);
                 }
                 window.setFirstAnimFrame(true);
             }
@@ -463,8 +478,10 @@ void CWindowManager::refreshDirtyWindows() {
                     Values[0] = (int)window.getEffectiveSize().x;
                     Values[1] = (int)window.getEffectiveSize().y;
                     if (VECTORDELTANONZERO(window.getLastUpdateSize(), Vector2D(Values[0], Values[1]))) {
-                        xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, Values);
+                        const auto COOKIE = xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, Values);
                         window.setLastUpdateSize(Vector2D(Values[0], Values[1]));
+
+                        Events::ignoredEvents.push_back(COOKIE.sequence);
                     }
                 }
             }
@@ -1661,7 +1678,8 @@ void CWindowManager::setAllFloatingWindowsTop() {
 
 void CWindowManager::setAWindowTop(xcb_window_t window) {
     Values[0] = XCB_STACK_MODE_ABOVE;
-    xcb_configure_window(g_pWindowManager->DisplayConnection, window, XCB_CONFIG_WINDOW_STACK_MODE, Values);
+    const auto COOKIE = xcb_configure_window(g_pWindowManager->DisplayConnection, window, XCB_CONFIG_WINDOW_STACK_MODE, Values);
+    Events::ignoredEvents.push_back(COOKIE.sequence);
 }
 
 bool CWindowManager::shouldBeFloatedOnInit(int64_t window) {

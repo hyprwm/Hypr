@@ -31,4 +31,7 @@ namespace Events {
 
     // For docks etc
     inline bool     nextWindowCentered = false;
+
+    // Fix focus on open
+    inline std::deque<uint32_t> ignoredEvents;
 };
