@@ -366,10 +366,8 @@ void CWindowManager::refreshDirtyWindows() {
                 continue;
 
             // first and foremost, let's check if the window isn't on a hidden workspace
-            // or that it is not a non-fullscreen window in a fullscreen workspace thats under
             // or an animated workspace
             if (!isWorkspaceVisible(window.getWorkspaceID())
-                || (bHasFullscreenWindow && !window.getFullscreen() && (window.getUnderFullscreen() || !window.getIsFloating()))
                 || PWORKSPACE->getAnimationInProgress()) {
 
                 Values[0] = (int)window.getRealPosition().x + (int)PWORKSPACE->getCurrentOffset().x;
@@ -388,6 +386,18 @@ void CWindowManager::refreshDirtyWindows() {
                 }
 
                 applyShapeToWindow(&window);
+
+                continue;
+            }
+
+            // or that it is not a non-fullscreen window in a fullscreen workspace thats under
+            if (bHasFullscreenWindow && !window.getFullscreen() && (window.getUnderFullscreen() || !window.getIsFloating())) {
+                Values[0] = 150000;
+                Values[1] = 150000;
+                if (VECTORDELTANONZERO(window.getLastUpdatePosition(), Vector2D(Values[0], Values[1]))) {
+                    xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, Values);
+                    window.setLastUpdatePosition(Vector2D(Values[0], Values[1]));
+                }
 
                 continue;
             }
