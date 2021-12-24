@@ -13,4 +13,9 @@ public:
     EXPOSED_MEMBER(Monitor, int, i);
 
     EXPOSED_MEMBER(HasFullscreenWindow, bool, b);
+
+    // Wipe animations
+    EXPOSED_MEMBER(AnimationInProgress, bool, b);
+    EXPOSED_MEMBER(CurrentOffset, Vector2D, vec);
+    EXPOSED_MEMBER(GoalOffset, Vector2D, vec);
 };

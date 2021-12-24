@@ -152,6 +152,7 @@ private:
     SMonitor*                   getMonitorFromWorkspace(const int&);
     void                        recalcEntireWorkspace(const int&);
     void                        fixMasterWorkspaceOnClosed(CWindow* pWindow);
+    void                        startWipeAnimOnWorkspace(const int&, const int&);
 };
 
 inline std::unique_ptr<CWindowManager> g_pWindowManager = std::make_unique<CWindowManager>();

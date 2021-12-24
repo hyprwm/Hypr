@@ -133,21 +133,13 @@ void CWindowManager::setupRandrMonitors() {
     }
 
     xcb_flush(DisplayConnection);
-}
-
-void CWindowManager::setupManager() {
-    setupColormapAndStuff();
-    EWMH::setupInitEWMH();
-
-    // ---- RANDR ----- //
-    setupRandrMonitors();
 
     if (monitors.size() == 0) {
         // RandR failed!
         Debug::log(WARN, "RandR failed!");
         monitors.clear();
 
-#define TESTING_MON_AMOUNT 3
+#define TESTING_MON_AMOUNT 2
         for (int i = 0; i < TESTING_MON_AMOUNT /* Testing on 3 monitors, RandR shouldnt fail on a real desktop */; ++i) {
             monitors.push_back(SMonitor());
             monitors[i].vecPosition = Vector2D(i * Screen->width_in_pixels / TESTING_MON_AMOUNT, 0);
@@ -156,6 +148,14 @@ void CWindowManager::setupManager() {
             monitors[i].szName = "Screen" + std::to_string(i);
         }
     }
+}
+
+void CWindowManager::setupManager() {
+    setupColormapAndStuff();
+    EWMH::setupInitEWMH();
+
+    // ---- RANDR ----- //
+    setupRandrMonitors();
 
     Debug::log(LOG, "RandR done.");
 
@@ -360,13 +360,20 @@ void CWindowManager::refreshDirtyWindows() {
             // Fullscreen flag
             bool bHasFullscreenWindow = getWorkspaceByID(window.getWorkspaceID())->getHasFullscreenWindow();
 
+            const auto PWORKSPACE = getWorkspaceByID(window.getWorkspaceID());
+
+            if (!PWORKSPACE)
+                continue;
+
             // first and foremost, let's check if the window isn't on a hidden workspace
             // or that it is not a non-fullscreen window in a fullscreen workspace thats under
+            // or an animated workspace
             if (!isWorkspaceVisible(window.getWorkspaceID())
-                || (bHasFullscreenWindow && !window.getFullscreen() && (window.getUnderFullscreen() || !window.getIsFloating()))) {
-                // Move it to hades
-                Values[0] = (int)1500000; // hmu when monitors actually have that many pixels
-                Values[1] = (int)1500000; // and we are still using xorg =)
+                || (bHasFullscreenWindow && !window.getFullscreen() && (window.getUnderFullscreen() || !window.getIsFloating()))
+                || PWORKSPACE->getAnimationInProgress()) {
+
+                Values[0] = (int)window.getRealPosition().x + (int)PWORKSPACE->getCurrentOffset().x;
+                Values[1] = (int)window.getRealPosition().y + (int)PWORKSPACE->getCurrentOffset().y;
                 if (VECTORDELTANONZERO(window.getLastUpdatePosition(), Vector2D(Values[0], Values[1]))) {
                     xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, Values);
                     window.setLastUpdatePosition(Vector2D(Values[0], Values[1]));
@@ -379,6 +386,8 @@ void CWindowManager::refreshDirtyWindows() {
                     xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, Values);
                     window.setLastUpdateSize(Vector2D(Values[0], Values[1]));
                 }
+
+                applyShapeToWindow(&window);
 
                 continue;
             }
@@ -698,6 +707,25 @@ void CWindowManager::applyShapeToWindow(CWindow* pWindow) {
     xcb_poly_fill_rectangle(DisplayConnection, PIXMAP2, BLACK, 1, &CLIPPINGRECT);
     xcb_poly_fill_rectangle(DisplayConnection, PIXMAP2, WHITE, 2, CLIPPINGRECTS);
     xcb_poly_fill_arc(DisplayConnection, PIXMAP2, WHITE, 4, CLIPPINGARCS);
+
+    const auto WORKSPACE = getWorkspaceByID(pWindow->getWorkspaceID());
+    if (WORKSPACE->getAnimationInProgress()) {
+        // if it's animated we draw 2 more black rects to clip it. (if it goes out of the monitor)
+
+        if (W + (pWindow->getRealPosition().x + WORKSPACE->getCurrentOffset().x - MONITOR->vecPosition.x) > MONITOR->vecSize.x) {
+            // clip right
+            xcb_rectangle_t rect[] = {{MONITOR->vecSize.x - (pWindow->getRealPosition().x + WORKSPACE->getCurrentOffset().x - MONITOR->vecPosition.x), -100, W + 100, H + 100}};
+            xcb_poly_fill_rectangle(DisplayConnection, PIXMAP1, BLACK, 1, rect);
+            xcb_poly_fill_rectangle(DisplayConnection, PIXMAP2, BLACK, 1, rect);
+        }
+
+        if (pWindow->getRealPosition().x + WORKSPACE->getCurrentOffset().x - MONITOR->vecPosition.x < 0) {
+            // clip left
+            xcb_rectangle_t rect[] = {{-100, -100, - (pWindow->getRealPosition().x  + WORKSPACE->getCurrentOffset().x - MONITOR->vecPosition.x), H + 100}};
+            xcb_poly_fill_rectangle(DisplayConnection, PIXMAP1, BLACK, 1, rect);
+            xcb_poly_fill_rectangle(DisplayConnection, PIXMAP2, BLACK, 1, rect);
+        }
+    }
 
     // Draw done
 
@@ -1383,12 +1411,16 @@ void CWindowManager::changeWorkspaceByID(int ID) {
     // mark old workspace dirty
     setAllWorkspaceWindowsDirtyByID(activeWorkspaces[MONITOR->ID]);
 
+    // save old workspace for anim
+    auto OLDWORKSPACE = activeWorkspaces[MONITOR->ID];
+
     for (auto& workspace : workspaces) {
         if (workspace.getID() == ID) {
             // set workspaces dirty
             setAllWorkspaceWindowsDirtyByID(activeWorkspaces[workspace.getMonitor()]);
             setAllWorkspaceWindowsDirtyByID(ID);
 
+            OLDWORKSPACE = activeWorkspaces[workspace.getMonitor()];
             activeWorkspaces[workspace.getMonitor()] = workspace.getID();
 
             // if not fullscreen set the focus to any window on that workspace
@@ -1411,6 +1443,9 @@ void CWindowManager::changeWorkspaceByID(int ID) {
 
             // Update bar info
             updateBarInfo();
+
+            // Wipe animation
+            startWipeAnimOnWorkspace(OLDWORKSPACE, ID);
             
             return;
         }
@@ -1426,6 +1461,9 @@ void CWindowManager::changeWorkspaceByID(int ID) {
 
     // Update bar info
     updateBarInfo();
+
+    // Wipe animation
+    startWipeAnimOnWorkspace(OLDWORKSPACE, ID);
 
     // no need for the new dirty, it's empty
 }
@@ -1933,5 +1971,21 @@ void CWindowManager::recalcAllDocks() {
         Values[0] = w.getDefaultSize().x;
         Values[1] = w.getDefaultSize().y;
         xcb_configure_window(DisplayConnection, w.getDrawable(), XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, Values);
+    }
+}
+
+void CWindowManager::startWipeAnimOnWorkspace(const int& oldwork, const int& newwork) {
+    const auto PMONITOR = getMonitorFromWorkspace(newwork);
+
+    for (auto& work : workspaces) {
+        if (work.getID() == oldwork) {
+            work.setCurrentOffset(Vector2D(0,0));
+            work.setGoalOffset(Vector2D(PMONITOR->vecSize.x, 0));
+            work.setAnimationInProgress(true);
+        } else if (work.getID() == newwork) {
+            work.setCurrentOffset(Vector2D(-PMONITOR->vecSize.x, 0));
+            work.setGoalOffset(Vector2D(0, 0));
+            work.setAnimationInProgress(true);
+        }
     }
 }

@@ -88,6 +88,40 @@ void AnimationUtil::move() {
         }
     }
 
+    for (auto& work : g_pWindowManager->workspaces) {
+        work.setAnimationInProgress(false);
+        if (VECTORDELTANONZERO(work.getCurrentOffset(), work.getGoalOffset())) {
+            work.setAnimationInProgress(true);
+            work.setCurrentOffset(Vector2D(parabolic(work.getCurrentOffset().x, work.getGoalOffset().x, ANIMATIONSPEED), parabolic(work.getCurrentOffset().y, work.getGoalOffset().y, ANIMATIONSPEED)));
+            
+            updateRequired = true;
+            g_pWindowManager->setAllWorkspaceWindowsDirtyByID(work.getID());
+
+            if (ConfigManager::getInt("anim:workspaces") == 0)
+                work.setAnimationInProgress(false);
+        }
+
+        if (!work.getAnimationInProgress()) {
+            if (!g_pWindowManager->isWorkspaceVisible(work.getID())) {
+                if (work.getCurrentOffset().x != 1500000) {
+                    g_pWindowManager->setAllWorkspaceWindowsDirtyByID(work.getID());
+                    updateRequired = true;
+                }
+
+                work.setCurrentOffset(Vector2D(1500000, 1500000));
+                work.setGoalOffset(Vector2D(1500000, 1500000));
+            } else {
+                if (work.getCurrentOffset().x != 0) {
+                    g_pWindowManager->setAllWorkspaceWindowsDirtyByID(work.getID());
+                    updateRequired = true;
+                }
+
+                work.setCurrentOffset(Vector2D(0, 0));
+                work.setGoalOffset(Vector2D(0, 0));
+            }
+        }
+    }
+
     if (updateRequired)
         emptyEvent();  // send a fake request to update dirty windows
 }
