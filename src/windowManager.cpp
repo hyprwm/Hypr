@@ -1267,8 +1267,11 @@ CWindow* CWindowManager::getNeighborInDir(char dir) {
     const auto POSA = CURRENTWINDOW->getPosition();
     const auto SIZEA = CURRENTWINDOW->getSize();
 
+    auto longestIntersect = -1;
+    CWindow* longestIntersectWindow = nullptr;
+
     for (auto& w : windows) {
-        if (w.getDrawable() == CURRENTWINDOW->getDrawable() || w.getWorkspaceID() != CURRENTWINDOW->getWorkspaceID())
+        if (w.getDrawable() == CURRENTWINDOW->getDrawable() || w.getDrawable() < 1 || w.getIsFloating() || !isWorkspaceVisible(w.getWorkspaceID()))
             continue;
 
         const auto POSB = w.getPosition();
@@ -1276,25 +1279,48 @@ CWindow* CWindowManager::getNeighborInDir(char dir) {
 
         switch (dir) {
             case 'l':
-                if (STICKS(POSA.x, POSB.x + SIZEB.x))
-                    return &w;
+                if (STICKS(POSA.x, POSB.x + SIZEB.x)) {
+                    const auto INTERSECTLEN = std::max((double)0, std::min(POSA.y + SIZEA.y, POSB.y + SIZEB.y) - std::max(POSA.y, POSB.y));
+                    if (INTERSECTLEN > longestIntersect) {
+                        longestIntersect = INTERSECTLEN;
+                        longestIntersectWindow = &w;
+                    }       
+                }
                 break;
             case 'r':
-                if (STICKS(POSA.x + SIZEA.x, POSB.x))
-                    return &w;
+                if (STICKS(POSA.x + SIZEA.x, POSB.x)) {
+                    const auto INTERSECTLEN = std::max((double)0, std::min(POSA.y + SIZEA.y, POSB.y + SIZEB.y) - std::max(POSA.y, POSB.y));
+                    if (INTERSECTLEN > longestIntersect) {
+                        longestIntersect = INTERSECTLEN;
+                        longestIntersectWindow = &w;
+                    }
+                }
                 break;
             case 't':
             case 'u':
-                if (STICKS(POSA.y, POSB.y + SIZEB.y))
-                    return &w;
+                if (STICKS(POSA.y, POSB.y + SIZEB.y)) {
+                    const auto INTERSECTLEN = std::max((double)0, std::min(POSA.x + SIZEA.x, POSB.x + SIZEB.x) - std::max(POSA.x, POSB.x));
+                    if (INTERSECTLEN > longestIntersect) {
+                        longestIntersect = INTERSECTLEN;
+                        longestIntersectWindow = &w;
+                    }
+                }
                 break;
             case 'b':
             case 'd':
-                if (STICKS(POSA.y + SIZEA.y, POSB.y))
-                    return &w;
+                if (STICKS(POSA.y + SIZEA.y, POSB.y)) {
+                    const auto INTERSECTLEN = std::max((double)0, std::min(POSA.x + SIZEA.x, POSB.x + SIZEB.x) - std::max(POSA.x, POSB.x));
+                    if (INTERSECTLEN > longestIntersect) {
+                        longestIntersect = INTERSECTLEN;
+                        longestIntersectWindow = &w;
+                    }
+                }
                 break;
         }
     }
+
+    if (longestIntersect != -1)
+        return longestIntersectWindow;
 
     return nullptr;
 }
@@ -1390,6 +1416,49 @@ void CWindowManager::moveActiveWindowTo(char dir) {
     CURRENTWINDOW->setDirty(true);
     neighbor->setDirty(true);
 
+    // Fix the tree
+    if (CURRENTWINDOW->getParentNodeID() != 0) {
+        const auto PPARENT = getWindowFromDrawable(CURRENTWINDOW->getParentNodeID());
+        if (!PPARENT) {
+            Debug::log(ERR, "No parent node ID despite non-null???");
+            return;
+        }
+
+        if (PPARENT->getChildNodeAID() == CURRENTWINDOW->getDrawable())
+            PPARENT->setChildNodeAID(neighbor->getDrawable());
+        else
+            PPARENT->setChildNodeBID(neighbor->getDrawable());
+    }
+
+    if (neighbor->getParentNodeID() != 0) {
+        const auto PPARENT = getWindowFromDrawable(neighbor->getParentNodeID());
+        if (!PPARENT) {
+            Debug::log(ERR, "No parent node ID despite non-null???");
+            return;
+        }
+
+        if (PPARENT->getChildNodeAID() == neighbor->getDrawable())
+            PPARENT->setChildNodeAID(CURRENTWINDOW->getDrawable());
+        else
+            PPARENT->setChildNodeBID(CURRENTWINDOW->getDrawable());
+    }
+
+    const auto PARENTC = CURRENTWINDOW->getParentNodeID();
+
+    CURRENTWINDOW->setParentNodeID(neighbor->getParentNodeID());
+    neighbor->setParentNodeID(PARENTC);
+
+    // Fix the master layout
+    const auto SMASTER = CURRENTWINDOW->getMaster();
+    const auto SINDEX  = CURRENTWINDOW->getMasterChildIndex();
+    
+    CURRENTWINDOW->setMasterChildIndex(neighbor->getMasterChildIndex());
+    CURRENTWINDOW->setMaster(neighbor->getMaster());
+
+    neighbor->setMaster(SMASTER);
+    neighbor->setMasterChildIndex(SINDEX);
+        
+
     // finish by moving the cursor to the new current window
     warpCursorTo(CURRENTWINDOW->getPosition() + CURRENTWINDOW->getSize() / 2.f);
 }
@@ -1436,8 +1505,11 @@ void CWindowManager::changeWorkspaceByID(int ID) {
     }
 
     // Don't change if already opened
-    if (isWorkspaceVisible(ID))
+    if (isWorkspaceVisible(ID)) {
+        focusOnWorkspace(ID);
         return;
+    }
+        
 
     // mark old workspace dirty
     setAllWorkspaceWindowsDirtyByID(activeWorkspaces[MONITOR->ID]);
@@ -1456,21 +1528,7 @@ void CWindowManager::changeWorkspaceByID(int ID) {
 
             // if not fullscreen set the focus to any window on that workspace
             // if fullscreen, set to the fullscreen window
-            const auto PWORKSPACE = getWorkspaceByID(ID);
-            if (PWORKSPACE) {
-                if (!PWORKSPACE->getHasFullscreenWindow()) {
-                    for (auto& window : windows) {
-                        if (window.getWorkspaceID() == ID && window.getDrawable() > 0) {
-                            setFocusedWindow(window.getDrawable());
-                            break;
-                        }
-                    }
-                } else {
-                    const auto PFULLWINDOW = getFullscreenWindowByWorkspace(ID);
-                    if (PFULLWINDOW)
-                        setFocusedWindow(PFULLWINDOW->getDrawable());
-                }
-            }
+            focusOnWorkspace(ID);
 
             // Update bar info
             updateBarInfo();
@@ -1496,7 +1554,48 @@ void CWindowManager::changeWorkspaceByID(int ID) {
     // Wipe animation
     startWipeAnimOnWorkspace(OLDWORKSPACE, ID);
 
+    if (getMonitorFromCursor() && MONITOR->ID != getMonitorFromCursor()->ID)
+        warpCursorTo(MONITOR->vecPosition + MONITOR->vecSize / 2.f);
+
     // no need for the new dirty, it's empty
+}
+
+void CWindowManager::focusOnWorkspace(const int& work) {
+    const auto PWORKSPACE = getWorkspaceByID(work);
+    const auto PMONITOR = getMonitorFromWorkspace(work);
+
+    if (!PMONITOR) {
+        Debug::log(ERR, "Orphaned workspace at focusOnWorkspace ???");
+        return;
+    }
+
+    if (PWORKSPACE) {
+        if (!PWORKSPACE->getHasFullscreenWindow()) {
+            bool shouldHopToScreen = true;
+            for (auto& window : windows) {
+                if (window.getWorkspaceID() == work && window.getDrawable() > 0) {
+                    setFocusedWindow(window.getDrawable());
+
+                    if (getMonitorFromCursor() && getMonitorFromCursor()->ID != PMONITOR->ID)
+                        warpCursorTo(window.getPosition() + window.getSize() / 2.f);
+
+                    shouldHopToScreen = false;
+                    break;
+                }
+            }
+
+            if (shouldHopToScreen)
+                warpCursorTo(PMONITOR->vecPosition + PMONITOR->vecSize / 2.f);
+        } else {
+            const auto PFULLWINDOW = getFullscreenWindowByWorkspace(work);
+            if (PFULLWINDOW) {
+                setFocusedWindow(PFULLWINDOW->getDrawable());
+                
+                if (getMonitorFromCursor() && getMonitorFromCursor()->ID != PMONITOR->ID)
+                    warpCursorTo(PFULLWINDOW->getPosition() + PFULLWINDOW->getSize() / 2.f);
+            }
+        }
+    }
 }
 
 void CWindowManager::setAllWindowsDirty() {
