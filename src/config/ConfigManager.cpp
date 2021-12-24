@@ -43,7 +43,7 @@ void ConfigManager::init() {
     configValues["anim:enabled"].intValue = 0;
     configValues["anim:cheap"].intValue = 1;
     configValues["anim:borders"].intValue = 1;
-    configValues["anim:workspaces"].intValue = 1;
+    configValues["anim:workspaces"].intValue = 0;
 
     if (!g_pWindowManager->statusBar) {
         isFirstLaunch = true;

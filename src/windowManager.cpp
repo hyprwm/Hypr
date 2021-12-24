@@ -1979,11 +1979,17 @@ void CWindowManager::startWipeAnimOnWorkspace(const int& oldwork, const int& new
 
     for (auto& work : workspaces) {
         if (work.getID() == oldwork) {
-            work.setCurrentOffset(Vector2D(0,0));
+            if (ConfigManager::getInt("anim:workspaces") == 1)
+                work.setCurrentOffset(Vector2D(0,0));
+            else
+                work.setCurrentOffset(Vector2D(150000, 150000));
             work.setGoalOffset(Vector2D(PMONITOR->vecSize.x, 0));
             work.setAnimationInProgress(true);
         } else if (work.getID() == newwork) {
-            work.setCurrentOffset(Vector2D(-PMONITOR->vecSize.x, 0));
+            if (ConfigManager::getInt("anim:workspaces") == 1)
+                work.setCurrentOffset(Vector2D(-PMONITOR->vecSize.x, 0));
+            else
+                work.setCurrentOffset(Vector2D(0, 0));
             work.setGoalOffset(Vector2D(0, 0));
             work.setAnimationInProgress(true);
         }
