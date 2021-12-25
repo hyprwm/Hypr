@@ -77,7 +77,7 @@ void CWindowManager::setupRandrMonitors() {
 
     const auto MONITORNUM = xcb_randr_get_monitors_monitors_length(MONITORS);
 
-    Debug::log(LOG, "Found " + std::to_string(MONITORNUM) + " Monitors!");
+    Debug::log(LOG, "Found " + std::to_string(MONITORNUM) + " Monitor(s)!");
 
     if (MONITORNUM < 1) {
         // TODO: RandR 1.4 maybe for people with ancient hardware?
@@ -130,6 +130,7 @@ void CWindowManager::setupRandrMonitors() {
         //listen for screen change events
         xcb_randr_select_input(DisplayConnection, Screen->root, XCB_RANDR_NOTIFY_MASK_SCREEN_CHANGE);
         RandREventBase = EXTENSIONREPLY->first_event;
+        Debug::log(LOG, "RandR first event base found at " + std::to_string(RandREventBase) + ".");
     }
 
     xcb_flush(DisplayConnection);
