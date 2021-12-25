@@ -1894,8 +1894,7 @@ void CWindowManager::doPostCreationChecks(CWindow* pWindow) {
     // Check if it has a name
     const auto NAME = getClassName(window);
     if (NAME.first == "Error" && NAME.second == "Error") {
-        closeWindowAllChecks(window);
-        Debug::log(WARN, "Window created but has a class of NULL. Removing.");
+        Debug::log(WARN, "Window created but has a class of NULL?");
     }
 
     Debug::log(LOG, "Post creation checks ended");
