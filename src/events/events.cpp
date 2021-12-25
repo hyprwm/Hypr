@@ -821,6 +821,28 @@ void Events::eventClientMessage(xcb_generic_event_t* event) {
 
 void Events::eventRandRScreenChange(xcb_generic_event_t* event) {
 
+    // fix sus randr events, that sometimes happen
+    // it will spam these for no reason
+    // so we check if we have > 9 consecutive randr events less than 1s between each
+    // and if so, we stop listening for them
+    const auto DELTA = std::chrono::duration_cast<std::chrono::milliseconds>(lastRandREvent - std::chrono::high_resolution_clock::now());
+
+    if (susRandREventNo < 10) {
+        if (DELTA.count() <= 1000) {
+            susRandREventNo += 1;
+            Debug::log(WARN, "Suspicious RandR event no. " + std::to_string(susRandREventNo) + "!");
+            if (susRandREventNo > 9)
+                Debug::log(WARN, "Disabling RandR event listening because of excess suspicious RandR events (bug!)");
+        }
+        else
+            susRandREventNo = 0;
+    }
+
+    if (susRandREventNo > 9)
+        return; 
+    // randr sus fixed
+    //
+
     // redetect screens
     g_pWindowManager->monitors.clear();
     g_pWindowManager->setupRandrMonitors();

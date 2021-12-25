@@ -34,4 +34,8 @@ namespace Events {
 
     // Fix focus on open
     inline std::deque<uint32_t> ignoredEvents;
+
+    // Fix spammed RandR events
+    inline std::chrono::high_resolution_clock::time_point lastRandREvent = std::chrono::high_resolution_clock::now();
+    inline int      susRandREventNo = 0;
 };

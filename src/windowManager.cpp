@@ -313,12 +313,12 @@ void CWindowManager::recieveEvent() {
 
             default:
 
-                if ((EVENTCODE != 14) && (EVENTCODE != 13) && (EVENTCODE != 0) && (EVENTCODE != 22))
+                if ((EVENTCODE != 14) && (EVENTCODE != 13) && (EVENTCODE != 0) && (EVENTCODE != 22) && (TYPE - RandREventBase != XCB_RANDR_SCREEN_CHANGE_NOTIFY))
                     Debug::log(WARN, "Unknown event: " + std::to_string(ev->response_type & ~0x80));
                 break;
         }
 
-        if (TYPE - RandREventBase == XCB_RANDR_SCREEN_CHANGE_NOTIFY) {
+        if ((int)TYPE - RandREventBase == XCB_RANDR_SCREEN_CHANGE_NOTIFY && RandREventBase > 0) {
             Events::eventRandRScreenChange(ev);
             Debug::log(LOG, "Event dispatched RANDR_SCREEN_CHANGE");
         }
