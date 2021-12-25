@@ -63,6 +63,8 @@ public:
 
     std::vector<SBarModule> modules;
 
+    xcb_window_t        trayWindowID = 0;
+
 private:
     // for not deleting nulls
     bool                m_bIsDestroyed = true;
@@ -92,7 +94,6 @@ private:
     void                fixTrayOnCreate();
     void                saveTrayOnDestroy();
     int                 drawTrayModule(SBarModule*, int);
-    xcb_window_t        trayWindowID = 0;
 };
 
 // Main thread for the bar. Is only initted once in main.cpp so we can do this.

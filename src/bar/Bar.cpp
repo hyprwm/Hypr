@@ -165,7 +165,7 @@ void CStatusBar::setupTray() {
                       values);
 
     xcb_atom_t dockAtom[] = {HYPRATOMS["_NET_WM_WINDOW_TYPE_DOCK"]};
-    xcb_ewmh_set_wm_window_type(g_pWindowManager->EWMHConnection, m_iWindowID, 1, dockAtom);
+    xcb_ewmh_set_wm_window_type(g_pWindowManager->EWMHConnection, trayWindowID, 1, dockAtom);
 
     const uint32_t ORIENTATION = 0; // Horizontal
     xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, trayWindowID,
@@ -253,9 +253,9 @@ void CStatusBar::setupTray() {
 }
 
 void CStatusBar::fixTrayOnCreate() {
-    if (m_bHasTray) {
+    if (m_bHasTray && ConfigManager::getInt("bar:no_tray_saving") == 0) {
         for (auto& tray : g_pWindowManager->trayclients) {
-            xcb_reparent_window(g_pWindowManager->DisplayConnection, tray.window, g_pWindowManager->statusBar->getWindowID(), 0, 0);
+            xcb_reparent_window(g_pWindowManager->DisplayConnection, tray.window, g_pWindowManager->statusBar->trayWindowID, 0, 0);
             xcb_map_window(g_pWindowManager->DisplayConnection, tray.window);
             tray.hidden = false;
         }
@@ -278,8 +278,14 @@ void CStatusBar::fixTrayOnCreate() {
 }
 
 void CStatusBar::saveTrayOnDestroy() {
+
+    // TODO: fix this instead of disabling it.
+
+    if (ConfigManager::getInt("bar:no_tray_saving") == 1)
+        return;
+
     for (auto& tray : g_pWindowManager->trayclients) {
-        xcb_reparent_window(g_pWindowManager->DisplayConnection, tray.window, g_pWindowManager->Screen->root, -999, -999);
+        xcb_reparent_window(g_pWindowManager->DisplayConnection, tray.window, g_pWindowManager->Screen->root, 30000, 30000);
     }
 }
 
@@ -300,6 +306,8 @@ void CStatusBar::setup(int MonitorID) {
     }
 
     const auto MONITOR = g_pWindowManager->monitors[MonitorID];
+
+    Debug::log(LOG, "Bar monitor found to be " + std::to_string(MONITOR.ID));
 
     m_iMonitorID = MonitorID;
     m_vecPosition = MONITOR.vecPosition;
@@ -331,6 +339,7 @@ void CStatusBar::setup(int MonitorID) {
 
     // map
     xcb_map_window(g_pWindowManager->DisplayConnection, m_iWindowID);
+    Debug::log(LOG, "Bar mapping!");
 
     // Create a pixmap for writing to.
     m_iPixmap = xcb_generate_id(g_pWindowManager->DisplayConnection);
@@ -356,6 +365,7 @@ void CStatusBar::setup(int MonitorID) {
     // fix tray
     fixTrayOnCreate();
 
+    Debug::log(LOG, "Bar setup done!");
 
     m_bIsDestroyed = false;
 }

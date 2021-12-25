@@ -53,7 +53,7 @@ public:
     SIPCPipe                    m_sIPCBarPipeOut = {ISDEBUG ? "/tmp/hypr/hyprbaroutd" : "/tmp/hypr/hyprbarout", 0};
     CStatusBar*                 statusBar = nullptr;
     Vector2D                    lastKnownBarPosition = {-1,-1};
-    uint64_t                    barWindowID = 0;
+    int64_t                     barWindowID = 0;
     GThread*                    barThread; /* Well right now anything but the bar but lol */
     
     std::deque<CTrayClient>     trayclients;

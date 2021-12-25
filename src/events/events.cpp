@@ -393,6 +393,12 @@ CWindow* Events::remapWindow(int windowID, bool wasfloating, int forcemonitor) {
         return nullptr;
     }
 
+    if (PWINDOWINARR->getClassName() == "Error") {
+        Debug::log(LOG, "Class error -> force float");
+        return remapFloatingWindow(windowID, forcemonitor);
+    }
+        
+
     PWINDOWINARR->setIsFloating(false);
     PWINDOWINARR->setDirty(true);
 
@@ -567,10 +573,6 @@ void Events::eventMapWindow(xcb_generic_event_t* event) {
 
     // Map the window
     xcb_map_window(g_pWindowManager->DisplayConnection, E->window);
-
-    // make sure it's not the bar!
-    if (E->window == g_pWindowManager->barWindowID)
-        return;
 
     // Check if it's not unmapped
     if (g_pWindowManager->isWindowUnmapped(E->window)) {
@@ -782,7 +784,7 @@ void Events::eventClientMessage(xcb_generic_event_t* event) {
 
             free(XEMBEDREPLY);
 
-            xcb_reparent_window(g_pWindowManager->DisplayConnection, CLIENT, g_pWindowManager->statusBar->getWindowID(), 0, 0);
+            xcb_reparent_window(g_pWindowManager->DisplayConnection, CLIENT, g_pWindowManager->statusBar->trayWindowID, 0, 0);
         
             // icon sizes are barY - 2 - pad: 1
             values[0] = ConfigManager::getInt("bar:height") - 2 < 1 ? 1 : ConfigManager::getInt("bar:height") - 2;
@@ -800,7 +802,7 @@ void Events::eventClientMessage(xcb_generic_event_t* event) {
             event->format = 32;
             event->data.data32[0] = XCB_CURRENT_TIME;
             event->data.data32[1] = 0;
-            event->data.data32[2] = g_pWindowManager->statusBar->getWindowID();
+            event->data.data32[2] = g_pWindowManager->statusBar->trayWindowID;
             event->data.data32[3] = XEMBEDVERSION;
             xcb_send_event(g_pWindowManager->DisplayConnection, 0, CLIENT, XCB_EVENT_MASK_NO_EVENT, (char*)event);
 
