@@ -1799,11 +1799,6 @@ bool CWindowManager::shouldBeFloatedOnInit(int64_t window) {
         Debug::log(ERR, "shouldBeFloatedOnInit with an invalid window!");
         return true;
     }
-
-    if (window == barWindowID) {
-        PWINDOW->setDock(true);
-        PWINDOW->setDockAlign(DOCK_TOP);
-    }
         
     
     const auto WINCLASS = getClassName(window);
