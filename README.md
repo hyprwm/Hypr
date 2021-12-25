@@ -45,6 +45,7 @@ You have to use a config, place it in ~/.config/hypr/hypr.conf
 See the [Wiki](https://github.com/vaxerski/Hypr/wiki/Building) to see build instructions.
 
 # Known issues
+- RandR sometimes bugs at launch and starts spamming events, which will make the WM sluggish. Has never happened to me on a real machine though, only in a nested X11 session. (fix: restart X)
 - Picom's shadow and effects do not update for cheap animations while animating
 - Non-cheap animations are choppy (duh!)
 - The config is still pretty simple, although riceable!
