@@ -1773,12 +1773,20 @@ void CWindowManager::setAllFloatingWindowsTop() {
             window.bringTopRecursiveTransients();
         }
     }
+
+    // set the bar topper jic
+    Values[0] = XCB_STACK_MODE_ABOVE;
+    xcb_configure_window(g_pWindowManager->DisplayConnection, barWindowID, XCB_CONFIG_WINDOW_STACK_MODE, Values);
 }
 
 void CWindowManager::setAWindowTop(xcb_window_t window) {
     Values[0] = XCB_STACK_MODE_ABOVE;
     const auto COOKIE = xcb_configure_window(g_pWindowManager->DisplayConnection, window, XCB_CONFIG_WINDOW_STACK_MODE, Values);
     Events::ignoredEvents.push_back(COOKIE.sequence);
+
+    // set the bar topper jic
+    Values[0] = XCB_STACK_MODE_ABOVE;
+    xcb_configure_window(g_pWindowManager->DisplayConnection, barWindowID, XCB_CONFIG_WINDOW_STACK_MODE, Values);
 }
 
 bool CWindowManager::shouldBeFloatedOnInit(int64_t window) {
