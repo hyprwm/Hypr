@@ -46,7 +46,7 @@ See the [Wiki](https://github.com/vaxerski/Hypr/wiki/Building) to see build inst
 
 # Known issues
 - Picom's shadow and effects do not update for cheap animations while animating
-- Non-cheap animations are choppy (duh!)rgith
+- Non-cheap animations are choppy (duh!)
 - Popups sometimes are created a bit off
 
 # Contributions
