@@ -18,6 +18,7 @@ uint32_t KeybindManager::getKeyCodeFromName(std::string name) {
     if (name == "")
         return 0;
 
+    const auto ORIGINALCASENAME = name;
     transform(name.begin(), name.end(), name.begin(), ::tolower);
 
     if (name.length() == 1) {
@@ -44,6 +45,19 @@ uint32_t KeybindManager::getKeyCodeFromName(std::string name) {
             return 0xff54;
         } else if (name == "space") {
             return 0x20;
+        } else {
+            // unknown key, find in the xmodmap
+            std::string command = "xmodmap -pk | grep \"(" + ORIGINALCASENAME + ")\"";
+            std::string returnValue = exec(command.c_str());
+
+            try {
+                returnValue = returnValue.substr(returnValue.find_first_of('x') + 1);
+                returnValue = returnValue.substr(0, returnValue.find_first_of(' '));
+
+                return std::stoi(returnValue, nullptr, 16);  // return hex to int
+            } catch (...) {
+                Debug::log(ERR, "Unknown key: " + ORIGINALCASENAME);
+            }
         }
     }
 
