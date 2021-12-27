@@ -446,7 +446,8 @@ void ConfigManager::applyKeybindsToX() {
         Debug::log(LOG, "Not applying the keybinds because status bar not null");
         return;  // If we are in the status bar don't do this.
     }
-        
+
+    Debug::log(LOG, "Applying " + std::to_string(KeybindManager::keybinds.size()) + " keybinds to X.");
 
     xcb_ungrab_key(g_pWindowManager->DisplayConnection, XCB_GRAB_ANY, g_pWindowManager->Screen->root, XCB_MOD_MASK_ANY);
     xcb_ungrab_button(g_pWindowManager->DisplayConnection, XCB_GRAB_ANY, g_pWindowManager->Screen->root, XCB_MOD_MASK_ANY);
