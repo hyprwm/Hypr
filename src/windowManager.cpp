@@ -382,16 +382,24 @@ void CWindowManager::refreshDirtyWindows() {
             if (!isWorkspaceVisible(window.getWorkspaceID())
                 || PWORKSPACE->getAnimationInProgress()) {
 
-                Values[0] = (int)window.getRealPosition().x + (int)PWORKSPACE->getCurrentOffset().x;
-                Values[1] = (int)window.getRealPosition().y + (int)PWORKSPACE->getCurrentOffset().y;
+                const auto MONITOR = getMonitorFromWindow(&window);
+
+                Values[0] = (int)(window.getFullscreen() ? MONITOR->vecPosition.x : window.getRealPosition().x) + (int)PWORKSPACE->getCurrentOffset().x;
+                Values[1] = (int)(window.getFullscreen() ? MONITOR->vecPosition.y : window.getRealPosition().y) + (int)PWORKSPACE->getCurrentOffset().y;
+
+                if (bHasFullscreenWindow && !window.getFullscreen() && (window.getUnderFullscreen() || !window.getIsFloating())) {
+                    Values[0] = 150000;
+                    Values[1] = 150000;
+                }
+
                 if (VECTORDELTANONZERO(window.getLastUpdatePosition(), Vector2D(Values[0], Values[1]))) {
                     xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, Values);
                     window.setLastUpdatePosition(Vector2D(Values[0], Values[1]));
                 }
 
                 // Set the size JIC.
-                Values[0] = (int)window.getEffectiveSize().x;
-                Values[1] = (int)window.getEffectiveSize().y;
+                Values[0] = window.getFullscreen() ? MONITOR->vecSize.x : (int)window.getEffectiveSize().x;
+                Values[1] = window.getFullscreen() ? MONITOR->vecSize.y : (int)window.getEffectiveSize().y;
                 if (VECTORDELTANONZERO(window.getLastUpdateSize(), Vector2D(Values[0], Values[1]))) {
                     xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, Values);
                     window.setLastUpdateSize(Vector2D(Values[0], Values[1]));
