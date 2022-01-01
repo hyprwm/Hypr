@@ -148,7 +148,12 @@ CWindow* Events::remapFloatingWindow(int windowID, int forcemonitor) {
     const auto PWINDOWINARR = g_pWindowManager->getWindowFromDrawable(windowID);
 
     if (!PWINDOWINARR) {
-        Debug::log(ERR, "remapWindow called with an invalid window!");
+        Debug::log(ERR, "remapFloatingWindow called with an invalid window!");
+        return nullptr;
+    }
+
+    if (PWINDOWINARR->getClassName() == "") {
+        Debug::log(WARN, "remapFloatingWindow with Error, not managing.");
         return nullptr;
     }
 
@@ -394,8 +399,8 @@ CWindow* Events::remapWindow(int windowID, bool wasfloating, int forcemonitor) {
     }
 
     if (PWINDOWINARR->getClassName() == "Error") {
-        Debug::log(LOG, "Class error -> force float");
-        return remapFloatingWindow(windowID, forcemonitor);
+        Debug::log(LOG, "Class error -> we wont manage this.");
+        return nullptr;
     }
         
 
@@ -600,8 +605,10 @@ void Events::eventMapWindow(xcb_generic_event_t* event) {
         pNewWindow = remapWindow(E->window);
     }
 
-    if (!pNewWindow)
+    if (!pNewWindow) {
+        g_pWindowManager->removeWindowFromVectorSafe(E->window);
         return;
+    }
 
     // Do post-creation checks.
     g_pWindowManager->doPostCreationChecks(pNewWindow);
