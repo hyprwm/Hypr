@@ -1359,9 +1359,10 @@ void CWindowManager::moveActiveWindowToWorkspace(int workspace) {
     const auto SAVEDFLOATSTATUS = PWINDOW->getIsFloating();
     const auto SAVEDDRAWABLE    = PWINDOW->getDrawable();
 
-    closeWindowAllChecks(SAVEDDRAWABLE);
+    fixWindowOnClose(PWINDOW);
 
-    // PWINDOW is dead!
+    if (const auto WORKSPACE = getWorkspaceByID(PWINDOW->getWorkspaceID()); WORKSPACE && PWINDOW->getFullscreen())
+        WORKSPACE->setHasFullscreenWindow(false);
 
     changeWorkspaceByID(workspace);
 
@@ -1386,19 +1387,12 @@ void CWindowManager::moveActiveWindowToWorkspace(int workspace) {
         setFocusedWindow(newLastWindow);
     }
 
-    CWindow newWindow;
-    newWindow.setDrawable(SAVEDDRAWABLE);
-    newWindow.setFirstOpen(false);
-    addWindowToVectorSafe(newWindow);
-
-    CWindow* PNEWWINDOW = nullptr;
     if (SAVEDFLOATSTATUS)
-        PNEWWINDOW = Events::remapFloatingWindow(SAVEDDRAWABLE, NEWMONITOR);
+        Events::remapFloatingWindow(PWINDOW->getDrawable(), NEWMONITOR);
     else
-        PNEWWINDOW = Events::remapWindow(SAVEDDRAWABLE, false, NEWMONITOR);
+        Events::remapWindow(PWINDOW->getDrawable(), false, NEWMONITOR);
 
-
-    PNEWWINDOW->setDefaultSize(SAVEDDEFAULTSIZE);
+    PWINDOW->setDefaultSize(SAVEDDEFAULTSIZE);
 }
 
 void CWindowManager::moveActiveWindowTo(char dir) {
