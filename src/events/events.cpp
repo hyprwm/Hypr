@@ -64,8 +64,31 @@ void Events::eventEnter(xcb_generic_event_t* event) {
 
     const auto PENTERWINDOW = g_pWindowManager->getWindowFromDrawable(E->event);
 
-    if (!PENTERWINDOW)
-        return; // wut
+    if (!PENTERWINDOW){
+
+        // we entered an unknown window to us. Let's manage it.
+        Debug::log(LOG, "Entered an unmanaged window. Trying to manage it!");
+
+        CWindow newEnteredWindow;
+        newEnteredWindow.setDrawable(E->event);
+        g_pWindowManager->addWindowToVectorSafe(newEnteredWindow);
+
+        CWindow* pNewWindow;
+        if (g_pWindowManager->shouldBeFloatedOnInit(E->event)) {
+            Debug::log(LOG, "Window SHOULD be floating on start.");
+            pNewWindow = remapFloatingWindow(E->event);
+        } else {
+            Debug::log(LOG, "Window should NOT be floating on start.");
+            pNewWindow = remapWindow(E->event);
+        }
+
+        if (!pNewWindow) { // oh well. we tried. 
+            g_pWindowManager->removeWindowFromVectorSafe(E->event);
+            Debug::log(LOG, "Tried to manage, but failed!");
+        }
+
+        return;
+    }
 
     // Only when focus_when_hover OR floating OR last window floating
     if (ConfigManager::getInt("focus_when_hover") == 1
@@ -581,6 +604,7 @@ void Events::eventMapWindow(xcb_generic_event_t* event) {
 
     // Check if it's not unmapped
     if (g_pWindowManager->isWindowUnmapped(E->window)) {
+        Debug::log(LOG, "Window was unmapped, mapping back.");
         g_pWindowManager->moveWindowToMapped(E->window);
         return;
     }
