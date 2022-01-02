@@ -51,3 +51,10 @@ See the [Wiki](https://github.com/vaxerski/Hypr/wiki/Building) to see build inst
 
 # Contributions
 Refer to [CONTRIBUTING.md](https://github.com/vaxerski/Hypr/blob/main/CONTRIBUTING.md) and the [Wiki](https://github.com/vaxerski/Hypr/wiki/Contributing-&-Debugging) for contributing instructions and guidelines.
+
+
+# Stars over time
+
+[![Stars over time](https://starchart.cc/vaxerski/Hypr.svg)](https://starchart.cc/vaxerski/Hypr)
+
+
