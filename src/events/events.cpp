@@ -507,9 +507,9 @@ CWindow* Events::remapWindow(int windowID, bool wasfloating, int forcemonitor) {
     if (auto PLASTWINDOW = g_pWindowManager->getWindowFromDrawable(g_pWindowManager->LastWindow); (PLASTWINDOW && PLASTWINDOW->getWorkspaceID() == g_pWindowManager->activeWorkspaces[CURRENTSCREEN]) || wasfloating || (forcemonitor != -1 && forcemonitor != PMONITOR->ID)) {
         // LastWindow is on our workspace, let's make a new split node
 
-        if (wasfloating || (forcemonitor != -1 && forcemonitor != PMONITOR->ID) || PLASTWINDOW->getIsFloating()) {
+        if (wasfloating || (forcemonitor != -1 && forcemonitor != PMONITOR->ID) || (forcemonitor != -1 && PLASTWINDOW->getWorkspaceID() != g_pWindowManager->activeWorkspaces[CURRENTSCREEN]) || PLASTWINDOW->getIsFloating()) {
             // if it's force monitor, find the first on a workspace.
-            if (forcemonitor != -1 && forcemonitor != PMONITOR->ID) {
+            if ((forcemonitor != -1 && forcemonitor != PMONITOR->ID) || (forcemonitor != -1 && PLASTWINDOW->getWorkspaceID() != g_pWindowManager->activeWorkspaces[CURRENTSCREEN])) {
                 PLASTWINDOW = g_pWindowManager->findFirstWindowOnWorkspace(g_pWindowManager->activeWorkspaces[CURRENTSCREEN]);
             } else {
                 // find a window manually by the cursor

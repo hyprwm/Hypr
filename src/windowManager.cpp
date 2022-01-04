@@ -135,7 +135,7 @@ void CWindowManager::setupRandrMonitors() {
 
     xcb_flush(DisplayConnection);
 
-    if (monitors.size() == 0) {
+    if (monitors.size() == 0 || true) {
         // RandR failed!
         Debug::log(WARN, "RandR failed!");
         monitors.clear();
@@ -1350,16 +1350,25 @@ void CWindowManager::warpCursorTo(Vector2D to) {
 
 void CWindowManager::moveActiveWindowToWorkspace(int workspace) {
 
-    const auto PWINDOW = getWindowFromDrawable(LastWindow);
+    auto PWINDOW = getWindowFromDrawable(LastWindow);
 
     if (!PWINDOW)
         return;
+
+    if (PWINDOW->getWorkspaceID() == workspace)
+        return;
+
+    Debug::log(LOG, "Moving active window to " + std::to_string(workspace));
 
     const auto SAVEDDEFAULTSIZE = PWINDOW->getDefaultSize();
     const auto SAVEDFLOATSTATUS = PWINDOW->getIsFloating();
     const auto SAVEDDRAWABLE    = PWINDOW->getDrawable();
 
     fixWindowOnClose(PWINDOW);
+    // deque reallocated
+    LastWindow = SAVEDDRAWABLE;
+    PWINDOW = getWindowFromDrawable(LastWindow);
+    PWINDOW->setDead(false);
 
     if (const auto WORKSPACE = getWorkspaceByID(PWINDOW->getWorkspaceID()); WORKSPACE && PWINDOW->getFullscreen())
         WORKSPACE->setHasFullscreenWindow(false);
