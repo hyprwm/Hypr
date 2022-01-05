@@ -64,6 +64,8 @@ public:
     xcb_cursor_t                pointerCursor;
     xcb_cursor_context_t*       pointerContext;
 
+    Vector2D                    QueuedPointerWarp = {-1, -1};
+
     CWindow*                    getWindowFromDrawable(int64_t);
     void                        addWindowToVectorSafe(CWindow);
     void                        removeWindowFromVectorSafe(int64_t);
@@ -154,6 +156,7 @@ private:
     void                        fixMasterWorkspaceOnClosed(CWindow* pWindow);
     void                        startWipeAnimOnWorkspace(const int&, const int&);
     void                        focusOnWorkspace(const int&);
+    void                        dispatchQueuedWarp();
 };
 
 inline std::unique_ptr<CWindowManager> g_pWindowManager = std::make_unique<CWindowManager>();

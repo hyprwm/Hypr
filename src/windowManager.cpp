@@ -220,6 +220,9 @@ bool CWindowManager::handleEvent() {
     // remove unused workspaces
     cleanupUnusedWorkspaces();
 
+    // Process the queued warp
+    dispatchQueuedWarp();
+
     // Update last window name
     updateActiveWindowName();
 
@@ -507,6 +510,9 @@ void CWindowManager::refreshDirtyWindows() {
 
 void CWindowManager::setFocusedWindow(xcb_drawable_t window) {
     if (window && window != Screen->root) {
+
+        Debug::log(LOG, "Setting focus to " + std::to_string(window));
+
         // border color
         if (const auto PLASTWIN = getWindowFromDrawable(LastWindow); PLASTWIN) {
             PLASTWIN->setEffectiveBorderColor(CFloatingColor(ConfigManager::getInt("col.inactive_border")));
@@ -1472,7 +1478,7 @@ void CWindowManager::moveActiveWindowTo(char dir) {
         
 
     // finish by moving the cursor to the new current window
-    warpCursorTo(CURRENTWINDOW->getPosition() + CURRENTWINDOW->getSize() / 2.f);
+    QueuedPointerWarp = Vector2D(CURRENTWINDOW->getPosition() + CURRENTWINDOW->getSize() / 2.f);
 }
 
 CWindow* CWindowManager::getFullscreenWindowByWorkspace(const int& id) {
@@ -1504,7 +1510,7 @@ void CWindowManager::moveActiveFocusTo(char dir) {
     setFocusedWindow(NEIGHBOR->getDrawable());
 
     // finish by moving the cursor to the neighbor window
-    warpCursorTo(NEIGHBOR->getPosition() + (NEIGHBOR->getSize() / 2.f));
+    QueuedPointerWarp = Vector2D(NEIGHBOR->getPosition() + (NEIGHBOR->getSize() / 2.f));
 }
 
 void CWindowManager::changeWorkspaceByID(int ID) {
@@ -1518,6 +1524,7 @@ void CWindowManager::changeWorkspaceByID(int ID) {
 
     // Don't change if already opened
     if (isWorkspaceVisible(ID)) {
+        Debug::log(LOG, "Workspace visible, only focus.");
         focusOnWorkspace(ID);
         return;
     }
@@ -1531,6 +1538,8 @@ void CWindowManager::changeWorkspaceByID(int ID) {
 
     for (auto& workspace : workspaces) {
         if (workspace.getID() == ID) {
+            Debug::log(LOG, "Workspace open, bringing to active.");
+
             // set workspaces dirty
             setAllWorkspaceWindowsDirtyByID(activeWorkspaces[workspace.getMonitor()]);
             setAllWorkspaceWindowsDirtyByID(ID);
@@ -1545,12 +1554,16 @@ void CWindowManager::changeWorkspaceByID(int ID) {
             // Update bar info
             updateBarInfo();
 
+            Debug::log(LOG, "Bar info updated with workspace changed.");
+
             // Wipe animation
             startWipeAnimOnWorkspace(OLDWORKSPACE, ID);
             
             return;
         }
     }
+
+    Debug::log(LOG, "New workspace, creating.");
 
     // If we are here it means the workspace is new. Let's create it.
     CWorkspace newWorkspace;
@@ -1566,8 +1579,10 @@ void CWindowManager::changeWorkspaceByID(int ID) {
     // Wipe animation
     startWipeAnimOnWorkspace(OLDWORKSPACE, ID);
 
+    Debug::log(LOG, "New workspace created.");
+
     if (getMonitorFromCursor() && MONITOR->ID != getMonitorFromCursor()->ID)
-        warpCursorTo(MONITOR->vecPosition + MONITOR->vecSize / 2.f);
+        QueuedPointerWarp = Vector2D(MONITOR->vecPosition + MONITOR->vecSize / 2.f);
 
     // no need for the new dirty, it's empty
 }
@@ -1576,6 +1591,8 @@ void CWindowManager::focusOnWorkspace(const int& work) {
     const auto PWORKSPACE = getWorkspaceByID(work);
     const auto PMONITOR = getMonitorFromWorkspace(work);
 
+    Debug::log(LOG, "Focusing on workspace " + std::to_string(work));
+
     if (!PMONITOR) {
         Debug::log(ERR, "Orphaned workspace at focusOnWorkspace ???");
         return;
@@ -1583,28 +1600,31 @@ void CWindowManager::focusOnWorkspace(const int& work) {
 
     if (PWORKSPACE) {
         if (!PWORKSPACE->getHasFullscreenWindow()) {
+            Debug::log(LOG, "No fullscreen window");
             bool shouldHopToScreen = true;
             for (auto& window : windows) {
                 if (window.getWorkspaceID() == work && window.getDrawable() > 0) {
                     setFocusedWindow(window.getDrawable());
 
                     if (getMonitorFromCursor() && getMonitorFromCursor()->ID != PMONITOR->ID)
-                        warpCursorTo(window.getPosition() + window.getSize() / 2.f);
+                        QueuedPointerWarp = Vector2D(window.getPosition() + window.getSize() / 2.f);
 
                     shouldHopToScreen = false;
+                    Debug::log(LOG, "No hopping to new workspace");
                     break;
                 }
             }
 
             if (shouldHopToScreen)
-                warpCursorTo(PMONITOR->vecPosition + PMONITOR->vecSize / 2.f);
+                QueuedPointerWarp = Vector2D(PMONITOR->vecPosition + PMONITOR->vecSize / 2.f);
         } else {
             const auto PFULLWINDOW = getFullscreenWindowByWorkspace(work);
             if (PFULLWINDOW) {
+                Debug::log(LOG, "Fullscreen window id " + std::to_string(PFULLWINDOW->getDrawable()));
                 setFocusedWindow(PFULLWINDOW->getDrawable());
                 
                 if (getMonitorFromCursor() && getMonitorFromCursor()->ID != PMONITOR->ID)
-                    warpCursorTo(PFULLWINDOW->getPosition() + PFULLWINDOW->getSize() / 2.f);
+                    QueuedPointerWarp = Vector2D(PFULLWINDOW->getPosition() + PFULLWINDOW->getSize() / 2.f);
             }
         }
     }
@@ -2145,4 +2165,12 @@ void CWindowManager::startWipeAnimOnWorkspace(const int& oldwork, const int& new
             work.setAnimationInProgress(true);
         }
     }
+}
+
+void CWindowManager::dispatchQueuedWarp() {
+    if (QueuedPointerWarp.x == -1 && QueuedPointerWarp.y == -1)
+        return;
+
+    warpCursorTo(QueuedPointerWarp);
+    QueuedPointerWarp = Vector2D(-1,-1);
 }
