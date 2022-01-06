@@ -16,6 +16,7 @@ void ConfigManager::init() {
     configValues["rounding"].intValue = 5;
     configValues["main_mod"].strValue = "SUPER";
     configValues["intelligent_transients"].intValue = 1;
+    configValues["no_unmap_saving"].intValue = 1;
 
     configValues["focus_when_hover"].intValue = 1;
 

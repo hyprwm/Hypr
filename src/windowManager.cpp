@@ -2070,6 +2070,11 @@ void CWindowManager::recalcAllWorkspaces() {
 }
 
 void CWindowManager::moveWindowToUnmapped(int64_t id) {
+    if (ConfigManager::getInt("no_unmap_saving") == 1){
+        closeWindowAllChecks(id);
+        return;
+    }
+
     for (auto& w : windows) {
         if (w.getDrawable() == id) {
             // Move it

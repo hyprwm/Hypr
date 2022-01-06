@@ -631,6 +631,7 @@ void Events::eventMapWindow(xcb_generic_event_t* event) {
     }
 
     if (!pNewWindow || pNewWindow->getClassName() == "") {
+        Debug::log(LOG, "Removing, NULL.");
         g_pWindowManager->removeWindowFromVectorSafe(E->window);
         return;
     }
