@@ -518,7 +518,7 @@ void CWindowManager::setFocusedWindow(xcb_drawable_t window) {
             PLASTWIN->setEffectiveBorderColor(CFloatingColor(ConfigManager::getInt("col.inactive_border")));
         }
         if (const auto PLASTWIN = getWindowFromDrawable(window); PLASTWIN) {
-            PLASTWIN->setEffectiveBorderColor(CFloatingColor(ConfigManager::getInt("col.active_border")));
+		    PLASTWIN->setEffectiveBorderColor(CFloatingColor(ConfigManager::getInt("col.active_border")));
         }
 
         if (const auto PWINDOW = g_pWindowManager->getWindowFromDrawable(window); PWINDOW) {
@@ -620,6 +620,62 @@ void CWindowManager::sanityCheckOnWorkspace(int workspaceID) {
 
                 } else {
                     Debug::log(ERR, "Malformed node ID " + std::to_string(w.getDrawable()) + " with 2 children but one or both are nullptr.");
+
+                    // fix it
+                    if (!CHILDA && !CHILDB) {
+                        closeWindowAllChecks(w.getDrawable());
+                        Debug::log(ERR, "Node fixed, both nullptr.");
+                        continue;
+                    }
+
+                    const auto PNULLCHILD = CHILDA ? CHILDB : CHILDA;
+                    const auto PSIBLING = CHILDA ? CHILDA : CHILDB;
+
+                    const auto PPARENT = getWindowFromDrawable(w.getDrawable());
+
+                    if (!PPARENT)
+                        return;  // ????????
+
+                    if (!PSIBLING) {
+                        Debug::log(ERR, "No sibling found in fixing malformed node! (Corrupted tree...?)");
+                        return;
+                    }
+
+                    // FIX TREE ----
+                    // make the sibling replace the parent
+                    PSIBLING->setPosition(PPARENT->getPosition());
+                    PSIBLING->setSize(PPARENT->getSize());
+                    PSIBLING->setParentNodeID(PPARENT->getParentNodeID());
+
+                    if (PPARENT->getParentNodeID() != 0 && getWindowFromDrawable(PPARENT->getParentNodeID())) {
+                        if (getWindowFromDrawable(PPARENT->getParentNodeID())->getChildNodeAID() == PPARENT->getDrawable()) {
+                            getWindowFromDrawable(PPARENT->getParentNodeID())->setChildNodeAID(PSIBLING->getDrawable());
+                        } else {
+                            getWindowFromDrawable(PPARENT->getParentNodeID())->setChildNodeBID(PSIBLING->getDrawable());
+                        }
+                    }
+                    // TREE FIXED ----
+                    Debug::log(ERR, "Tree fixed.");
+
+                    // Fix master stuff
+                    getMasterForWorkspace(PSIBLING->getWorkspaceID());
+
+                    // recalc the workspace
+                    if (ConfigManager::getInt("layout") == LAYOUT_MASTER)
+                        recalcEntireWorkspace(PSIBLING->getWorkspaceID());
+                    else {
+                        PSIBLING->recalcSizePosRecursive();
+                        PSIBLING->setDirtyRecursive(true);
+                    }
+
+                    // Remove the parent
+                    removeWindowFromVectorSafe(PPARENT->getDrawable());
+
+                    if (findWindowAtCursor())
+                        setFocusedWindow(findWindowAtCursor()->getDrawable());  // Set focus. :)
+
+
+                    Debug::log(ERR, "Node fixed, one nullptr.");
                 }
             }
         }
@@ -681,9 +737,17 @@ void CWindowManager::applyShapeToWindow(CWindow* pWindow) {
     if (!SHAPEQUERY || !SHAPEQUERY->present || pWindow->getNoInterventions())
         return;
 
+    Debug::log(LOG, "Applying shape to " + std::to_string(pWindow->getDrawable()));
+
     // Prepare values
 
     const auto MONITOR = getMonitorFromWindow(pWindow);
+
+    if (!MONITOR) {
+        Debug::log(ERR, "No monitor for " + std::to_string(pWindow->getDrawable()) + "??");
+        return;
+    }
+
     const uint16_t W = pWindow->getFullscreen() ? MONITOR->vecSize.x : pWindow->getRealSize().x;
     const uint16_t H = pWindow->getFullscreen() ? MONITOR->vecSize.y : pWindow->getRealSize().y;
     const uint16_t BORDER = pWindow->getFullscreen() ? 0 : ConfigManager::getInt("border_size");
@@ -751,6 +815,12 @@ void CWindowManager::applyShapeToWindow(CWindow* pWindow) {
     xcb_poly_fill_arc(DisplayConnection, PIXMAP2, WHITE, 4, CLIPPINGARCS);
 
     const auto WORKSPACE = getWorkspaceByID(pWindow->getWorkspaceID());
+
+    if (!WORKSPACE) {
+        Debug::log(ERR, "No workspace for " + std::to_string(pWindow->getDrawable()) + "??");
+        return;
+    }
+
     if (WORKSPACE->getAnimationInProgress()) {
         // if it's animated we draw 2 more black rects to clip it. (if it goes out of the monitor)
 
@@ -1177,20 +1247,32 @@ void CWindowManager::closeWindowAllChecks(int64_t id) {
         g_pWindowManager->recalcAllDocks();
 }
 
-void CWindowManager::fixMasterWorkspaceOnClosed(CWindow* pWindow) {
-    // get children and master
+CWindow* CWindowManager::getMasterForWorkspace(const int& work) {
     CWindow* pMaster = nullptr;
     for (auto& w : windows) {
-        if (w.getWorkspaceID() == pWindow->getWorkspaceID() && w.getMaster()) {
+        if (w.getWorkspaceID() == work && w.getMaster()) {
             pMaster = &w;
             break;
         }
     }
 
     if (!pMaster) {
-        Debug::log(ERR, "No master found on workspace???");
-        return;
+        Debug::log(ERR, "No master found on workspace? Setting automatically");
+        for (auto& w : windows) {
+            if (w.getWorkspaceID() == work) {
+                pMaster = &w;
+                w.setMaster(true);
+                break;
+            }
+        }
     }
+
+    return pMaster;
+}
+
+void CWindowManager::fixMasterWorkspaceOnClosed(CWindow* pWindow) {
+
+    getMasterForWorkspace(pWindow->getWorkspaceID()); // to fix if no master
 
     // get children sorted
     std::vector<CWindow*> children;
@@ -1606,7 +1688,14 @@ void CWindowManager::focusOnWorkspace(const int& work) {
                 if (window.getWorkspaceID() == work && window.getDrawable() > 0) {
                     setFocusedWindow(window.getDrawable());
 
-                    if (getMonitorFromCursor() && getMonitorFromCursor()->ID != PMONITOR->ID)
+                    Debug::log(LOG, "Queueing the warp");
+
+                    const auto PMONITORFROMCURSOR = getMonitorFromCursor();
+
+                    if (PMONITORFROMCURSOR)
+                        Debug::log(LOG, "Monitor from cursor: " + std::to_string(PMONITORFROMCURSOR->ID));
+
+                    if (PMONITORFROMCURSOR && PMONITORFROMCURSOR->ID != PMONITOR->ID)
                         QueuedPointerWarp = Vector2D(window.getPosition() + window.getSize() / 2.f);
 
                     shouldHopToScreen = false;
@@ -1614,6 +1703,8 @@ void CWindowManager::focusOnWorkspace(const int& work) {
                     break;
                 }
             }
+
+            Debug::log(LOG, "Queueing a hop if needed.");
 
             if (shouldHopToScreen)
                 QueuedPointerWarp = Vector2D(PMONITOR->vecPosition + PMONITOR->vecSize / 2.f);
@@ -1703,6 +1794,8 @@ Vector2D CWindowManager::getCursorPos() {
 
     const auto CURSORPOS = Vector2D(pointerreply->root_x, pointerreply->root_y);
     free(pointerreply);
+
+    Debug::log(LOG, "Cursor pos: " + std::to_string(CURSORPOS.x) + ", " + std::to_string(CURSORPOS.y));
 
     return CURSORPOS;
 }

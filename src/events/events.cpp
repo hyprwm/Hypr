@@ -602,13 +602,6 @@ void Events::eventMapWindow(xcb_generic_event_t* event) {
     // Map the window
     xcb_map_window(g_pWindowManager->DisplayConnection, E->window);
 
-    // Check if it's not unmapped
-    if (g_pWindowManager->isWindowUnmapped(E->window)) {
-        Debug::log(LOG, "Window was unmapped, mapping back.");
-        g_pWindowManager->moveWindowToMapped(E->window);
-        return;
-    }
-
     // bar
     if (E->window == g_pWindowManager->barWindowID)
         return;
@@ -616,20 +609,28 @@ void Events::eventMapWindow(xcb_generic_event_t* event) {
     // We check if the window is not on our tile-blacklist and if it is, we have a special treatment procedure for it.
     // this func also sets some stuff
 
-    CWindow window;
-    window.setDrawable(E->window);
-    g_pWindowManager->addWindowToVectorSafe(window);
-
+    // Check if it's not unmapped
     CWindow* pNewWindow = nullptr;
-    if (g_pWindowManager->shouldBeFloatedOnInit(E->window)) {
-        Debug::log(LOG, "Window SHOULD be floating on start.");
-        pNewWindow = remapFloatingWindow(E->window);
+    if (g_pWindowManager->isWindowUnmapped(E->window)) {
+        Debug::log(LOG, "Window was unmapped, mapping back.");
+        g_pWindowManager->moveWindowToMapped(E->window);
+
+        pNewWindow = g_pWindowManager->getWindowFromDrawable(E->window);
     } else {
-        Debug::log(LOG, "Window should NOT be floating on start.");
-        pNewWindow = remapWindow(E->window);
+        CWindow window;
+        window.setDrawable(E->window);
+        g_pWindowManager->addWindowToVectorSafe(window);
+        
+        if (g_pWindowManager->shouldBeFloatedOnInit(E->window)) {
+            Debug::log(LOG, "Window SHOULD be floating on start.");
+            pNewWindow = remapFloatingWindow(E->window);
+        } else {
+            Debug::log(LOG, "Window should NOT be floating on start.");
+            pNewWindow = remapWindow(E->window);
+        }
     }
 
-    if (!pNewWindow) {
+    if (!pNewWindow || pNewWindow->getClassName() == "") {
         g_pWindowManager->removeWindowFromVectorSafe(E->window);
         return;
     }
