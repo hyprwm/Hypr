@@ -1667,6 +1667,12 @@ void CWindowManager::changeWorkspaceByID(int ID) {
         QueuedPointerWarp = Vector2D(MONITOR->vecPosition + MONITOR->vecSize / 2.f);
 
     // no need for the new dirty, it's empty
+
+    lastActiveWorkspaceID = ID;
+}
+
+void CWindowManager::changeToLastWorkspace() {
+    changeWorkspaceByID(lastActiveWorkspaceID);
 }
 
 void CWindowManager::focusOnWorkspace(const int& work) {
