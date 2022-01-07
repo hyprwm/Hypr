@@ -30,6 +30,19 @@ Hypr needs testers! Check it out and report suggestions or bugs!
 - Moving / Fullscreening windows
 - Mostly EWMH and ICCCM compliant
 
+# Installation
+I do not maintain any packages, but some kind people have made them for me. If I missed any, please let me know.
+
+*Arch (AUR)*
+```
+yay -S Hypr
+```
+
+## Manual building
+If your distro doesn't have Hypr in its' repositories, or you want to modify hypr,
+
+see the [Wiki](https://github.com/vaxerski/Hypr/wiki/Building) to see build and installation instructions.
+
 # Configuring
 See the [Wiki Page](https://github.com/vaxerski/Hypr/wiki/Configuring-Hypr) for a detailed overview on the config, or refer to the example config in examples/hypr.conf.
 
@@ -40,9 +53,6 @@ You have to use a config, place it in ~/.config/hypr/hypr.conf
 ![One](https://i.imgur.com/HLukmeA.png)
 ![Two](https://i.imgur.com/B0MDTu2.png)
 ![Three](https://i.imgur.com/yvZVde7.png)
-
-# Building
-See the [Wiki](https://github.com/vaxerski/Hypr/wiki/Building) to see build instructions.
 
 # Known issues
 - Picom's shadow and effects do not update for cheap animations while animating
