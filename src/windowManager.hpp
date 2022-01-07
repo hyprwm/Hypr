@@ -47,6 +47,7 @@ public:
 
     std::deque<CWorkspace>      workspaces;
     std::deque<int>             activeWorkspaces;
+    int                         lastActiveWorkspaceID = 1;
 
     // Pipes
     SIPCPipe                    m_sIPCBarPipeIn = {ISDEBUG ? "/tmp/hypr/hyprbarind" : "/tmp/hypr/hyprbarin", 0};
@@ -90,6 +91,7 @@ public:
     void                        recalcAllDocks();
 
     void                        changeWorkspaceByID(int);
+    void                        changeToLastWorkspace();
     void                        setAllWorkspaceWindowsDirtyByID(int);
     int                         getHighestWorkspaceID();
     CWorkspace*                 getWorkspaceByID(int);
