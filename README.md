@@ -35,7 +35,7 @@ I do not maintain any packages, but some kind people have made them for me. If I
 
 *Arch (AUR)*
 ```
-yay -S Hypr
+yay -S hypr-git
 ```
 
 ## Manual building
