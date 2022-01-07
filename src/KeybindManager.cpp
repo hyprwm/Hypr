@@ -1,6 +1,7 @@
 #include "KeybindManager.hpp"
 #include "utilities/Util.hpp"
 #include "events/events.hpp"
+#include "windowManager.hpp"
 
 #include <algorithm>
 #include <string.h>
@@ -157,9 +158,13 @@ void KeybindManager::changeworkspace(std::string arg) {
 
     if (ID != -1) {
         Debug::log(LOG, "Changing the current workspace to " + std::to_string(ID));
-
         g_pWindowManager->changeWorkspaceByID(ID);
     }
+}
+
+void KeybindManager::changetolastworkspace(std::string arg) {
+    Debug::log(LOG, "Changing the current workspace to the last workspace");
+    g_pWindowManager->changeToLastWorkspace();
 }
 
 void KeybindManager::toggleActiveWindowFullscreen(std::string unusedArg) {
