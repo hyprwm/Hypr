@@ -1617,6 +1617,7 @@ void CWindowManager::changeWorkspaceByID(int ID) {
 
     // save old workspace for anim
     auto OLDWORKSPACE = activeWorkspaces[MONITOR->ID];
+    lastActiveWorkspaceID = OLDWORKSPACE;
 
     for (auto& workspace : workspaces) {
         if (workspace.getID() == ID) {
@@ -1667,8 +1668,6 @@ void CWindowManager::changeWorkspaceByID(int ID) {
         QueuedPointerWarp = Vector2D(MONITOR->vecPosition + MONITOR->vecSize / 2.f);
 
     // no need for the new dirty, it's empty
-
-    lastActiveWorkspaceID = ID;
 }
 
 void CWindowManager::changeToLastWorkspace() {
