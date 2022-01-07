@@ -34,5 +34,3 @@ Systemd instructions:
 find the last ocurrence of Hypr and note the PID.
 `coredumpctl info <PID>`
 will print the coredump.
-`coredumpctl info <PID> | xclip -sel clip`
-will copy it to the clipboard.
