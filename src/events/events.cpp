@@ -175,11 +175,6 @@ CWindow* Events::remapFloatingWindow(int windowID, int forcemonitor) {
         return nullptr;
     }
 
-    if (PWINDOWINARR->getClassName() == "") {
-        Debug::log(WARN, "remapFloatingWindow with Error, not managing.");
-        return nullptr;
-    }
-
     PWINDOWINARR->setIsFloating(true);
     PWINDOWINARR->setDirty(true);
 
@@ -421,12 +416,6 @@ CWindow* Events::remapWindow(int windowID, bool wasfloating, int forcemonitor) {
         return nullptr;
     }
 
-    if (PWINDOWINARR->getClassName() == "Error") {
-        Debug::log(LOG, "Class error -> we wont manage this.");
-        return nullptr;
-    }
-        
-
     PWINDOWINARR->setIsFloating(false);
     PWINDOWINARR->setDirty(true);
 
@@ -635,8 +624,8 @@ void Events::eventMapWindow(xcb_generic_event_t* event) {
         }
     }
 
-    if (!pNewWindow || pNewWindow->getClassName() == "") {
-        Debug::log(LOG, "Removing, NULL.");
+    if (!pNewWindow) {
+        Debug::log(LOG, "Removing, NULLPTR.");
         g_pWindowManager->removeWindowFromVectorSafe(E->window);
         return;
     }

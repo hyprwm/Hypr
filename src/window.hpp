@@ -3,6 +3,7 @@
 #include "defines.hpp"
 #include "utilities/Workspace.hpp"
 #include "utilities/Util.hpp"
+#include <chrono>
 
 class CWindow {
 public:
@@ -38,6 +39,7 @@ public:
     EXPOSED_MEMBER(RoleName, std::string, sz);
     EXPOSED_MEMBER(Constructed, bool, b);
     EXPOSED_MEMBER(FirstOpen, bool, b);
+    EXPOSED_MEMBER(OpenTimestamp, std::chrono::high_resolution_clock::time_point, t);
 
     // Tells the window manager to reload the window's params
     EXPOSED_MEMBER(Dirty, bool, b);

@@ -164,6 +164,7 @@ private:
     void                        focusOnWorkspace(const int&);
     void                        dispatchQueuedWarp();
     CWindow*                    getMasterForWorkspace(const int&);
+    void                        unmanageUnnamedWindows();
 };
 
 inline std::unique_ptr<CWindowManager> g_pWindowManager = std::make_unique<CWindowManager>();
