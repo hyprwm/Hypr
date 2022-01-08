@@ -462,6 +462,11 @@ CWindow* Events::remapWindow(int windowID, bool wasfloating, int forcemonitor) {
         }
     }
 
+    if (g_pWindowManager->getWindowFromDrawable(g_pWindowManager->LastWindow) && forcemonitor == -1 && PMONITOR->ID != g_pWindowManager->getWindowFromDrawable(g_pWindowManager->LastWindow)->getMonitor()) {
+        // If the monitor of the last window doesnt match the current screen force the monitor of the cursor
+        forcemonitor = PMONITOR->ID;
+    }
+
     const auto CURRENTSCREEN = forcemonitor != -1 ? forcemonitor : PMONITOR->ID;
     PWINDOWINARR->setWorkspaceID(g_pWindowManager->activeWorkspaces[CURRENTSCREEN]);
     PWINDOWINARR->setMonitor(CURRENTSCREEN);
