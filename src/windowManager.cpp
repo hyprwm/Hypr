@@ -217,6 +217,9 @@ bool CWindowManager::handleEvent() {
         sanityCheckOnWorkspace(active);
     }
 
+    // fix unmanaged windows
+    unmanageUnnamedWindows();
+
     // remove unused workspaces
     cleanupUnusedWorkspaces();
 
