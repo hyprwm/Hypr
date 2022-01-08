@@ -30,6 +30,7 @@ public:
     int                         RandREventBase = -1;
     uint32_t                    Values[3];
 
+    // holds the objects of all active monitors.
     std::vector<SMonitor>       monitors;
 
     bool                        modKeyDown = false;
@@ -45,13 +46,16 @@ public:
     std::deque<CWindow>         unmappedWindows;
     xcb_drawable_t              LastWindow = -1;
 
+    // holds the objects representing every open workspace
     std::deque<CWorkspace>      workspaces;
+    // holds the IDs of open workspaces, Monitor ID -> workspace ID
     std::deque<int>             activeWorkspaces;
     int                         lastActiveWorkspaceID = 1;
 
-    // Pipes
+    // Not really pipes, but files. Oh well. Used for IPC.
     SIPCPipe                    m_sIPCBarPipeIn = {ISDEBUG ? "/tmp/hypr/hyprbarind" : "/tmp/hypr/hyprbarin", 0};
     SIPCPipe                    m_sIPCBarPipeOut = {ISDEBUG ? "/tmp/hypr/hyprbaroutd" : "/tmp/hypr/hyprbarout", 0};
+    // This will be nullptr on the main thread, and will hold the pointer to the bar object on the bar thread.
     CStatusBar*                 statusBar = nullptr;
     Vector2D                    lastKnownBarPosition = {-1,-1};
     int64_t                     barWindowID = 0;
