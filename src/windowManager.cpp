@@ -2280,23 +2280,3 @@ void CWindowManager::dispatchQueuedWarp() {
     warpCursorTo(QueuedPointerWarp);
     QueuedPointerWarp = Vector2D(-1,-1);
 }
-
-void CWindowManager::unmanageUnnamedWindows() {
-    std::deque<int64_t> toRemove;
-
-    for (auto& w : windows) {
-
-        if (w.getClassName() == "Error" || w.getClassName() == "") {
-            const auto DELTA = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - w.getOpenTimestamp()).count();
-
-            if (DELTA > 500) {
-                Debug::log(LOG, "Class error after 500ms -> we wont manage this.");
-                toRemove.push_back(w.getDrawable());
-            }
-        }
-    }
-
-    for (auto& wid : toRemove) {
-        closeWindowAllChecks(wid);
-    }
-}
