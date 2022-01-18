@@ -141,6 +141,8 @@ public:
 
     void                        handleClientMessage(xcb_client_message_event_t*);
 
+    bool                        shouldBeManaged(const int&);
+
 private:
 
     // Internal WM functions that don't have to be exposed

@@ -175,11 +175,6 @@ CWindow* Events::remapFloatingWindow(int windowID, int forcemonitor) {
         return nullptr;
     }
 
-    if (PWINDOWINARR->getClassName() == "") {
-        Debug::log(WARN, "remapFloatingWindow with Error, not managing.");
-        return nullptr;
-    }
-
     PWINDOWINARR->setIsFloating(true);
     PWINDOWINARR->setDirty(true);
 
@@ -420,11 +415,6 @@ CWindow* Events::remapWindow(int windowID, bool wasfloating, int forcemonitor) {
         Debug::log(ERR, "remapWindow called with an invalid window!");
         return nullptr;
     }
-
-    if (PWINDOWINARR->getClassName() == "Error") {
-        Debug::log(LOG, "Class error -> we wont manage this.");
-        return nullptr;
-    }
         
 
     PWINDOWINARR->setIsFloating(false);
@@ -622,6 +612,16 @@ void Events::eventMapWindow(xcb_generic_event_t* event) {
 
         pNewWindow = g_pWindowManager->getWindowFromDrawable(E->window);
     } else {
+        if (g_pWindowManager->getWindowFromDrawable(E->window)) {
+            Debug::log(LOG, "Window already managed.");
+            return;
+        }
+
+        if (!g_pWindowManager->shouldBeManaged(E->window)) {
+            Debug::log(LOG, "window shouldn't be managed");
+            return;
+        }
+
         CWindow window;
         window.setDrawable(E->window);
         g_pWindowManager->addWindowToVectorSafe(window);
@@ -635,7 +635,7 @@ void Events::eventMapWindow(xcb_generic_event_t* event) {
         }
     }
 
-    if (!pNewWindow || pNewWindow->getClassName() == "") {
+    if (!pNewWindow) {
         Debug::log(LOG, "Removing, NULL.");
         g_pWindowManager->removeWindowFromVectorSafe(E->window);
         return;

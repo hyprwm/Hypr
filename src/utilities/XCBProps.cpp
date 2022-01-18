@@ -111,3 +111,18 @@ void removeAtom(const int& window, xcb_atom_t prop, xcb_atom_t atom) {
     free(REPLY);
     xcb_ungrab_server(DisplayConnection);
 }
+
+uint8_t getWindowState(const int& win) {
+    uint32_t returns = 0;
+
+    const auto COOKIE = xcb_get_property(DisplayConnection, 0, win, HYPRATOMS["_NET_WM_STATE"], HYPRATOMS["_NET_WM_STATE"], 0L, 2L);
+    const auto REPLY = xcb_get_property_reply(DisplayConnection, COOKIE, NULL);
+    if (REPLY) {
+        if (REPLY->type == HYPRATOMS["_NET_WM_STATE"] && REPLY->format == 32 && REPLY->length == 2) {
+            returns = *((uint32_t*)xcb_get_property_value(REPLY));
+        }
+            
+        free(REPLY);
+    }
+    return returns;
+}

@@ -2277,3 +2277,27 @@ void CWindowManager::dispatchQueuedWarp() {
     warpCursorTo(QueuedPointerWarp);
     QueuedPointerWarp = Vector2D(-1,-1);
 }
+
+bool CWindowManager::shouldBeManaged(const int& window) {
+    const auto WINDOWATTRS = xcb_get_window_attributes_reply(DisplayConnection, xcb_get_window_attributes(DisplayConnection, window), NULL);
+
+    if (!WINDOWATTRS) {
+        Debug::log(LOG, "Skipping: window attributes null");
+        return false;
+    }
+
+    if (WINDOWATTRS->override_redirect) {
+        Debug::log(LOG, "Skipping: override redirect");
+        return false;
+    }
+
+    const auto GEOMETRY = xcb_get_geometry_reply(DisplayConnection, xcb_get_geometry(DisplayConnection, window), NULL);
+    if (!GEOMETRY) {
+        Debug::log(LOG, "Skipping: No geometry");
+        return false;
+    }
+
+    Debug::log(LOG, "shouldBeManaged passed!");
+
+    return true;
+}
