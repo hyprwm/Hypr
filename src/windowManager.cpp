@@ -1985,6 +1985,11 @@ bool CWindowManager::shouldBeFloatedOnInit(int64_t window) {
             return false;
         else if (rule.szRule == "float")
             return true;
+        else if (rule.szRule == "nointerventions") {
+            PWINDOW->setNoInterventions(true);
+            PWINDOW->setImmovable(true);
+            return true;
+        }
     }
 
     return false;
