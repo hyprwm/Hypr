@@ -372,13 +372,13 @@ void CWindowManager::refreshDirtyWindows() {
                 
             setEffectiveSizePosUsingConfig(&window);
 
-            // Fullscreen flag
-            bool bHasFullscreenWindow = getWorkspaceByID(window.getWorkspaceID())->getHasFullscreenWindow();
-
             const auto PWORKSPACE = getWorkspaceByID(window.getWorkspaceID());
 
             if (!PWORKSPACE)
                 continue;
+
+            // Fullscreen flag
+            bool bHasFullscreenWindow = PWORKSPACE->getHasFullscreenWindow();
 
             // first and foremost, let's check if the window isn't on a hidden workspace
             // or an animated workspace
