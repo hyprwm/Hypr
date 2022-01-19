@@ -374,16 +374,13 @@ void CWindowManager::refreshDirtyWindows() {
 
             const auto PWORKSPACE = getWorkspaceByID(window.getWorkspaceID());
 
-            if (!PWORKSPACE)
-                continue;
-
             // Fullscreen flag
-            bool bHasFullscreenWindow = PWORKSPACE->getHasFullscreenWindow();
+            bool bHasFullscreenWindow = PWORKSPACE ? PWORKSPACE->getHasFullscreenWindow() : false;
 
             // first and foremost, let's check if the window isn't on a hidden workspace
             // or an animated workspace
-            if (!isWorkspaceVisible(window.getWorkspaceID())
-                || PWORKSPACE->getAnimationInProgress()) {
+            if (PWORKSPACE && (!isWorkspaceVisible(window.getWorkspaceID())
+                || PWORKSPACE->getAnimationInProgress())) {
 
                 const auto MONITOR = getMonitorFromWindow(&window);
 
