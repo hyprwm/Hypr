@@ -39,7 +39,7 @@ yay -S hypr-git
 ```
 
 ## Manual building
-If your distro doesn't have Hypr in its' repositories, or you want to modify hypr,
+If your distro doesn't have Hypr in its repositories, or you want to modify hypr,
 
 see the [Wiki](https://github.com/vaxerski/Hypr/wiki/Building) to see build and installation instructions.
 
