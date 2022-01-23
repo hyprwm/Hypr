@@ -1858,7 +1858,7 @@ void CWindowManager::updateBarInfo() {
 
     message.lastWindowClass = winclassname;
 
-    const auto WORKSPACE = getWorkspaceByID(activeWorkspaces[ConfigManager::getInt("bar:monitor") > monitors.size() ? 0 : ConfigManager::getInt("bar:monitor")]);
+    auto* const WORKSPACE = getWorkspaceByID(activeWorkspaces[ConfigManager::getInt("bar:monitor") > monitors.size() ? 0 : ConfigManager::getInt("bar:monitor")]);
     if (WORKSPACE)
         message.fullscreenOnBar = WORKSPACE->getHasFullscreenWindow();
     else
