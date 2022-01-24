@@ -888,6 +888,9 @@ void CWindowManager::setEffectiveSizePosUsingConfig(CWindow* pWindow) {
 CWindow* CWindowManager::findWindowAtCursor() {
     Vector2D cursorPos = getCursorPos();
 
+    if (!getMonitorFromCursor())
+        return nullptr;
+
     const auto WORKSPACE = activeWorkspaces[getMonitorFromCursor()->ID];
 
     for (auto& window : windows) {
