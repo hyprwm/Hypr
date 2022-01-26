@@ -510,6 +510,8 @@ void CWindowManager::setFocusedWindow(xcb_drawable_t window) {
 
         Debug::log(LOG, "Setting focus to " + std::to_string(window));
 
+        xcb_ungrab_pointer(DisplayConnection, XCB_CURRENT_TIME);
+
         // border color
         if (const auto PLASTWIN = getWindowFromDrawable(LastWindow); PLASTWIN) {
             PLASTWIN->setEffectiveBorderColor(CFloatingColor(ConfigManager::getInt("col.inactive_border")));
