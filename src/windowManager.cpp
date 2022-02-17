@@ -1454,6 +1454,14 @@ void CWindowManager::moveActiveWindowToWorkspace(int workspace) {
     const auto SAVEDFLOATSTATUS = PWINDOW->getIsFloating();
     const auto SAVEDDRAWABLE    = PWINDOW->getDrawable();
 
+    // remove current workspace's fullscreen status if fullscreen
+    if (PWINDOW->getFullscreen()) {
+        const auto PWORKSPACE = getWorkspaceByID(PWINDOW->getWorkspaceID());
+        if (PWORKSPACE) {
+            PWORKSPACE->setHasFullscreenWindow(false);
+        }
+    }
+
     fixWindowOnClose(PWINDOW);
     // deque reallocated
     LastWindow = SAVEDDRAWABLE;
@@ -1490,6 +1498,13 @@ void CWindowManager::moveActiveWindowToWorkspace(int workspace) {
         Events::remapFloatingWindow(PWINDOW->getDrawable(), NEWMONITOR);
     else
         Events::remapWindow(PWINDOW->getDrawable(), false, NEWMONITOR);
+
+    // fix fullscreen status
+    const auto PWORKSPACE = getWorkspaceByID(workspace);
+    if (PWORKSPACE) {
+        // Should NEVER be false but let's be sure
+        PWORKSPACE->setHasFullscreenWindow(PWINDOW->getFullscreen());
+    }
 
     PWINDOW->setDefaultSize(SAVEDDEFAULTSIZE);
 }
