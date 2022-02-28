@@ -2174,6 +2174,11 @@ void CWindowManager::toggleWindowFullscrenn(const int& window) {
 
     const auto MONITOR = getMonitorFromWindow(PWINDOW);
 
+    if (getWorkspaceByID(activeWorkspaces[MONITOR->ID])->getHasFullscreenWindow() && !PWINDOW->getFullscreen()) {
+        Debug::log(LOG, "Not making a window fullscreen because there already is one!");
+        return;
+    }
+
     setAllWorkspaceWindowsDirtyByID(activeWorkspaces[MONITOR->ID]);
 
     PWINDOW->setFullscreen(!PWINDOW->getFullscreen());
