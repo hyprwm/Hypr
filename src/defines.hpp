@@ -40,6 +40,11 @@
 #define ISDEBUG false
 #endif
 
+// hints
+#define NONMOVABLE
+#define NONCOPYABLE
+//
+
 #define EXPOSED_MEMBER(var, type, prefix) \
     private: \
         type m_##prefix##var; \

@@ -143,7 +143,8 @@ void handleStatusCommand(const std::string& command, const std::string& args) {
 }
 
 void parseModule(const std::string& COMMANDC, const std::string& VALUE) {
-    SBarModule module;
+    SBarModule* module = new SBarModule();
+    g_pWindowManager->statusBar->modules.push_back(module);
 
     auto valueCopy = VALUE;
 
@@ -156,24 +157,22 @@ void parseModule(const std::string& COMMANDC, const std::string& VALUE) {
 
         const auto PADW = valueCopy;
 
-        if (ALIGNR == "left") module.alignment = LEFT;
-        else if (ALIGNR == "right") module.alignment = RIGHT;
-        else if (ALIGNR == "center") module.alignment = CENTER;
+        if (ALIGNR == "left") module->alignment = LEFT;
+        else if (ALIGNR == "right") module->alignment = RIGHT;
+        else if (ALIGNR == "center") module->alignment = CENTER;
 
         try {
-            module.pad = stol(PADW);
+            module->pad = stol(PADW);
         } catch (...) {
             Debug::log(ERR, "Module creation pad error: invalid pad");
             ConfigManager::parseError = "Module creation error in pad: invalid pad.";
             return;
         }
 
-        module.isPad = true;
+        module->isPad = true;
 
-        module.color = 0;
-        module.bgcolor = 0;
-
-        g_pWindowManager->statusBar->modules.push_back(module);
+        module->color = 0;
+        module->bgcolor = 0;
 
         return;
     }
@@ -192,32 +191,34 @@ void parseModule(const std::string& COMMANDC, const std::string& VALUE) {
 
     const auto COMMAND = valueCopy;
 
-    if (ALIGN == "left") module.alignment = LEFT;
-    else if (ALIGN == "right") module.alignment = RIGHT;
-    else if (ALIGN == "center") module.alignment = CENTER;
+    if (ALIGN == "left") module->alignment = LEFT;
+    else if (ALIGN == "right") module->alignment = RIGHT;
+    else if (ALIGN == "center") module->alignment = CENTER;
 
     try {
-        module.color = stol(COL1.substr(2), nullptr, 16);
-        module.bgcolor = stol(COL2.substr(2), nullptr, 16);
+        module->color = stol(COL1.substr(2), nullptr, 16);
+        module->bgcolor = stol(COL2.substr(2), nullptr, 16);
     } catch (...) {
         Debug::log(ERR, "Module creation color error: invalid color");
         ConfigManager::parseError = "Module creation error in color: invalid color.";
+        g_pWindowManager->statusBar->modules.pop_back();
+        delete module;
         return;
     }
 
     try {
-        module.updateEveryMs = stol(UPDATE);
+        module->updateEveryMs = stol(UPDATE);
     } catch (...) {
         Debug::log(ERR, "Module creation error: invalid update interval");
         ConfigManager::parseError = "Module creation error in interval: invalid interval.";
+        g_pWindowManager->statusBar->modules.pop_back();
+        delete module;
         return;
     }
 
-    module.icon = ICON;
+    module->icon = ICON;
 
-    module.value = COMMAND;
-
-    g_pWindowManager->statusBar->modules.push_back(module);
+    module->value = COMMAND;
 }
 
 void parseBarLine(const std::string& line) {
@@ -363,7 +364,7 @@ void ConfigManager::loadConfigLoadVars() {
     if (loadBar && g_pWindowManager->statusBar) {
         // clear modules as we overwrite them
         for (auto& m : g_pWindowManager->statusBar->modules) {
-            g_pWindowManager->statusBar->destroyModule(&m);
+            g_pWindowManager->statusBar->destroyModule(m);
         }
         g_pWindowManager->statusBar->modules.clear();
     }

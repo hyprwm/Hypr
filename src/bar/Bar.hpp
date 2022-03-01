@@ -6,6 +6,8 @@
 #include "../ipc/ipc.hpp"
 #include "BarCommands.hpp"
 #include <chrono>
+#include <atomic>
+#include <mutex>
 
 inline int barScreen = 0;
 
@@ -20,7 +22,7 @@ enum ModuleAlignment {
     RIGHT
 };
 
-struct SBarModule {
+NONMOVABLE NONCOPYABLE struct SBarModule {
     ModuleAlignment alignment;
     std::string     value;
     std::string     icon;
@@ -36,6 +38,19 @@ struct SBarModule {
     // PADS
     bool            isPad = false;
     int             pad = 0;
+
+
+    // Simple but working thread safe value accessor
+    std::mutex mtx;
+    std::string accessValueCalculated(bool write, std::string val = "") {
+        std::lock_guard<std::mutex> lg(mtx);
+
+        if (write)
+            valueCalculated = val;
+        else
+            return valueCalculated;
+        return "";
+    }
 };
 
 class CStatusBar {
@@ -61,7 +76,7 @@ public:
     std::vector<int>    openWorkspaces;
     EXPOSED_MEMBER(CurrentWorkspace, int, i);
 
-    std::vector<SBarModule> modules;
+    std::vector<SBarModule*> modules;
 
     xcb_window_t        trayWindowID = 0;
 

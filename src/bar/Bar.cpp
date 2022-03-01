@@ -142,6 +142,9 @@ void CStatusBar::setupModule(SBarModule* module) {
 void CStatusBar::destroyModule(SBarModule* module) {
     if (module->bgcontext)
         xcb_free_gc(g_pWindowManager->DisplayConnection, module->bgcontext);
+
+    // delete it from the heap
+    delete module;
 }
 
 void CStatusBar::setupTray() {
@@ -181,8 +184,8 @@ void CStatusBar::setupTray() {
     // Check if the tray module is active
     SBarModule* pBarModule = nullptr;
     for (auto& mod : modules) {
-        if (mod.value == "tray") {
-            pBarModule = &mod;
+        if (mod->value == "tray") {
+            pBarModule = mod;
             break;
         }
     }
@@ -299,7 +302,7 @@ void CStatusBar::setup(int MonitorID) {
 
     m_bHasTray = false;
     for (auto& mod : g_pWindowManager->statusBar->modules) {
-        if (mod.value == "tray") {
+        if (mod->value == "tray") {
             m_bHasTray = true;
             break;
         }
@@ -474,18 +477,18 @@ void CStatusBar::draw() {
 
     for (auto& module : modules) {
 
-        if (!module.bgcontext && !module.isPad)
-            setupModule(&module);
+        if (!module->bgcontext && !module->isPad)
+            setupModule(module);
 
-        if (module.value == "workspaces") {
-            offLeft += drawWorkspacesModule(&module, offLeft);
+        if (module->value == "workspaces") {
+            offLeft += drawWorkspacesModule(module, offLeft);
         } else {
-            if (module.alignment == LEFT) {
-                offLeft += drawModule(&module, offLeft);
-            } else if (module.alignment == RIGHT) {
-                offRight += drawModule(&module, offRight);
+            if (module->alignment == LEFT) {
+                offLeft += drawModule(module, offLeft);
+            } else if (module->alignment == RIGHT) {
+                offRight += drawModule(module, offRight);
             } else {
-                drawModule(&module, 0);
+                drawModule(module, 0);
             }
         }
     }
@@ -609,10 +612,13 @@ int CStatusBar::drawModule(SBarModule* mod, int off) {
 
     // check if we need to update
     if (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - mod->updateLast).count() > mod->updateEveryMs) {
-        // Yes. Set the new last and do it.
-        mod->updateLast = std::chrono::system_clock::now();
-
-        mod->valueCalculated = BarCommands::parseCommand(mod->value);
+        // This is done asynchronously to prevent lag on especially slower PCs
+        // but ngl it also did hang on more powerful ones
+        std::thread([=](){
+            const auto RETVAL = BarCommands::parseCommand(mod->value);
+            mod->accessValueCalculated(true, RETVAL);
+            mod->updateLast = std::chrono::system_clock::now();
+        }).detach();
     }
 
     // We have the value, draw the module!
@@ -620,7 +626,7 @@ int CStatusBar::drawModule(SBarModule* mod, int off) {
     const auto MODULEWIDTH = getTextWidth(mod->valueCalculated, ConfigManager::getString("bar:font.main")) + PAD;
     const auto ICONWIDTH = getTextWidth(mod->icon, ConfigManager::getString("bar:font.secondary"));
 
-    if (!MODULEWIDTH || mod->valueCalculated == "")
+    if (!MODULEWIDTH || mod->accessValueCalculated(false) == "")
         return 0; // empty module
 
     Vector2D position;
@@ -639,7 +645,7 @@ int CStatusBar::drawModule(SBarModule* mod, int off) {
     drawCairoRectangle(position, Vector2D(MODULEWIDTH + ICONWIDTH, m_vecSize.y), mod->bgcolor);
 
     drawText(position + Vector2D(PAD / 2, getTextHalfY()), mod->icon, mod->color, ConfigManager::getString("bar:font.secondary"));
-    drawText(position + Vector2D(PAD / 2 + ICONWIDTH, getTextHalfY()), mod->valueCalculated, mod->color, ConfigManager::getString("bar:font.main"));
+    drawText(position + Vector2D(PAD / 2 + ICONWIDTH, getTextHalfY()), mod->accessValueCalculated(false), mod->color, ConfigManager::getString("bar:font.main"));
 
     return MODULEWIDTH + ICONWIDTH;
 }
