@@ -5,5 +5,5 @@ Exec=Hypr
 TryExec=Hypr
 Type=Application
 X-LightDM-DesktopName=Hypr
-DesktopNames=i3
+DesktopNames=Hypr
 Keywords=tiling;wm;window;manager;Hypr;
