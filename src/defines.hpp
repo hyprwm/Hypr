@@ -93,3 +93,8 @@
 #define RETURNIFMAIN if (!g_pWindowManager->statusBar) return;
 
 #define COLORDELTAOVERX(c, c1, d) (abs(RED(c) - RED(c1)) > d / 255.f || abs(GREEN(c) - GREEN(c1)) > d / 255.f || abs(BLUE(c) - BLUE(c1)) > d / 255.f || abs(ALPHA(c) - ALPHA(c1)) > d / 255.f)
+
+#define _NET_MOVERESIZE_WINDOW_X (1 << 8)
+#define _NET_MOVERESIZE_WINDOW_Y (1 << 9)
+#define _NET_MOVERESIZE_WINDOW_WIDTH (1 << 10)
+#define _NET_MOVERESIZE_WINDOW_HEIGHT (1 << 11)

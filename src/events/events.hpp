@@ -16,6 +16,7 @@ namespace Events {
     EVENT(KeyPress);
     EVENT(MotionNotify);
     EVENT(ClientMessage);
+    EVENT(Configure);
 
     EVENT(RandRScreenChange);
 

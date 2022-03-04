@@ -863,6 +863,29 @@ void Events::eventClientMessage(xcb_generic_event_t* event) {
     }
 }
 
+void Events::eventConfigure(xcb_generic_event_t* event) {
+    const auto E = reinterpret_cast<xcb_configure_request_event_t*>(event);
+
+    Debug::log(LOG, "Window " + std::to_string(E->window) + " requests XY: " + std::to_string(E->x) + ", " + std::to_string(E->y) + ", WH: " + std::to_string(E->width) + "x" + std::to_string(E->height));
+
+    auto *const PWINDOW = g_pWindowManager->getWindowFromDrawable(E->window);
+
+    if (!PWINDOW) {
+        Debug::log(LOG, "CONFIGURE: Window doesn't exist, ignoring.");
+        return;
+    }
+
+    if (!PWINDOW->getIsFloating()) {
+        Debug::log(LOG, "CONFIGURE: Window isn't floating, ignoring.");
+        return;
+    }
+
+    PWINDOW->setDefaultPosition(Vector2D(E->x, E->y));
+    PWINDOW->setDefaultSize(Vector2D(E->width, E->height));
+    PWINDOW->setEffectiveSize(PWINDOW->getDefaultSize());
+    PWINDOW->setEffectivePosition(PWINDOW->getDefaultPosition());
+}
+
 void Events::eventRandRScreenChange(xcb_generic_event_t* event) {
 
     // fix sus randr events, that sometimes happen

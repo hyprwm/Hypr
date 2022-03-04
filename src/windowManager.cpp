@@ -313,6 +313,10 @@ void CWindowManager::recieveEvent() {
                 Events::eventClientMessage(ev);
                 Debug::log(LOG, "Event dispatched CLIENT_MESSAGE");
                 break;
+            case XCB_CONFIGURE_REQUEST:
+                Events::eventConfigure(ev);
+                Debug::log(LOG, "Event dispatched CONFIGURE");
+                break;
 
             default:
 
@@ -2231,6 +2235,33 @@ void CWindowManager::handleClientMessage(xcb_client_message_event_t* E) {
         setFocusedWindow(PWINDOW->getDrawable());
 
         Debug::log(LOG, "Message recieved to set active for " + std::to_string(PWINDOW->getDrawable()));
+    } else if (E->type == HYPRATOMS["_NET_MOVERESIZE_WINDOW"]) {
+        void *const PEVENT = calloc(32, 1);
+        xcb_configure_request_event_t* const GENEV = (xcb_configure_request_event_t*)PEVENT;
+
+        GENEV->window = E->window;
+        GENEV->response_type = XCB_CONFIGURE_REQUEST;
+
+        GENEV->value_mask = 0;
+        if (E->data.data32[0] & _NET_MOVERESIZE_WINDOW_X) {
+            GENEV->value_mask |= XCB_CONFIG_WINDOW_X;
+            GENEV->x = E->data.data32[1];
+        }
+        if (E->data.data32[0] & _NET_MOVERESIZE_WINDOW_Y) {
+            GENEV->value_mask |= XCB_CONFIG_WINDOW_Y;
+            GENEV->y = E->data.data32[2];
+        }
+        if (E->data.data32[0] & _NET_MOVERESIZE_WINDOW_WIDTH) {
+            GENEV->value_mask |= XCB_CONFIG_WINDOW_WIDTH;
+            GENEV->width = E->data.data32[3];
+        }
+        if (E->data.data32[0] & _NET_MOVERESIZE_WINDOW_HEIGHT) {
+            GENEV->value_mask |= XCB_CONFIG_WINDOW_HEIGHT;
+            GENEV->height = E->data.data32[4];
+        }
+
+        Events::eventConfigure((xcb_generic_event_t*)GENEV);
+        free(GENEV);
     }
 }
 
