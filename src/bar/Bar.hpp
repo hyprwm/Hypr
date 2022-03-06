@@ -55,6 +55,9 @@ NONMOVABLE NONCOPYABLE struct SBarModule {
 
 class CStatusBar {
 public:
+    CStatusBar() {
+        m_bIsDestroyed = true;
+    }
 
     EXPOSED_MEMBER(WindowID, xcb_window_t, i);
     EXPOSED_MEMBER(MonitorID, int, i);
@@ -63,6 +66,7 @@ public:
     EXPOSED_MEMBER(LastWindowClass, std::string, sz);
     EXPOSED_MEMBER(IsCovered, bool, b);
     EXPOSED_MEMBER(HasTray, bool, b);
+    EXPOSED_MEMBER(IsDestroyed, bool, b);  // for not deleting nulls
 
     void                draw();
     void                setup(int MonitorID);
@@ -81,8 +85,6 @@ public:
     xcb_window_t        trayWindowID = 0;
 
 private:
-    // for not deleting nulls
-    bool                m_bIsDestroyed = true;
 
     Vector2D            m_vecSize;
     Vector2D            m_vecPosition;

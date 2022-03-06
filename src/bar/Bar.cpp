@@ -83,14 +83,18 @@ int64_t barMainThread() {
     // Init config manager
     ConfigManager::init();
 
-    STATUSBAR.setup(0);
+    if (ConfigManager::getInt("bar:enabled") == 1) {
+        Debug::log(LOG, "Bar enabled, reload config to launch it.");
+        ConfigManager::loadConfigLoadVars();
+    }
 
     Debug::log(LOG, "Bar setup finished!");
 
     int lazyUpdateCounter = 0;
 
     // setup the tray so apps send to us
-    STATUSBAR.setupTray();
+    if (!STATUSBAR.getIsDestroyed())
+        STATUSBAR.setupTray();
 
     while (1) {
 
