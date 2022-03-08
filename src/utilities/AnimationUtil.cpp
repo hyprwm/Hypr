@@ -84,6 +84,9 @@ void AnimationUtil::move() {
         if (!VECTORDELTANONZERO(window.getRealPosition(), window.getEffectivePosition()) 
             && !VECTORDELTANONZERO(window.getRealSize(), window.getEffectiveSize())) {
                 window.setIsAnimated(false);
+
+                window.setRealSize(window.getEffectiveSize());
+                window.setRealPosition(window.getEffectivePosition());
         }
     }
 

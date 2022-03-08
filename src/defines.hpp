@@ -73,7 +73,8 @@
     free(error##name);
 
 
-#define VECTORDELTANONZERO(veca, vecb) ((int)abs(veca.x - vecb.x) > 0 || (int)abs(veca.y - vecb.y) > 0)
+#define VECTORDELTANONZERO(veca, vecb) (abs(veca.x - vecb.x) > 0.4f || abs(veca.y - vecb.y) > 0.4f)
+#define VECTORDELTAMORETHAN(veca, vecb, delta) (abs(veca.x - vecb.x) > (delta) || abs(veca.y - vecb.y) > (delta))
 
 #define PROP(cookie, name, len) const auto cookie = xcb_get_property(DisplayConnection, false, window, name, XCB_GET_PROPERTY_TYPE_ANY, 0, len); \
         const auto cookie##reply = xcb_get_property_reply(DisplayConnection, cookie, NULL)
