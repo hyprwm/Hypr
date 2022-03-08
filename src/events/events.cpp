@@ -303,17 +303,6 @@ CWindow* Events::remapFloatingWindow(int windowID, int forcemonitor) {
 
                 free(STRUTREPLY);
 
-                switch (PWINDOWINARR->getDockAlign()) {
-                    case DOCK_TOP:
-                        PWINDOWINARR->setDefaultPosition(Vector2D(g_pWindowManager->monitors[CURRENTSCREEN].vecPosition.x, g_pWindowManager->monitors[CURRENTSCREEN].vecPosition.y));
-                        break;
-                    case DOCK_BOTTOM:
-                        PWINDOWINARR->setDefaultPosition(Vector2D(g_pWindowManager->monitors[CURRENTSCREEN].vecPosition.x, g_pWindowManager->monitors[CURRENTSCREEN].vecPosition.y + g_pWindowManager->monitors[CURRENTSCREEN].vecSize.y - PWINDOWINARR->getDefaultSize().y));
-                        break;
-                    default:
-                        break;
-                }
-
                 Debug::log(LOG, "New dock created, setting default XYWH to: " + std::to_string(PWINDOWINARR->getDefaultPosition().x) + ", " + std::to_string(PWINDOWINARR->getDefaultPosition().y)
                     + ", " + std::to_string(PWINDOWINARR->getDefaultSize().x) + ", " + std::to_string(PWINDOWINARR->getDefaultSize().y));
 
