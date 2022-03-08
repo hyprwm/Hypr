@@ -7,6 +7,8 @@
 #include <unistd.h>
 
 #include <fstream>
+#include <algorithm>
+#include <string.h>
 #include <iostream>
 
 void ConfigManager::init() {
@@ -21,6 +23,7 @@ void ConfigManager::init() {
     configValues["focus_when_hover"].intValue = 1;
 
     configValues["layout"].intValue = LAYOUT_DWINDLE;
+    configValues["layout:no_gaps_when_only"].intValue = 0;
 
     configValues["max_fps"].intValue = 60;
 
@@ -41,11 +44,11 @@ void ConfigManager::init() {
     configValues["col.inactive_border"].intValue = 0x77222222;
 
     // animations
-    configValues["anim:speed"].floatValue = 1;
-    configValues["anim:enabled"].intValue = 0;
-    configValues["anim:cheap"].intValue = 1;
-    configValues["anim:borders"].intValue = 1;
-    configValues["anim:workspaces"].intValue = 0;
+    configValues["animations:speed"].floatValue = 1;
+    configValues["animations:enabled"].intValue = 0;
+    configValues["animations:cheap"].intValue = 1;
+    configValues["animations:borders"].intValue = 1;
+    configValues["animations:workspaces"].intValue = 0;
 
     if (!g_pWindowManager->statusBar) {
         isFirstLaunch = true;
@@ -221,44 +224,6 @@ void parseModule(const std::string& COMMANDC, const std::string& VALUE) {
     module->value = COMMAND;
 }
 
-void parseBarLine(const std::string& line) {
-
-    // And parse
-    // check if command
-
-    const auto EQUALSPLACE = line.find_first_of('=');
-
-    if (EQUALSPLACE == std::string::npos)
-        return;
-
-
-    const auto COMMAND = line.substr(0, EQUALSPLACE);
-    const auto VALUE = line.substr(EQUALSPLACE + 1);
-
-    // Now check commands
-    if (COMMAND == "module") {
-        if (g_pWindowManager->statusBar)
-            parseModule(COMMAND, VALUE);
-    } else {
-        // We need to parse those to let the main thread know e.g. the bar height
-        configSetValueSafe("bar:" + COMMAND, VALUE);
-    }
-}
-
-void parseAnimLine(const std::string& line) {
-    // And parse
-    // check if command
-    const auto EQUALSPLACE = line.find_first_of('=');
-
-    if (EQUALSPLACE == std::string::npos)
-        return;
-
-    const auto COMMAND = line.substr(0, EQUALSPLACE);
-    const auto VALUE = line.substr(EQUALSPLACE + 1);
-
-    configSetValueSafe("anim:" + COMMAND, VALUE);
-}
-
 void handleWindowRule(const std::string& command, const std::string& value) {
     const auto RULE = value.substr(0, value.find_first_of(","));
     const auto VALUE = value.substr(value.find_first_of(",") + 1);
@@ -298,28 +263,15 @@ void parseLine(std::string& line) {
         line = line.substr(1);
     }
 
-    if (line.find("Bar {") != std::string::npos) {
-        ConfigManager::currentCategory = "bar";
-        return;
-    }
-
-    if (line.find("Animations {") != std::string::npos) {
-        ConfigManager::currentCategory = "anim";
+    if (line.find(" {") != std::string::npos) {
+        auto cat = line.substr(0, line.find(" {"));
+        transform(cat.begin(), cat.end(), cat.begin(), ::tolower);
+        ConfigManager::currentCategory = cat;
         return;
     }
 
     if (line.find("}") != std::string::npos && ConfigManager::currentCategory != "") {
         ConfigManager::currentCategory = "";
-        return;
-    }
-
-    if (ConfigManager::currentCategory == "bar") {
-        parseBarLine(line);
-        return;
-    }
-
-    if (ConfigManager::currentCategory == "anim") {
-        parseAnimLine(line);
         return;
     }
 
@@ -351,7 +303,14 @@ void parseLine(std::string& line) {
         return;
     }
 
-    configSetValueSafe(COMMAND, VALUE);
+    if (COMMAND == "module" && ConfigManager::currentCategory == "bar") {
+        if (g_pWindowManager->statusBar)
+            parseModule(COMMAND, VALUE);gi
+        return;
+    }
+
+    configSetValueSafe(ConfigManager::currentCategory + (ConfigManager::currentCategory == "" ? "" : ":") + COMMAND, VALUE);
+
 }
 
 void ConfigManager::loadConfigLoadVars() {

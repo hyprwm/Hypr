@@ -427,52 +427,50 @@ void CWindowManager::refreshDirtyWindows() {
             }
 
             // Fullscreen window. No border, all screen.
-            if (window.getFullscreen()) {
+            // also do this when "layout:no_gaps_when_only" is set, but with a twist to enable the bar
+            if (window.getFullscreen() || (ConfigManager::getInt("layout:no_gaps_when_only") && getWindowsOnWorkspace(window.getWorkspaceID()) == 1)) {
                 Values[0] = 0;
                 xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_BORDER_WIDTH, Values);
 
                 const auto MONITOR = getMonitorFromWindow(&window);
 
                 Values[0] = (int)MONITOR->vecSize.x;
-                Values[1] = (int)MONITOR->vecSize.y;
-                if (VECTORDELTANONZERO(window.getLastUpdateSize(), Vector2D(Values[0], Values[1]))) {
-                    xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, Values);
-                    window.setLastUpdateSize(Vector2D(Values[0], Values[1]));
-                }
+                Values[1] = window.getFullscreen() ? (int) MONITOR->vecSize.y : MONITOR->vecSize.y - getBarHeightForMonitor(window.getMonitor());
+                window.setEffectiveSize(Vector2D(Values[0], Values[1]));
 
                 Values[0] = (int)MONITOR->vecPosition.x;
-                Values[1] = (int)MONITOR->vecPosition.y;
+                Values[1] = window.getFullscreen() ? (int)MONITOR->vecPosition.y : MONITOR->vecPosition.y + getBarHeightForMonitor(window.getMonitor());
+                window.setEffectivePosition(Vector2D(Values[0], Values[1]));
+
+                Values[0] = (int)window.getRealPosition().x;
+                Values[1] = (int)window.getRealPosition().y;
                 if (VECTORDELTANONZERO(window.getLastUpdatePosition(), Vector2D(Values[0], Values[1]))) {
-                    xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, Values);
+                    const auto COOKIE = xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, Values);
                     window.setLastUpdatePosition(Vector2D(Values[0], Values[1]));
+
+                    Events::ignoredEvents.push_back(COOKIE.sequence);
+                }
+            } else {
+                // Update the position because the border makes the window jump
+                // I have added the bordersize vec2d before in the setEffectiveSizePosUsingConfig function.
+                Values[0] = (int)window.getRealPosition().x - ConfigManager::getInt("border_size");
+                Values[1] = (int)window.getRealPosition().y - ConfigManager::getInt("border_size");
+                if (VECTORDELTANONZERO(window.getLastUpdatePosition(), Vector2D(Values[0], Values[1]))) {
+                    const auto COOKIE = xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, Values);
+                    window.setLastUpdatePosition(Vector2D(Values[0], Values[1]));
+
+                    Events::ignoredEvents.push_back(COOKIE.sequence);
                 }
 
-                // Apply rounded corners, does all the checks inside
-                applyShapeToWindow(&window);
+                Values[0] = (int)ConfigManager::getInt("border_size");
+                xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_BORDER_WIDTH, Values);
 
-                continue;
+                Values[0] = window.getRealBorderColor().getAsUint32();
+                xcb_change_window_attributes(DisplayConnection, window.getDrawable(), XCB_CW_BORDER_PIXEL, Values);
             }
-
-            // Update the position because the border makes the window jump
-            // I have added the bordersize vec2d before in the setEffectiveSizePosUsingConfig function.
-            Values[0] = (int)window.getRealPosition().x - ConfigManager::getInt("border_size");
-            Values[1] = (int)window.getRealPosition().y - ConfigManager::getInt("border_size");
-            if (VECTORDELTANONZERO(window.getLastUpdatePosition(), Vector2D(Values[0], Values[1]))) {
-                const auto COOKIE = xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, Values);
-                window.setLastUpdatePosition(Vector2D(Values[0], Values[1]));
-
-                Events::ignoredEvents.push_back(COOKIE.sequence);
-            }
-
-            Values[0] = (int)ConfigManager::getInt("border_size");
-            xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_BORDER_WIDTH, Values);
-
-            // do border
-            Values[0] = window.getRealBorderColor().getAsUint32();
-            xcb_change_window_attributes(DisplayConnection, window.getDrawable(), XCB_CW_BORDER_PIXEL, Values);
 
             // If it isn't animated or we have non-cheap animations, update the real size
-            if (!window.getIsAnimated() || ConfigManager::getInt("anim:cheap") == 0) {
+            if (!window.getIsAnimated() || ConfigManager::getInt("animations:cheap") == 0) {
                 Values[0] = (int)window.getRealSize().x;
                 Values[1] = (int)window.getRealSize().y;
                 if (VECTORDELTANONZERO(window.getLastUpdateSize(), Vector2D(Values[0], Values[1]))) {
@@ -484,7 +482,7 @@ void CWindowManager::refreshDirtyWindows() {
                 window.setFirstAnimFrame(true);
             }
 
-            if (ConfigManager::getInt("anim:cheap") == 1 && window.getFirstAnimFrame() && window.getIsAnimated()) {
+            if (ConfigManager::getInt("animations:cheap") == 1 && window.getFirstAnimFrame() && window.getIsAnimated()) {
                 // first frame, fix the size if smaller
                 window.setFirstAnimFrame(false);
                 if (window.getRealSize().x < window.getEffectiveSize().x || window.getRealSize().y < window.getEffectiveSize().y) {
@@ -753,7 +751,7 @@ void CWindowManager::applyShapeToWindow(CWindow* pWindow) {
 
     const uint16_t W = pWindow->getFullscreen() ? MONITOR->vecSize.x : pWindow->getRealSize().x;
     const uint16_t H = pWindow->getFullscreen() ? MONITOR->vecSize.y : pWindow->getRealSize().y;
-    const uint16_t BORDER = pWindow->getFullscreen() ? 0 : ConfigManager::getInt("border_size");
+    const uint16_t BORDER = pWindow->getFullscreen() || (ConfigManager::getInt("layout:no_gaps_when_only") && getWindowsOnWorkspace(pWindow->getWorkspaceID()) == 1) ? 0 : ConfigManager::getInt("border_size");
     const uint16_t TOTALW = W + 2 * BORDER;
     const uint16_t TOTALH = H + 2 * BORDER;
 
@@ -862,7 +860,7 @@ void CWindowManager::setEffectiveSizePosUsingConfig(CWindow* pWindow) {
         return;
 
     const auto MONITOR = getMonitorFromWindow(pWindow);
-    const auto BARHEIGHT = (MONITOR->ID == ConfigManager::getInt("bar:monitor") ? (ConfigManager::getInt("bar:enabled") == 1 ? ConfigManager::getInt("bar:height") : ConfigManager::parseError == "" ? 0 : ConfigManager::getInt("bar:height")) : 0);
+    const auto BARHEIGHT = getBarHeightForMonitor(pWindow->getMonitor());
 
     // set some flags.
     const bool DISPLAYLEFT          = STICKS(pWindow->getPosition().x, MONITOR->vecPosition.x);
@@ -2315,14 +2313,14 @@ void CWindowManager::startWipeAnimOnWorkspace(const int& oldwork, const int& new
 
     for (auto& work : workspaces) {
         if (work.getID() == oldwork) {
-            if (ConfigManager::getInt("anim:workspaces") == 1)
+            if (ConfigManager::getInt("animations:workspaces") == 1)
                 work.setCurrentOffset(Vector2D(0,0));
             else
                 work.setCurrentOffset(Vector2D(150000, 150000));
             work.setGoalOffset(Vector2D(PMONITOR->vecSize.x, 0));
             work.setAnimationInProgress(true);
         } else if (work.getID() == newwork) {
-            if (ConfigManager::getInt("anim:workspaces") == 1)
+            if (ConfigManager::getInt("animations:workspaces") == 1)
                 work.setCurrentOffset(Vector2D(-PMONITOR->vecSize.x, 0));
             else
                 work.setCurrentOffset(Vector2D(0, 0));
@@ -2362,4 +2360,8 @@ bool CWindowManager::shouldBeManaged(const int& window) {
     Debug::log(LOG, "shouldBeManaged passed!");
 
     return true;
+}
+
+int CWindowManager::getBarHeightForMonitor(const int& mon) {
+    return (mon == ConfigManager::getInt("bar:monitor") ? (ConfigManager::getInt("bar:enabled") == 1 ? ConfigManager::getInt("bar:height") : ConfigManager::parseError == "" ? 0 : ConfigManager::getInt("bar:height")) : 0);
 }

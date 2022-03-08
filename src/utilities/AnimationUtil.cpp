@@ -7,7 +7,7 @@ void AnimationUtil::move() {
     const double DELTA = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - lastFrame).count();
     lastFrame = std::chrono::high_resolution_clock::now();
 
-    const double ANIMATIONSPEED = std::max(1.f / ((double)ConfigManager::getFloat("anim:speed") * DELTA) * 462.f, (double)1.f);
+    const double ANIMATIONSPEED = std::max(1.f / ((double)ConfigManager::getFloat("animations:speed") * DELTA) * 462.f, (double)1.f);
     
     bool updateRequired = false;
     // Now we are (or should be, lul) thread-safe.
@@ -24,7 +24,7 @@ void AnimationUtil::move() {
                 // interp border color if enabled
                 const auto PREVCOLOR = window.getRealBorderColor().getAsUint32();
 
-                if (ConfigManager::getInt("anim:borders") == 1) {
+                if (ConfigManager::getInt("animations:borders") == 1) {
                     window.setRealBorderColor(parabolicColor(window.getRealBorderColor(), window.getEffectiveBorderColor(), ANIMATIONSPEED));
                 } else {
                     window.setRealBorderColor(window.getEffectiveBorderColor());
@@ -37,7 +37,7 @@ void AnimationUtil::move() {
             }
         }
 
-        if (ConfigManager::getInt("anim:enabled") == 0 || window.getIsFloating() || window.getFullscreen()) {
+        if (ConfigManager::getInt("animations:enabled") == 0 || window.getIsFloating()) {
             // Disabled animations. instant warps.
 
             if (VECTORDELTANONZERO(window.getRealPosition(), window.getEffectivePosition())
@@ -96,7 +96,7 @@ void AnimationUtil::move() {
             updateRequired = true;
             g_pWindowManager->setAllWorkspaceWindowsDirtyByID(work.getID());
 
-            if (ConfigManager::getInt("anim:workspaces") == 0)
+            if (ConfigManager::getInt("animations:workspaces") == 0)
                 work.setAnimationInProgress(false);
         }
 
