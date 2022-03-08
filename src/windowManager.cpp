@@ -509,6 +509,12 @@ void CWindowManager::refreshDirtyWindows() {
 
 void CWindowManager::setFocusedWindow(xcb_drawable_t window) {
     if (window && window != Screen->root) {
+        const auto PNEWFOCUS = g_pWindowManager->getWindowFromDrawable(window);
+
+        if (PNEWFOCUS && PNEWFOCUS->getNoInterventions()) {
+            Debug::log(LOG, "Not setting focus to a non-interventions window.");
+            return;
+        }
 
         Debug::log(LOG, "Setting focus to " + std::to_string(window));
 
@@ -529,8 +535,6 @@ void CWindowManager::setFocusedWindow(xcb_drawable_t window) {
         }
 
         LastWindow = window;
-
-        const auto PNEWFOCUS = g_pWindowManager->getWindowFromDrawable(window);
 
         if (PNEWFOCUS) {
             applyShapeToWindow(g_pWindowManager->getWindowFromDrawable(window));
