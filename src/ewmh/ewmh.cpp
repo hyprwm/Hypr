@@ -75,11 +75,11 @@ void EWMH::updateDesktops() {
     if (!g_pWindowManager->getMonitorFromCursor()) {
         Debug::log(ERR, "Monitor was null! (updateDesktops EWMH) Using LastWindow");
         if (const auto PWINDOW = g_pWindowManager->getWindowFromDrawable(g_pWindowManager->LastWindow); PWINDOW)
-            ACTIVEWORKSPACE = g_pWindowManager->activeWorkspaces[PWINDOW->getWorkspaceID()];
+            ACTIVEWORKSPACE = g_pWindowManager->activeWorkspaces[PWINDOW->getWorkspaceID()] - 1; // because xorg counts from zero
         else
             ACTIVEWORKSPACE = 0;
     } else {
-       ACTIVEWORKSPACE = g_pWindowManager->activeWorkspaces[g_pWindowManager->getMonitorFromCursor()->ID];
+       ACTIVEWORKSPACE = g_pWindowManager->activeWorkspaces[g_pWindowManager->getMonitorFromCursor()->ID] - 1;
     }
     
     if (DesktopInfo::lastid != ACTIVEWORKSPACE) {
