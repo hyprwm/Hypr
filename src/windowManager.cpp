@@ -2210,12 +2210,14 @@ void CWindowManager::handleClientMessage(xcb_client_message_event_t* E) {
 
     const auto PWINDOW = getWindowFromDrawable(E->window);
 
-    if (!PWINDOW)
-        return;
-
     if (E->type == HYPRATOMS["_NET_WM_STATE"]) {
         // The window wants to change its' state.
         // For now we only support FULLSCREEN
+
+        if (!PWINDOW){
+            Debug::log(ERR, "Requested _NET_WM_STATE with an invalid window ID! Ignoring.");
+            return;
+        }
 
         if (E->data.data32[1] == HYPRATOMS["_NET_WM_STATE_FULLSCREEN"]) {
             if ((PWINDOW->getFullscreen() && (E->data.data32[0] == 0 || E->data.data32[0] == 2))
@@ -2231,6 +2233,13 @@ void CWindowManager::handleClientMessage(xcb_client_message_event_t* E) {
         // Change the focused window
         if (E->format != 32)
             return;
+
+        if (!PWINDOW) {
+            Debug::log(ERR, "Requested _NET_ACTIVE_WINDOW with an invalid window ID! Ignoring.");
+            return;
+        }
+
+        Debug::log(LOG, "Request to change active window to " + std::to_string(PWINDOW->getDrawable()));
 
         setFocusedWindow(PWINDOW->getDrawable());
 
@@ -2262,6 +2271,21 @@ void CWindowManager::handleClientMessage(xcb_client_message_event_t* E) {
 
         Events::eventConfigure((xcb_generic_event_t*)GENEV);
         free(GENEV);
+    } else if (E->type == HYPRATOMS["_NET_CURRENT_DESKTOP"]) {
+        // request to change the workspace to something else
+        // likely a bar
+        // emitted by xcb_ewmh_request_change_current_desktop
+
+        const auto WORK = E->data.data32[0] + 1; // +1 because our first ID is 1 and ewmh's is 0
+
+        Debug::log(LOG, "External request to switch to workspace " + std::to_string(WORK));
+
+        if (!getWorkspaceByID(WORK)) {
+            Debug::log(ERR, "Workspace ID " + std::to_string(WORK) + " does NOT exist! Ignoring.");
+            return;
+        }
+
+        changeWorkspaceByID(WORK);
     }
 }
 
