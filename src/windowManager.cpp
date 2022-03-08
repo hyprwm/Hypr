@@ -1823,8 +1823,6 @@ Vector2D CWindowManager::getCursorPos() {
     const auto CURSORPOS = Vector2D(pointerreply->root_x, pointerreply->root_y);
     free(pointerreply);
 
-    Debug::log(LOG, "Cursor pos: " + std::to_string(CURSORPOS.x) + ", " + std::to_string(CURSORPOS.y));
-
     return CURSORPOS;
 }
 
