@@ -131,6 +131,8 @@ void Events::eventDestroy(xcb_generic_event_t* event) {
 
     RETURNIFBAR;
 
+    Debug::log(LOG, "Destroy called on " + std::to_string(E->window));
+
     g_pWindowManager->closeWindowAllChecks(E->window);
 
     // refocus on new window
@@ -148,6 +150,8 @@ void Events::eventUnmapWindow(xcb_generic_event_t* event) {
         g_pWindowManager->statusBar->ensureTrayClientHidden(E->window, true);
 
     RETURNIFBAR;
+
+    Debug::log(LOG, "Unmap called on " + std::to_string(E->window));
 
     const auto PCLOSEDWINDOW = g_pWindowManager->getWindowFromDrawable(E->window);
 
