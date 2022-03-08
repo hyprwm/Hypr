@@ -307,6 +307,16 @@ CWindow* Events::remapFloatingWindow(int windowID, int forcemonitor) {
                     + ", " + std::to_string(PWINDOWINARR->getDefaultSize().x) + ", " + std::to_string(PWINDOWINARR->getDefaultSize().y));
 
                 PWINDOWINARR->setDock(true);
+
+                // since it's a dock get its monitor from the coords
+                const auto CENTERVEC = PWINDOWINARR->getDefaultPosition() + (PWINDOWINARR->getDefaultSize() / 2.f);
+                const auto MONITOR = g_pWindowManager->getMonitorFromCoord(CENTERVEC);
+                if (MONITOR) {
+                    PWINDOWINARR->setMonitor(MONITOR->ID);
+                    Debug::log(LOG, "Guessed dock's monitor to be " + std::to_string(MONITOR->ID) + ".");
+                } else {
+                    Debug::log(LOG, "Couldn't guess dock's monitor. Leaving at " + std::to_string(PWINDOWINARR->getMonitor()) + ".");
+                }
             }
         }
     }

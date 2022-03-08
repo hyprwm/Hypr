@@ -2391,3 +2391,12 @@ bool CWindowManager::shouldBeManaged(const int& window) {
 int CWindowManager::getBarHeightForMonitor(const int& mon) {
     return (mon == ConfigManager::getInt("bar:monitor") ? (ConfigManager::getInt("bar:enabled") == 1 ? ConfigManager::getInt("bar:height") : ConfigManager::parseError == "" ? 0 : ConfigManager::getInt("bar:height")) : 0);
 }
+
+SMonitor* CWindowManager::getMonitorFromCoord(const Vector2D coord) {
+    for (auto& m : monitors) {
+        if (VECINRECT(coord, m.vecPosition.x, m.vecPosition.y, m.vecPosition.x + m.vecSize.x, m.vecPosition.y + m.vecSize.y))
+            return &m;
+    }
+
+    return nullptr;
+}

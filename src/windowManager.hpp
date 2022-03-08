@@ -107,6 +107,7 @@ public:
 
     SMonitor*                   getMonitorFromWindow(CWindow*);
     SMonitor*                   getMonitorFromCursor();
+    SMonitor*                   getMonitorFromCoord(const Vector2D);
 
     Vector2D                    getCursorPos();
 
