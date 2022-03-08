@@ -111,6 +111,17 @@ void EWMH::updateDesktops() {
         }
 
         xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, g_pWindowManager->Screen->root, HYPRATOMS["_NET_DESKTOP_NAMES"], HYPRATOMS["UTF8_STRING"], 8, msglen, names);
+    
+        // Also update where the workspaces are so that bars and shit can read which monitor they belong to.
+        uint32_t workspaceCoords[ALLDESKTOPS * 2];
+
+        int pos = 0;
+        for (int i = 0; i < ALLDESKTOPS; ++i) {
+            workspaceCoords[pos++] = g_pWindowManager->monitors[g_pWindowManager->workspaces[i].getMonitor()].vecPosition.x;
+            workspaceCoords[pos++] = g_pWindowManager->monitors[g_pWindowManager->workspaces[i].getMonitor()].vecPosition.y;
+        }
+
+        xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, g_pWindowManager->Screen->root, HYPRATOMS["_NET_DESKTOP_VIEWPORT"], XCB_ATOM_CARDINAL, 32, pos, &workspaceCoords);
     }
 }
 
