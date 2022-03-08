@@ -305,7 +305,7 @@ void parseLine(std::string& line) {
 
     if (COMMAND == "module" && ConfigManager::currentCategory == "bar") {
         if (g_pWindowManager->statusBar)
-            parseModule(COMMAND, VALUE);gi
+            parseModule(COMMAND, VALUE);
         return;
     }
 
