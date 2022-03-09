@@ -1,7 +1,7 @@
 #include "window.hpp"
 #include "windowManager.hpp"
 
-CWindow::CWindow() { this->setDockHidden(false); this->setRealBorderColor(0); this->setEffectiveBorderColor(0); this->setFirstOpen(true); this->setConstructed(false); this->setTransient(false); this->setLastUpdatePosition(Vector2D(0,0)); this->setLastUpdateSize(Vector2D(0,0)); this->setDock(false); this->setUnderFullscreen(false); this->setIsSleeping(true); this->setFirstAnimFrame(true); this->setIsAnimated(false); this->setDead(false); this->setMasterChildIndex(0); this->setMaster(false); this->setCanKill(false); this->setImmovable(false); this->setNoInterventions(false); this->setDirty(true); this->setFullscreen(false); this->setIsFloating(false); this->setParentNodeID(0); this->setChildNodeAID(0); this->setChildNodeBID(0); this->setName(""); }
+CWindow::CWindow() { this->setSplitRatio(1); this->setDockHidden(false); this->setRealBorderColor(0); this->setEffectiveBorderColor(0); this->setFirstOpen(true); this->setConstructed(false); this->setTransient(false); this->setLastUpdatePosition(Vector2D(0,0)); this->setLastUpdateSize(Vector2D(0,0)); this->setDock(false); this->setUnderFullscreen(false); this->setIsSleeping(true); this->setFirstAnimFrame(true); this->setIsAnimated(false); this->setDead(false); this->setMasterChildIndex(0); this->setMaster(false); this->setCanKill(false); this->setImmovable(false); this->setNoInterventions(false); this->setDirty(true); this->setFullscreen(false); this->setIsFloating(false); this->setParentNodeID(0); this->setChildNodeAID(0); this->setChildNodeBID(0); this->setName(""); }
 CWindow::~CWindow() { }
 
 void CWindow::generateNodeID() {
@@ -28,11 +28,14 @@ void CWindow::setDirtyRecursive(bool val) {
 void CWindow::recalcSizePosRecursive() {
     if (m_iChildNodeAID != 0) {
         const auto HORIZONTAL = m_vecSize.x > m_vecSize.y;
+
+        const auto REVERSESPLITRATIO = 2.f - m_fSplitRatio;
+
         g_pWindowManager->getWindowFromDrawable(m_iChildNodeAID)->setPosition(m_vecPosition);
-        g_pWindowManager->getWindowFromDrawable(m_iChildNodeBID)->setPosition(m_vecPosition + (HORIZONTAL ? Vector2D(m_vecSize.x / 2.f, 0) : Vector2D(0, m_vecSize.y / 2.f)));
-        
-        g_pWindowManager->getWindowFromDrawable(m_iChildNodeAID)->setSize(Vector2D(m_vecSize.x / (HORIZONTAL ? 2 : 1), m_vecSize.y / (HORIZONTAL ? 1 : 2)));
-        g_pWindowManager->getWindowFromDrawable(m_iChildNodeBID)->setSize(Vector2D(m_vecSize.x / (HORIZONTAL ? 2 : 1), m_vecSize.y / (HORIZONTAL ? 1 : 2)));
+        g_pWindowManager->getWindowFromDrawable(m_iChildNodeBID)->setPosition(m_vecPosition + (HORIZONTAL ? Vector2D(m_vecSize.x / 2.f * m_fSplitRatio, 0) : Vector2D(0, m_vecSize.y / 2.f * m_fSplitRatio)));
+
+        g_pWindowManager->getWindowFromDrawable(m_iChildNodeAID)->setSize(Vector2D(m_vecSize.x / (HORIZONTAL ? 2 / m_fSplitRatio : 1), m_vecSize.y / (HORIZONTAL ? 1 : 2 / m_fSplitRatio)));
+        g_pWindowManager->getWindowFromDrawable(m_iChildNodeBID)->setSize(Vector2D(m_vecSize.x / (HORIZONTAL ? 2 / REVERSESPLITRATIO : 1), m_vecSize.y / (HORIZONTAL ? 1 : 2 / REVERSESPLITRATIO)));
 
         g_pWindowManager->getWindowFromDrawable(m_iChildNodeAID)->setDirty(true);
         g_pWindowManager->getWindowFromDrawable(m_iChildNodeBID)->setDirty(true);

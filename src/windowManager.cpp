@@ -1113,7 +1113,7 @@ void CWindowManager::recalcEntireWorkspace(const int& workspace) {
             // get the master on the workspace
             CWindow* pMasterWindow = nullptr;
             for (auto& w : windows) {
-                if (w.getWorkspaceID() == workspace && w.getParentNodeID() == 0) {
+                if (w.getWorkspaceID() == workspace && w.getParentNodeID() == 0 && !w.getIsFloating() && !w.getDock()) {
                     pMasterWindow = &w;
                     break;
                 }
@@ -2425,4 +2425,39 @@ SMonitor* CWindowManager::getMonitorFromCoord(const Vector2D coord) {
     }
 
     return nullptr;
+}
+
+void CWindowManager::changeSplitRatioCurrent(const char& dir) {
+
+    const auto CURRENT = getWindowFromDrawable(LastWindow);
+
+    if (!CURRENT) {
+        Debug::log(LOG, "Cannot change split ratio when lastwindow NULL.");
+        return;
+    }
+
+    const auto PARENT = getWindowFromDrawable(CURRENT->getParentNodeID());
+
+    if (!PARENT) {
+        Debug::log(LOG, "Cannot change split ratio when parent NULL.");
+        return;
+    }
+
+    switch(dir) {
+        case '+':
+            PARENT->setSplitRatio(PARENT->getSplitRatio() + 0.05f);
+            break;
+        case '-':
+            PARENT->setSplitRatio(PARENT->getSplitRatio() - 0.05f);
+            break;
+        default:
+            Debug::log(ERR, "changeSplitRatioCurrent called with an invalid dir!");
+            return;
+    }
+
+    PARENT->setSplitRatio(std::clamp(PARENT->getSplitRatio(), 0.1f, 1.9f));
+
+    Debug::log(LOG, "Changed SplitRatio of " + std::to_string(PARENT->getDrawable()) + " to " + std::to_string(PARENT->getSplitRatio()) + " (" + dir + ")" );
+
+    recalcEntireWorkspace(CURRENT->getWorkspaceID());
 }

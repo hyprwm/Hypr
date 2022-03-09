@@ -144,6 +144,8 @@ public:
 
     bool                        shouldBeManaged(const int&);
 
+    void                        changeSplitRatioCurrent(const char& dir);
+
 private:
 
     // Internal WM functions that don't have to be exposed

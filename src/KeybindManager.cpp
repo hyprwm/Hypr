@@ -212,3 +212,7 @@ void KeybindManager::toggleActiveWindowFloating(std::string unusedArg) {
         g_pWindowManager->setAllFloatingWindowsTop();
     }
 }
+
+void KeybindManager::changeSplitRatio(std::string args) {
+    g_pWindowManager->changeSplitRatioCurrent(args[0]);
+}

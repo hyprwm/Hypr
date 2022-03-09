@@ -59,6 +59,9 @@ public:
     EXPOSED_MEMBER(IsFloating, bool, b);
     EXPOSED_MEMBER(Drawable, int64_t, i);  // int64_t because it's my internal ID system too.
 
+    // For splitting ratios
+    EXPOSED_MEMBER(SplitRatio, float, f);
+
     // Fullscreen
     EXPOSED_MEMBER(Fullscreen, bool, b);
 

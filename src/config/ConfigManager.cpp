@@ -124,6 +124,7 @@ void handleBind(const std::string& command, const std::string& value) {
     if (HANDLER == "workspace") dispatcher = KeybindManager::changeworkspace;
     if (HANDLER == "lastworkspace") dispatcher = KeybindManager::changetolastworkspace;
     if (HANDLER == "togglefloating") dispatcher = KeybindManager::toggleActiveWindowFloating;
+    if (HANDLER == "splitratio") dispatcher = KeybindManager::changeSplitRatio;
 
     if (dispatcher && KEY != 0)
         KeybindManager::keybinds.push_back(Keybind(KeybindManager::modToMask(MOD), KEY, COMMAND, dispatcher));
