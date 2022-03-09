@@ -358,8 +358,7 @@ void CWindowManager::processBarHiding() {
         }
             
         else if (!WORK->getHasFullscreenWindow() && w.getDockHidden()) {
-            const auto COOKIE = xcb_map_window(DisplayConnection, w.getDrawable());
-            Events::ignoredEvents.push_back(COOKIE.sequence);
+            xcb_map_window(DisplayConnection, w.getDrawable());
             w.setDockHidden(false);
         }
     }
