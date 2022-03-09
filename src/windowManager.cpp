@@ -360,14 +360,6 @@ void CWindowManager::processBarHiding() {
         else if (!WORK->getHasFullscreenWindow() && w.getDockHidden()) {
             const auto COOKIE = xcb_map_window(DisplayConnection, w.getDrawable());
             Events::ignoredEvents.push_back(COOKIE.sequence);
-
-            // restore its params
-            // Values[0] = (int)w.getDefaultPosition().x;
-            // Values[1] = (int)w.getDefaultPosition().y;
-            // xcb_configure_window(DisplayConnection, w.getDrawable(), XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, Values);
-            // Values[0] = (int)w.getDefaultSize().x;
-            // Values[1] = (int)w.getDefaultSize().y;
-            // xcb_configure_window(DisplayConnection, w.getDrawable(), XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, Values);
             w.setDockHidden(false);
         }
     }
