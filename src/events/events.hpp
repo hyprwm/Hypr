@@ -34,7 +34,7 @@ namespace Events {
     inline bool     nextWindowCentered = false;
 
     // Fix focus on open
-    inline std::deque<uint32_t> ignoredEvents;
+    inline std::deque<uint64_t> ignoredEvents;
 
     // Fix spammed RandR events
     inline std::chrono::high_resolution_clock::time_point lastRandREvent = std::chrono::high_resolution_clock::now();
