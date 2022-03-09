@@ -151,23 +151,17 @@ void Events::eventUnmapWindow(xcb_generic_event_t* event) {
 
     RETURNIFBAR;
 
-    Debug::log(LOG, "Unmap called on " + std::to_string(E->window));
-
     const auto PCLOSEDWINDOW = g_pWindowManager->getWindowFromDrawable(E->window);
 
-    if (!PCLOSEDWINDOW)
+    if (!PCLOSEDWINDOW) {
+        Debug::log(LOG, "Unmap called on an invalid window: " + std::to_string(E->window));
         return; // bullshit window?
+    }
 
-    if (PCLOSEDWINDOW->getIsFloating())
-        g_pWindowManager->moveWindowToUnmapped(E->window);  // If it's floating, just unmap it.
-    else
-        g_pWindowManager->closeWindowAllChecks(E->window);
+    Debug::log(LOG, "Unmap called on " + std::to_string(E->window) + " -> " + PCLOSEDWINDOW->getName());
 
     // refocus on new window
     g_pWindowManager->refocusWindowOnClosed();
-
-    // EWMH
-    EWMH::updateClientList();
 }
 
 CWindow* Events::remapFloatingWindow(int windowID, int forcemonitor) {
