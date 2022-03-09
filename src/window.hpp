@@ -99,6 +99,7 @@ public:
     // Docks
     EXPOSED_MEMBER(Dock, bool, b);
     EXPOSED_MEMBER(DockAlign, EDockAlign, e);
+    EXPOSED_MEMBER(DockHidden, bool, b);
 
     // Transient
     EXPOSED_MEMBER(Children, std::vector<int64_t>, vec);

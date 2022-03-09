@@ -168,6 +168,7 @@ private:
     void                        dispatchQueuedWarp();
     CWindow*                    getMasterForWorkspace(const int&);
     int                         getBarHeightForMonitor(const int&);
+    void                        processBarHiding();
 };
 
 inline std::unique_ptr<CWindowManager> g_pWindowManager = std::make_unique<CWindowManager>();

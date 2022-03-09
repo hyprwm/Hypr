@@ -217,6 +217,9 @@ bool CWindowManager::handleEvent() {
         sanityCheckOnWorkspace(active);
     }
 
+    // hide ewmh bars if fullscreen
+    processBarHiding();
+
     // remove unused workspaces
     cleanupUnusedWorkspaces();
 
@@ -331,6 +334,42 @@ void CWindowManager::recieveEvent() {
         }
 
         free(ev);
+    }
+}
+
+void CWindowManager::processBarHiding() {
+    for (auto& w : windows) {
+        if (!w.getDock())
+            continue;
+
+        // get the dock's monitor
+        const auto& MON = monitors[w.getMonitor()];
+
+        // get the dock's current workspace
+        auto *const WORK = getWorkspaceByID(activeWorkspaces[MON.ID]);
+
+        if (!WORK)
+            continue; // weird if happens
+
+        if (WORK->getHasFullscreenWindow() && !w.getDockHidden()) {
+            const auto COOKIE = xcb_unmap_window(DisplayConnection, w.getDrawable());
+            Events::ignoredEvents.push_back(COOKIE.sequence);
+            w.setDockHidden(true);
+        }
+            
+        else if (!WORK->getHasFullscreenWindow() && w.getDockHidden()) {
+            const auto COOKIE = xcb_map_window(DisplayConnection, w.getDrawable());
+            Events::ignoredEvents.push_back(COOKIE.sequence);
+
+            // restore its params
+            // Values[0] = (int)w.getDefaultPosition().x;
+            // Values[1] = (int)w.getDefaultPosition().y;
+            // xcb_configure_window(DisplayConnection, w.getDrawable(), XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, Values);
+            // Values[0] = (int)w.getDefaultSize().x;
+            // Values[1] = (int)w.getDefaultSize().y;
+            // xcb_configure_window(DisplayConnection, w.getDrawable(), XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, Values);
+            w.setDockHidden(false);
+        }
     }
 }
 
