@@ -8,7 +8,7 @@
 ![Best](https://img.shields.io/badge/Standard-C%2B%2B20-success)
 ![HiMom](https://img.shields.io/badge/Hi-mom!-ff69b4)
 <br/><br/>
-Hypr is a Linux tiling window manager for Xorg. It's written in XCB with modern C++ and aims to provide easily readable and expandable code.
+Hypr is a dynamic Linux tiling window manager for Xorg. It's written in XCB with modern C++ and aims to provide easily readable and expandable code.
 
 Hypr needs testers! Check it out and report suggestions or bugs!
 <br/>
@@ -50,9 +50,9 @@ You have to use a config, place it in ~/.config/hypr/hypr.conf
 
 # Screenshot Gallery
 
-![One](https://i.imgur.com/HLukmeA.png)
-![Two](https://i.imgur.com/B0MDTu2.png)
-![Three](https://i.imgur.com/yvZVde7.png)
+![One](https://i.imgur.com/ygked0M.png)
+![Two](https://i.imgur.com/HLukmeA.png)
+![Three](https://i.imgur.com/B0MDTu2.png)
 
 # Known issues
 - Picom's shadow and effects do not update for cheap animations while animating
