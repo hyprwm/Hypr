@@ -465,12 +465,12 @@ void CWindowManager::refreshDirtyWindows() {
 
                 const auto MONITOR = getMonitorFromWindow(&window);
 
-                Values[0] = (int)MONITOR->vecSize.x;
-                Values[1] = window.getFullscreen() ? (int) MONITOR->vecSize.y : MONITOR->vecSize.y - getBarHeightForMonitor(window.getMonitor());
+                Values[0] = window.getFullscreen() ? (int)MONITOR->vecSize.x : MONITOR->vecSize.x - MONITOR->vecReservedTopLeft.x - MONITOR->vecReservedBottomRight.x;
+                Values[1] = window.getFullscreen() ? (int) MONITOR->vecSize.y : MONITOR->vecSize.y - MONITOR->vecReservedTopLeft.y - MONITOR->vecReservedBottomRight.y;
                 window.setEffectiveSize(Vector2D(Values[0], Values[1]));
 
-                Values[0] = (int)MONITOR->vecPosition.x;
-                Values[1] = window.getFullscreen() ? (int)MONITOR->vecPosition.y : MONITOR->vecPosition.y + getBarHeightForMonitor(window.getMonitor());
+                Values[0] = window.getFullscreen() ? (int)MONITOR->vecPosition.x : MONITOR->vecPosition.x + MONITOR->vecReservedTopLeft.x;
+                Values[1] = window.getFullscreen() ? (int)MONITOR->vecPosition.y : MONITOR->vecPosition.y + MONITOR->vecReservedTopLeft.y;
                 window.setEffectivePosition(Vector2D(Values[0], Values[1]));
 
                 Values[0] = (int)window.getRealPosition().x;
@@ -895,7 +895,6 @@ void CWindowManager::setEffectiveSizePosUsingConfig(CWindow* pWindow) {
         return;
 
     const auto MONITOR = getMonitorFromWindow(pWindow);
-    const auto BARHEIGHT = getBarHeightForMonitor(pWindow->getMonitor());
 
     // set some flags.
     const bool DISPLAYLEFT          = STICKS(pWindow->getPosition().x, MONITOR->vecPosition.x);
@@ -911,7 +910,7 @@ void CWindowManager::setEffectiveSizePosUsingConfig(CWindow* pWindow) {
     pWindow->setEffectiveSize(pWindow->getSize() - (Vector2D(BORDERSIZE, BORDERSIZE) * 2));
 
     const auto OFFSETTOPLEFT = Vector2D(DISPLAYLEFT ? GAPSOUT + MONITOR->vecReservedTopLeft.x : GAPSIN,
-                                         DISPLAYTOP ? GAPSOUT + MONITOR->vecReservedTopLeft.y + BARHEIGHT : GAPSIN);
+                                         DISPLAYTOP ? GAPSOUT + MONITOR->vecReservedTopLeft.y : GAPSIN);
 
     const auto OFFSETBOTTOMRIGHT = Vector2D( DISPLAYRIGHT ? GAPSOUT + MONITOR->vecReservedBottomRight.x : GAPSIN,
                                             DISPLAYBOTTOM ? GAPSOUT + MONITOR->vecReservedBottomRight.y : GAPSIN);
@@ -1026,7 +1025,7 @@ void CWindowManager::calculateNewTileSetOldTile(CWindow* pWindow) {
 int CWindowManager::getWindowsOnWorkspace(const int& workspace) {
     int number = 0;
     for (auto& w : windows) {
-        if (w.getWorkspaceID() == workspace && w.getDrawable() > 0) {
+        if (w.getWorkspaceID() == workspace && w.getDrawable() > 0 && !w.getDock()) {
             ++number;
         }
     }
@@ -2417,10 +2416,6 @@ bool CWindowManager::shouldBeManaged(const int& window) {
     Debug::log(LOG, "shouldBeManaged passed!");
 
     return true;
-}
-
-int CWindowManager::getBarHeightForMonitor(const int& mon) {
-    return (mon == ConfigManager::getInt("bar:monitor") ? (ConfigManager::getInt("bar:enabled") == 1 ? ConfigManager::getInt("bar:height") : ConfigManager::parseError == "" ? 0 : ConfigManager::getInt("bar:height")) : 0);
 }
 
 SMonitor* CWindowManager::getMonitorFromCoord(const Vector2D coord) {

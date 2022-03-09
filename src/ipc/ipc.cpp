@@ -136,7 +136,7 @@ void IPCRecieveMessageB(const std::string path) {
             } else if (PROPNAME == "lastwindowclass") {
                 g_pWindowManager->statusBar->setLastWindowClass(PROPVALUE);
             } else if (PROPNAME == "barfullscreenwindow") {
-                g_pWindowManager->statusBar->setIsCovered(PROPVALUE == "1" ? true : false);
+                // deprecated
             }
         }
     } catch(...) {

@@ -167,7 +167,6 @@ private:
     void                        focusOnWorkspace(const int&);
     void                        dispatchQueuedWarp();
     CWindow*                    getMasterForWorkspace(const int&);
-    int                         getBarHeightForMonitor(const int&);
     void                        processBarHiding();
 };
 

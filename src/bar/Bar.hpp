@@ -64,7 +64,6 @@ public:
     EXPOSED_MEMBER(StatusCommand, std::string, sz); // TODO: make the bar better
     EXPOSED_MEMBER(LastWindowName, std::string, sz);
     EXPOSED_MEMBER(LastWindowClass, std::string, sz);
-    EXPOSED_MEMBER(IsCovered, bool, b);
     EXPOSED_MEMBER(HasTray, bool, b);
     EXPOSED_MEMBER(IsDestroyed, bool, b);  // for not deleting nulls
 

@@ -446,9 +446,6 @@ void CStatusBar::drawErrorScreen() {
 
 void CStatusBar::draw() {
 
-    if (m_bIsCovered)
-        return; // Do not draw a bar on a fullscreen window.
-
     if (m_bIsDestroyed)
         return;
 

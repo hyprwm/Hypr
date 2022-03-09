@@ -600,10 +600,6 @@ void Events::eventMapWindow(xcb_generic_event_t* event) {
     // Map the window
     xcb_map_window(g_pWindowManager->DisplayConnection, E->window);
 
-    // bar
-    if (E->window == g_pWindowManager->barWindowID)
-        return;
-
     // We check if the window is not on our tile-blacklist and if it is, we have a special treatment procedure for it.
     // this func also sets some stuff
 
