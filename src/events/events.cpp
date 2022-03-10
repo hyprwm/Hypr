@@ -160,8 +160,14 @@ void Events::eventUnmapWindow(xcb_generic_event_t* event) {
 
     Debug::log(LOG, "Unmap called on " + std::to_string(E->window) + " -> " + PCLOSEDWINDOW->getName());
 
+    if (!PCLOSEDWINDOW->getDock())
+        g_pWindowManager->closeWindowAllChecks(E->window);
+
     // refocus on new window
     g_pWindowManager->refocusWindowOnClosed();
+
+    // EWMH
+    EWMH::updateClientList();
 }
 
 CWindow* Events::remapFloatingWindow(int windowID, int forcemonitor) {
