@@ -555,7 +555,7 @@ CWindow* Events::remapWindow(int windowID, bool wasfloating, int forcemonitor) {
     // For master layout, add the index
     PWINDOWINARR->setMasterChildIndex(g_pWindowManager->getWindowsOnWorkspace(g_pWindowManager->activeWorkspaces[CURRENTSCREEN]) - 1);
     // and set master if needed
-    if (g_pWindowManager->getWindowsOnWorkspace(g_pWindowManager->activeWorkspaces[CURRENTSCREEN]) == 0) 
+    if (g_pWindowManager->getWindowsOnWorkspace(g_pWindowManager->activeWorkspaces[CURRENTSCREEN]) == 1) // 1 because the current window is already in the arr 
         PWINDOWINARR->setMaster(true);
     
 

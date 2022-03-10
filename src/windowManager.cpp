@@ -1062,8 +1062,16 @@ void CWindowManager::recalcEntireWorkspace(const int& workspace) {
             // first, calc the size
             CWindow* pMaster = nullptr;
             for (auto& w : windows) {
-                if (w.getWorkspaceID() == workspace && w.getMaster() && !w.getDead()) {
+                if (w.getWorkspaceID() == workspace && w.getMaster() && !w.getDead() && !w.getIsFloating() && !w.getDock()) {
                     pMaster = &w;
+                    break;
+                }
+            }
+
+            CWindow* pMasterContainer = nullptr;
+            for (auto& w : windows) {
+                if (w.getWorkspaceID() == workspace && w.getParentNodeID() == 0 && !w.getIsFloating() && !w.getDock()) {
+                    pMasterContainer = &w;
                     break;
                 }
             }
@@ -1074,13 +1082,17 @@ void CWindowManager::recalcEntireWorkspace(const int& workspace) {
             }
 
             // set the xy for master
+            float splitRatio = 1;
+            if (pMasterContainer)
+                splitRatio = pMasterContainer->getSplitRatio();
+
             pMaster->setPosition(Vector2D(0, 0) + PMONITOR->vecPosition);
-            pMaster->setSize(Vector2D(PMONITOR->vecSize.x / 2, PMONITOR->vecSize.y));
+            pMaster->setSize(Vector2D(PMONITOR->vecSize.x / 2 * splitRatio, PMONITOR->vecSize.y));
 
             // get children sorted
             std::vector<CWindow*> children;
             for (auto& w : windows) {
-                if (w.getWorkspaceID() == workspace && !w.getMaster() && w.getDrawable() > 0 && !w.getDead())
+                if (w.getWorkspaceID() == workspace && !w.getMaster() && w.getDrawable() > 0 && !w.getDead() && !w.getDock())
                     children.push_back(&w);
             }
             std::sort(children.begin(), children.end(), [](CWindow*& a, CWindow*& b) {
@@ -1096,8 +1108,8 @@ void CWindowManager::recalcEntireWorkspace(const int& workspace) {
             // Children sorted, set xy
             int yoff = 0;
             for (const auto& child : children) {
-                child->setPosition(Vector2D(PMONITOR->vecSize.x / 2, yoff) + PMONITOR->vecPosition);
-                child->setSize(Vector2D(PMONITOR->vecSize.x / 2, PMONITOR->vecSize.y / children.size()));
+                child->setPosition(Vector2D(PMONITOR->vecSize.x / 2 * splitRatio, yoff) + PMONITOR->vecPosition);
+                child->setSize(Vector2D(PMONITOR->vecSize.x / 2 * (2 - splitRatio), PMONITOR->vecSize.y / children.size()));
 
                 yoff += PMONITOR->vecSize.y / children.size();
             }
@@ -1296,7 +1308,7 @@ CWindow* CWindowManager::getMasterForWorkspace(const int& work) {
     if (!pMaster) {
         Debug::log(ERR, "No master found on workspace? Setting automatically");
         for (auto& w : windows) {
-            if (w.getWorkspaceID() == work) {
+            if (w.getWorkspaceID() == work && !w.getDock() && !w.getIsFloating()) {
                 pMaster = &w;
                 w.setMaster(true);
                 break;
@@ -1314,7 +1326,7 @@ void CWindowManager::fixMasterWorkspaceOnClosed(CWindow* pWindow) {
     // get children sorted
     std::vector<CWindow*> children;
     for (auto& w : windows) {
-        if (w.getWorkspaceID() == pWindow->getWorkspaceID() && !w.getMaster() && w.getDrawable() > 0 && w.getDrawable() != pWindow->getDrawable())
+        if (w.getWorkspaceID() == pWindow->getWorkspaceID() && !w.getMaster() && w.getDrawable() > 0 && w.getDrawable() != pWindow->getDrawable() && !w.getDock())
             children.push_back(&w);
     }
     std::sort(children.begin(), children.end(), [](CWindow*& a, CWindow*& b) {
