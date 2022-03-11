@@ -765,7 +765,7 @@ void CWindowManager::applyShapeToWindow(CWindow* pWindow) {
     if (!pWindow)
         return;
 
-    const auto ROUNDING = pWindow->getFullscreen() ? 0 : ConfigManager::getInt("rounding");
+    const auto ROUNDING = pWindow->getFullscreen() || (ConfigManager::getInt("layout:no_gaps_when_only") && getWindowsOnWorkspace(pWindow->getWorkspaceID()) == 1) ? 0 : ConfigManager::getInt("rounding");
 
     const auto SHAPEQUERY = xcb_get_extension_data(DisplayConnection, &xcb_shape_id);
 
