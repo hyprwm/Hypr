@@ -33,6 +33,8 @@ Hypr needs testers! Check it out and report suggestions or bugs!
 # Installation
 I do not maintain any packages, but some kind people have made them for me. If I missed any, please let me know.
 
+For stable releases, use the Releases tab here on github, and follow the instructions to install it in the [Wiki](https://github.com/vaxerski/Hypr/wiki/Building) 
+
 *Arch (AUR)*
 ```
 yay -S hypr-git
