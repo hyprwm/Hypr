@@ -372,13 +372,7 @@ void CWindowManager::cleanupUnusedWorkspaces() {
     for (auto& work : temp) {
         if (!isWorkspaceVisible(work.getID())) {
             // check if it has any children
-            bool hasChildren = false;
-            for (auto& window : windows) {
-                if (window.getWorkspaceID() == work.getID()) {
-                    hasChildren = true;
-                    break;
-                }
-            }
+            bool hasChildren = getWindowsOnWorkspace(work.getID()) > 0;
 
             if (hasChildren) {
                 // Has windows opened on it.
