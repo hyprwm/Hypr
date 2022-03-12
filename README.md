@@ -59,7 +59,6 @@ You have to use a config, place it in ~/.config/hypr/hypr.conf
 # Known issues
 - Picom's shadow and effects do not update for cheap animations while animating
 - Non-cheap animations are choppy (duh!)
-- Popups sometimes are created a bit off
 
 # Contributions
 Refer to [CONTRIBUTING.md](https://github.com/vaxerski/Hypr/blob/main/CONTRIBUTING.md) and the [Wiki](https://github.com/vaxerski/Hypr/wiki/Contributing-&-Debugging) for contributing instructions and guidelines.
