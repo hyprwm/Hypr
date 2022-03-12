@@ -35,7 +35,7 @@ I do not maintain any packages, but some kind people have made them for me. If I
 
 For stable releases, use the Releases tab here on github, and follow the instructions to install it in the [Wiki](https://github.com/vaxerski/Hypr/wiki/Building) 
 
-*Arch (AUR)* **Warning: it is bugged as of right now and will crash. Use the Release or compile by yourself.**
+*Arch (AUR)*
 ```
 yay -S hypr-git
 ```
