@@ -21,6 +21,7 @@ Hypr needs testers! Check it out and report suggestions or bugs!
 - Config reloaded instantly upon saving
 - A built-in status bar with modules
 - Easily expandable and readable codebase
+- Pseudotiling
 - Multiple tiling modes (dwindling and master)
 - Window rules
 - Intelligent transients
