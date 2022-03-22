@@ -899,21 +899,51 @@ void CWindowManager::setEffectiveSizePosUsingConfig(CWindow* pWindow) {
     const auto GAPSOUT = ConfigManager::getInt("gaps_out");
     const auto GAPSIN = ConfigManager::getInt("gaps_in");
 
-    pWindow->setEffectivePosition(pWindow->getPosition() + Vector2D(BORDERSIZE, BORDERSIZE));
-    pWindow->setEffectiveSize(pWindow->getSize() - (Vector2D(BORDERSIZE, BORDERSIZE) * 2));
+    auto TEMPEFFECTIVESIZE = pWindow->getSize();
+    auto TEMPEFFECTIVEPOS  = pWindow->getPosition();
 
     const auto OFFSETTOPLEFT = Vector2D(DISPLAYLEFT ? GAPSOUT + MONITOR->vecReservedTopLeft.x : GAPSIN,
-                                         DISPLAYTOP ? GAPSOUT + MONITOR->vecReservedTopLeft.y : GAPSIN);
+                                        DISPLAYTOP ? GAPSOUT + MONITOR->vecReservedTopLeft.y : GAPSIN);
 
-    const auto OFFSETBOTTOMRIGHT = Vector2D( DISPLAYRIGHT ? GAPSOUT + MONITOR->vecReservedBottomRight.x : GAPSIN,
+    const auto OFFSETBOTTOMRIGHT = Vector2D(DISPLAYRIGHT ? GAPSOUT + MONITOR->vecReservedBottomRight.x : GAPSIN,
                                             DISPLAYBOTTOM ? GAPSOUT + MONITOR->vecReservedBottomRight.y : GAPSIN);
 
+    TEMPEFFECTIVEPOS = TEMPEFFECTIVEPOS + Vector2D(BORDERSIZE, BORDERSIZE);
+    TEMPEFFECTIVESIZE = TEMPEFFECTIVESIZE - (Vector2D(BORDERSIZE, BORDERSIZE) * 2);
+
     // do gaps, set top left
-    pWindow->setEffectivePosition(pWindow->getEffectivePosition() + OFFSETTOPLEFT);
+    TEMPEFFECTIVEPOS = TEMPEFFECTIVEPOS + OFFSETTOPLEFT;
     // fix to old size bottom right
-    pWindow->setEffectiveSize(pWindow->getEffectiveSize() - OFFSETTOPLEFT);
+    TEMPEFFECTIVESIZE = TEMPEFFECTIVESIZE - OFFSETTOPLEFT;
     // set bottom right
-    pWindow->setEffectiveSize(pWindow->getEffectiveSize() - OFFSETBOTTOMRIGHT);
+    TEMPEFFECTIVESIZE = TEMPEFFECTIVESIZE - OFFSETBOTTOMRIGHT;
+
+    if (pWindow->getIsPseudotiled()) {
+        float scale = 1;
+
+        // adjust if doesnt fit
+        if (pWindow->getPseudoSize().x > TEMPEFFECTIVESIZE.x || pWindow->getPseudoSize().y > TEMPEFFECTIVESIZE.y) {
+            
+            if (pWindow->getPseudoSize().x > TEMPEFFECTIVESIZE.x) {
+                scale = TEMPEFFECTIVESIZE.x / pWindow->getPseudoSize().x;
+            }
+
+            if (pWindow->getPseudoSize().y * scale > TEMPEFFECTIVESIZE.y) {
+                scale = TEMPEFFECTIVESIZE.y / pWindow->getPseudoSize().y;
+            }
+
+            auto DELTA = TEMPEFFECTIVESIZE - pWindow->getPseudoSize() * scale;
+            TEMPEFFECTIVESIZE = pWindow->getPseudoSize() * scale;
+            TEMPEFFECTIVEPOS = TEMPEFFECTIVEPOS + DELTA / 2.f;  // center
+        } else {
+            auto DELTA = TEMPEFFECTIVESIZE - pWindow->getPseudoSize();
+            TEMPEFFECTIVEPOS = TEMPEFFECTIVEPOS + DELTA / 2.f;  // center
+            TEMPEFFECTIVESIZE = pWindow->getPseudoSize();
+        }
+    }
+
+    pWindow->setEffectivePosition(TEMPEFFECTIVEPOS);
+    pWindow->setEffectiveSize(TEMPEFFECTIVESIZE);
 }
 
 CWindow* CWindowManager::findWindowAtCursor() {
@@ -2465,4 +2495,18 @@ void CWindowManager::changeSplitRatioCurrent(const char& dir) {
     Debug::log(LOG, "Changed SplitRatio of " + std::to_string(PARENT->getDrawable()) + " to " + std::to_string(PARENT->getSplitRatio()) + " (" + dir + ")" );
 
     recalcEntireWorkspace(CURRENT->getWorkspaceID());
+}
+
+void CWindowManager::getICCCMSizeHints(CWindow* pWindow) {
+    xcb_size_hints_t sizeHints;
+    const auto succ = xcb_icccm_get_wm_normal_hints_reply(g_pWindowManager->DisplayConnection, xcb_icccm_get_wm_normal_hints_unchecked(g_pWindowManager->DisplayConnection, pWindow->getDrawable()), &sizeHints, NULL);
+    
+    if (succ) {
+        auto NEWSIZE = Vector2D(std::max(std::max(sizeHints.width, (int32_t)pWindow->getDefaultSize().x), std::max(sizeHints.max_width > g_pWindowManager->monitors[pWindow->getMonitor()].vecSize.x ? 0 : sizeHints.max_width, sizeHints.base_width)),
+                                std::max(std::max(sizeHints.height, (int32_t)pWindow->getDefaultSize().y), std::max(sizeHints.max_height > g_pWindowManager->monitors[pWindow->getMonitor()].vecSize.y ? 0 : sizeHints.max_height, sizeHints.base_height)));
+
+        pWindow->setPseudoSize(NEWSIZE);
+    } else {
+        Debug::log(ERR, "ICCCM Size Hints failed.");
+    }
 }

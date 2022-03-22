@@ -189,12 +189,17 @@ void KeybindManager::toggleActiveWindowFloating(std::string unusedArg) {
             const auto RESTOREACPOS = PWINDOW->getDefaultPosition();
             const auto RESTOREWINID = PWINDOW->getDrawable();
             const auto RESTORECANKILL = PWINDOW->getCanKill();
+            const auto RESTOREPSEUDO = PWINDOW->getPseudoSize();
+            const auto RESTOREISPSEUDO = PWINDOW->getIsPseudotiled();
+            const auto RESTOREREALS = PWINDOW->getRealSize();
+            const auto RESTOREREALP = PWINDOW->getRealPosition();
 
             g_pWindowManager->removeWindowFromVectorSafe(PWINDOW->getDrawable());
 
             CWindow newWindow;
             newWindow.setDrawable(RESTOREWINID);
             newWindow.setFirstOpen(false);
+            newWindow.setConstructed(false);
             g_pWindowManager->addWindowToVectorSafe(newWindow);
 
             const auto PNEWWINDOW = Events::remapWindow(RESTOREWINID, true);
@@ -202,6 +207,10 @@ void KeybindManager::toggleActiveWindowFloating(std::string unusedArg) {
             PNEWWINDOW->setDefaultPosition(RESTOREACPOS);
             PNEWWINDOW->setDefaultSize(RESTOREACSIZE);
             PNEWWINDOW->setCanKill(RESTORECANKILL);
+            PNEWWINDOW->setPseudoSize(RESTOREPSEUDO);
+            PNEWWINDOW->setIsPseudotiled(RESTOREISPSEUDO);
+            PNEWWINDOW->setRealPosition(RESTOREREALP);
+            PNEWWINDOW->setRealSize(RESTOREREALS);
         }
 
         // EWMH to let everyone know
@@ -215,4 +224,15 @@ void KeybindManager::toggleActiveWindowFloating(std::string unusedArg) {
 
 void KeybindManager::changeSplitRatio(std::string args) {
     g_pWindowManager->changeSplitRatioCurrent(args[0]);
+}
+
+void KeybindManager::togglePseudoActive(std::string args) {
+    const auto PWINDOW = g_pWindowManager->getWindowFromDrawable(g_pWindowManager->LastWindow);
+
+    if (!PWINDOW)
+        return;
+
+    PWINDOW->setIsPseudotiled(!PWINDOW->getIsPseudotiled());
+
+    PWINDOW->setDirty(true);
 }

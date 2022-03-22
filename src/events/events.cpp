@@ -213,6 +213,10 @@ CWindow* Events::remapFloatingWindow(int windowID, int forcemonitor) {
                 Debug::log(LOG, "Rule monitor failed, rule: " + rule.szRule + "=" + rule.szValue);
             }
         }
+
+        if (rule.szRule.find("pseudo") == 0) {
+            PWINDOWINARR->setIsPseudotiled(true);
+        }
     }
 
     const auto CURRENTSCREEN = forcemonitor != -1 ? forcemonitor : PMONITOR->ID;
@@ -325,27 +329,14 @@ CWindow* Events::remapFloatingWindow(int windowID, int forcemonitor) {
     //
     //
 
-    // ICCCM
+    g_pWindowManager->getICCCMSizeHints(PWINDOWINARR);
 
-    xcb_size_hints_t sizeHints;
-    const auto succ = xcb_icccm_get_wm_normal_hints_reply(g_pWindowManager->DisplayConnection, xcb_icccm_get_wm_normal_hints_unchecked(g_pWindowManager->DisplayConnection, PWINDOWINARR->getDrawable()), &sizeHints, NULL);
-    if (succ && nextWindowCentered /* Basically means dialog */) {
-
-        //                          vvv gets the max value out of the geometry, size hint, (size hint max if < screen) and size hint base.
-        auto NEWSIZE = Vector2D(std::max(std::max(sizeHints.width, (int32_t)PWINDOWINARR->getDefaultSize().x), std::max(sizeHints.max_width > g_pWindowManager->monitors[CURRENTSCREEN].vecSize.x ? 0 : sizeHints.max_width, sizeHints.base_width)),
-                                std::max(std::max(sizeHints.height, (int32_t)PWINDOWINARR->getDefaultSize().y), std::max(sizeHints.max_height > g_pWindowManager->monitors[CURRENTSCREEN].vecSize.y ? 0 : sizeHints.max_height, sizeHints.base_height)));
-
-        // clip the new size to max monitor size
-        NEWSIZE = Vector2D(std::clamp(NEWSIZE.x, (double)40.f, g_pWindowManager->monitors[CURRENTSCREEN].vecSize.x),
-                           std::clamp(NEWSIZE.y, (double)40.f, g_pWindowManager->monitors[CURRENTSCREEN].vecSize.y));
-
-        auto DELTA = NEWSIZE - PWINDOWINARR->getDefaultSize();
+    if (nextWindowCentered /* Basically means dialog */) {
+        auto DELTA = PWINDOWINARR->getPseudoSize() - PWINDOWINARR->getDefaultSize();
 
         // update
-        PWINDOWINARR->setDefaultSize(NEWSIZE);
+        PWINDOWINARR->setDefaultSize(PWINDOWINARR->getPseudoSize());
         PWINDOWINARR->setDefaultPosition(PWINDOWINARR->getDefaultPosition() - DELTA / 2.f);
-    } else if (!succ) {
-        Debug::log(ERR, "ICCCM Size Hints failed.");
     }
 
     // Check the size and pos rules
@@ -453,6 +444,10 @@ CWindow* Events::remapWindow(int windowID, bool wasfloating, int forcemonitor) {
                 Debug::log(LOG, "Rule monitor failed, rule: " + rule.szRule + "=" + rule.szValue);
             }
         }
+
+        if (rule.szRule.find("pseudo") == 0) {
+            PWINDOWINARR->setIsPseudotiled(true);
+        }
     }
 
     if (g_pWindowManager->getWindowFromDrawable(g_pWindowManager->LastWindow) && forcemonitor == -1 && PMONITOR->ID != g_pWindowManager->getWindowFromDrawable(g_pWindowManager->LastWindow)->getMonitor()) {
@@ -499,6 +494,8 @@ CWindow* Events::remapWindow(int windowID, bool wasfloating, int forcemonitor) {
             g_pWindowManager->setAllWorkspaceWindowsDirtyByID(PWORKSPACE->getID());
         }
     }
+
+    g_pWindowManager->getICCCMSizeHints(PWINDOWINARR);
 
     // Set the parent
     // check if lastwindow is on our workspace
@@ -763,6 +760,7 @@ void Events::eventMotionNotify(xcb_generic_event_t* event) {
         PACTINGWINDOW->setDefaultSize(PACTINGWINDOW->getSize());
         PACTINGWINDOW->setEffectiveSize(PACTINGWINDOW->getSize());
         PACTINGWINDOW->setRealSize(PACTINGWINDOW->getSize());
+        PACTINGWINDOW->setPseudoSize(PACTINGWINDOW->getSize());
 
         PACTINGWINDOW->setDirty(true);
     }

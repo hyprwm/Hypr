@@ -108,6 +108,10 @@ public:
     EXPOSED_MEMBER(Children, std::vector<int64_t>, vec);
     EXPOSED_MEMBER(Transient, bool, b);
 
+    // Pseudotiling
+    EXPOSED_MEMBER(IsPseudotiled, bool, b);
+    EXPOSED_MEMBER(PseudoSize, Vector2D, vec);
+
 private:
 
 };

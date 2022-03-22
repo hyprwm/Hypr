@@ -84,6 +84,7 @@ public:
     void                        refocusWindowOnClosed();
 
     void                        calculateNewWindowParams(CWindow*);
+    void                        getICCCMSizeHints(CWindow*);
     void                        fixWindowOnClose(CWindow*);
     void                        closeWindowAllChecks(int64_t);
 

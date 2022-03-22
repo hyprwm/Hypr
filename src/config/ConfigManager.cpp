@@ -125,6 +125,7 @@ void handleBind(const std::string& command, const std::string& value) {
     if (HANDLER == "lastworkspace") dispatcher = KeybindManager::changetolastworkspace;
     if (HANDLER == "togglefloating") dispatcher = KeybindManager::toggleActiveWindowFloating;
     if (HANDLER == "splitratio") dispatcher = KeybindManager::changeSplitRatio;
+    if (HANDLER == "pseudo") dispatcher = KeybindManager::togglePseudoActive;
 
     if (dispatcher && KEY != 0)
         KeybindManager::keybinds.push_back(Keybind(KeybindManager::modToMask(MOD), KEY, COMMAND, dispatcher));
@@ -240,6 +241,7 @@ void handleWindowRule(const std::string& command, const std::string& value) {
         && RULE.find("move") != 0
         && RULE.find("size") != 0
         && RULE.find("nointerventions") != 0
+        && RULE.find("pseudo") != 0
         && RULE.find("monitor") != 0) {
             Debug::log(ERR, "Invalid rule found: " + RULE);
             ConfigManager::parseError = "Invalid rule found: " + RULE;
@@ -486,15 +488,23 @@ std::vector<SWindowRule> ConfigManager::getMatchingRules(xcb_window_t w) {
     for (auto& rule : ConfigManager::windowRules) {
         // check if we have a matching rule
         if (rule.szValue.find("class:") == 0) {
-            std::regex classCheck(rule.szValue.substr(strlen("class:")));
+            try {
+                std::regex classCheck(rule.szValue.substr(strlen("class:")));
 
-            if (!std::regex_search(PWINDOW->getClassName(), classCheck))
-                continue;
+                if (!std::regex_search(PWINDOW->getClassName(), classCheck))
+                    continue;
+            } catch (...) {
+                Debug::log(ERR, "Regex error at " + rule.szValue);
+            }
         } else if (rule.szValue.find("role:") == 0) {
-            std::regex roleCheck(rule.szValue.substr(strlen("role:")));
+            try {
+                std::regex roleCheck(rule.szValue.substr(strlen("role:")));
 
-            if (!std::regex_search(PWINDOW->getRoleName(), roleCheck))
-                continue;
+                if (!std::regex_search(PWINDOW->getRoleName(), roleCheck))
+                    continue;
+            } catch (...) {
+                Debug::log(ERR, "Regex error at " + rule.szValue);
+            }
         } else {
             continue;
         }
