@@ -73,6 +73,10 @@ unsigned int KeybindManager::modToMask(std::string mod) {
     if (CONTAINS(mod, "SHIFT"))                             sum |= XCB_MOD_MASK_SHIFT;
     if (CONTAINS(mod, "CTRL"))                              sum |= XCB_MOD_MASK_CONTROL;
     if (CONTAINS(mod, "ALT") || CONTAINS(mod, "MOD1"))      sum |= XCB_MOD_MASK_1;
+    if (CONTAINS(mod, "MOD2"))                              sum |= XCB_MOD_MASK_2;
+    if (CONTAINS(mod, "MOD3"))                              sum |= XCB_MOD_MASK_3;
+    if (CONTAINS(mod, "MOD5"))                              sum |= XCB_MOD_MASK_5;
+    if (CONTAINS(mod, "LOCK"))                              sum |= XCB_MOD_MASK_LOCK;
 
     return sum;
 }
