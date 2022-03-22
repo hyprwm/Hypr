@@ -10,6 +10,8 @@
 <br/><br/>
 Hypr is a dynamic Linux tiling window manager for Xorg. It's written in XCB with modern C++ and aims to provide easily readable and expandable code.
 
+Hypr is _only_ a window manager. It is not a compositor and does not implement a compositor's functionality. You can run it without one (e.g. Picom) though, since it runs on Xorg, which doesn't require a compositor.
+
 Hypr needs testers! Check it out and report suggestions or bugs!
 <br/>
 
