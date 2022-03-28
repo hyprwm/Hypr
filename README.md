@@ -43,6 +43,9 @@ For stable releases, use the Releases tab here on github, and follow the instruc
 yay -S hypr-git
 ```
 
+*Void Linux*
+[https://github.com/Flammable-Duck/hypr-template](https://github.com/Flammable-Duck/hypr-template)
+
 ## Manual building
 If your distro doesn't have Hypr in its repositories, or you want to modify hypr,
 
