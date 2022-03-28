@@ -44,6 +44,7 @@ yay -S hypr-git
 ```
 
 *Void Linux*
+
 [https://github.com/Flammable-Duck/hypr-template](https://github.com/Flammable-Duck/hypr-template)
 
 ## Manual building
