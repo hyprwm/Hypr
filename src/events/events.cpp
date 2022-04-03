@@ -217,6 +217,23 @@ CWindow* Events::remapFloatingWindow(int windowID, int forcemonitor) {
         if (rule.szRule.find("pseudo") == 0) {
             PWINDOWINARR->setIsPseudotiled(true);
         }
+
+        if (rule.szRule.find("fullscreen") == 0) {
+            PWINDOWINARR->setFullscreen(true);
+        }
+        
+        if (rule.szRule.find("workspace") == 0) {
+            try {
+                const auto WORKSPACE = stoi(rule.szRule.substr(rule.szRule.find(" ") + 1));
+
+                Debug::log(LOG, "Rule workspace, applying to window " + std::to_string(windowID));
+
+                g_pWindowManager->changeWorkspaceByID(WORKSPACE);
+                forcemonitor = g_pWindowManager->getWorkspaceByID(WORKSPACE)->getMonitor();
+            } catch (...) {
+                Debug::log(LOG, "Rule workspace failed, rule: " + rule.szRule + "=" + rule.szValue);
+            }
+        }
     }
 
     const auto CURRENTSCREEN = forcemonitor != -1 ? forcemonitor : PMONITOR->ID;
@@ -399,6 +416,12 @@ CWindow* Events::remapFloatingWindow(int windowID, int forcemonitor) {
     PWINDOWINARR->setConstructed(true);
     PWINDOWINARR->setFirstOpen(false);
 
+    // Fullscreen rule
+    if (PWINDOWINARR->getFullscreen()) {
+        PWINDOWINARR->setFullscreen(false);
+        g_pWindowManager->toggleWindowFullscrenn(PWINDOWINARR->getDrawable());
+    }
+
     return PWINDOWINARR;
 }
 
@@ -447,6 +470,23 @@ CWindow* Events::remapWindow(int windowID, bool wasfloating, int forcemonitor) {
 
         if (rule.szRule.find("pseudo") == 0) {
             PWINDOWINARR->setIsPseudotiled(true);
+        }
+
+        if (rule.szRule.find("fullscreen") == 0) {
+            PWINDOWINARR->setFullscreen(true);
+        }
+
+        if (rule.szRule.find("workspace") == 0) {
+            try {
+                const auto WORKSPACE = stoi(rule.szRule.substr(rule.szRule.find(" ") + 1));
+
+                Debug::log(LOG, "Rule workspace, applying to window " + std::to_string(windowID));
+
+                g_pWindowManager->changeWorkspaceByID(WORKSPACE);
+                forcemonitor = g_pWindowManager->getWorkspaceByID(WORKSPACE)->getMonitor();
+            } catch (...) {
+                Debug::log(LOG, "Rule workspace failed, rule: " + rule.szRule + "=" + rule.szValue);
+            }
         }
     }
 
@@ -578,6 +618,12 @@ CWindow* Events::remapWindow(int windowID, bool wasfloating, int forcemonitor) {
     // Reset flags
     PWINDOWINARR->setConstructed(true);
     PWINDOWINARR->setFirstOpen(false);
+
+    // Fullscreen rule
+    if (PWINDOWINARR->getFullscreen()) {
+        PWINDOWINARR->setFullscreen(false);
+        g_pWindowManager->toggleWindowFullscrenn(PWINDOWINARR->getDrawable());
+    }
 
     return PWINDOWINARR;
 }

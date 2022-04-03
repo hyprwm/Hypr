@@ -242,6 +242,8 @@ void handleWindowRule(const std::string& command, const std::string& value) {
         && RULE.find("size") != 0
         && RULE.find("nointerventions") != 0
         && RULE.find("pseudo") != 0
+        && RULE.find("fullscreen") != 0
+        && RULE.find("workspace") != 0
         && RULE.find("monitor") != 0) {
             Debug::log(ERR, "Invalid rule found: " + RULE);
             ConfigManager::parseError = "Invalid rule found: " + RULE;
