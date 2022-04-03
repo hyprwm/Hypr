@@ -955,7 +955,7 @@ CWindow* CWindowManager::findWindowAtCursor() {
     const auto WORKSPACE = activeWorkspaces[getMonitorFromCursor()->ID];
 
     for (auto& window : windows) {
-        if (window.getWorkspaceID() == WORKSPACE && !window.getIsFloating() && window.getDrawable() > 0) {
+        if (window.getWorkspaceID() == WORKSPACE && !window.getIsFloating() && window.getDrawable() > 0 && window.getConstructed()) {
 
             if (cursorPos.x >= window.getPosition().x 
                 && cursorPos.x <= window.getPosition().x + window.getSize().x

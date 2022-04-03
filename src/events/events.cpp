@@ -712,16 +712,26 @@ void Events::eventButtonPress(xcb_generic_event_t* event) {
 
     // mouse down!
     g_pWindowManager->mouseKeyDown = E->detail;
+
+    if (const auto PLASTWINDOW = g_pWindowManager->getWindowFromDrawable(g_pWindowManager->LastWindow); PLASTWINDOW) {
+
+        PLASTWINDOW->setDraggingTiled(!PLASTWINDOW->getIsFloating());
+
+        g_pWindowManager->actingOnWindowFloating = PLASTWINDOW->getDrawable();
+        g_pWindowManager->mouseLastPos = g_pWindowManager->getCursorPos();
+
+        if (!PLASTWINDOW->getIsFloating()) {
+            const auto PDRAWABLE = PLASTWINDOW->getDrawable();
+            KeybindManager::toggleActiveWindowFloating("");
+
+            // refocus
+            g_pWindowManager->setFocusedWindow(PDRAWABLE);
+        }
+    }
+
     xcb_grab_pointer(g_pWindowManager->DisplayConnection, 0, g_pWindowManager->Screen->root, XCB_EVENT_MASK_BUTTON_RELEASE | XCB_EVENT_MASK_BUTTON_MOTION | XCB_EVENT_MASK_POINTER_MOTION_HINT,
                      XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC,
                      g_pWindowManager->Screen->root, XCB_NONE, XCB_CURRENT_TIME);
-
-    if (const auto PLASTWINDOW = g_pWindowManager->getWindowFromDrawable(g_pWindowManager->LastWindow); PLASTWINDOW) {
-        if (PLASTWINDOW->getIsFloating()) {
-            g_pWindowManager->actingOnWindowFloating = PLASTWINDOW->getDrawable();
-            g_pWindowManager->mouseLastPos = g_pWindowManager->getCursorPos();
-        }
-    }
 }
 
 void Events::eventButtonRelease(xcb_generic_event_t* event) {
@@ -729,11 +739,21 @@ void Events::eventButtonRelease(xcb_generic_event_t* event) {
 
     RETURNIFBAR;
 
+    const auto PACTINGWINDOW = g_pWindowManager->getWindowFromDrawable(g_pWindowManager->actingOnWindowFloating);
+
     // ungrab the mouse ptr
     xcb_ungrab_pointer(g_pWindowManager->DisplayConnection, XCB_CURRENT_TIME);
-    const auto PACTINGWINDOW = g_pWindowManager->getWindowFromDrawable(g_pWindowManager->actingOnWindowFloating);
-    if (PACTINGWINDOW)
+
+    if (PACTINGWINDOW) {
         PACTINGWINDOW->setDirty(true);
+
+        if (PACTINGWINDOW->getDraggingTiled()) {
+            g_pWindowManager->LastWindow = PACTINGWINDOW->getDrawable();
+            KeybindManager::toggleActiveWindowFloating("");
+        }
+            
+    }
+
     g_pWindowManager->actingOnWindowFloating = 0;
     g_pWindowManager->mouseKeyDown = 0;
 }

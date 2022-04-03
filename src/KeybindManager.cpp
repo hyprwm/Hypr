@@ -175,7 +175,7 @@ void KeybindManager::toggleActiveWindowFullscreen(std::string unusedArg) {
     g_pWindowManager->toggleWindowFullscrenn(g_pWindowManager->LastWindow);
 }
 
-void KeybindManager::toggleActiveWindowFloating(std::string unusedArg) {
+void KeybindManager::toggleActiveWindowFloating(std::string arg) {
     if (const auto PWINDOW = g_pWindowManager->getWindowFromDrawable(g_pWindowManager->LastWindow); PWINDOW) {
         PWINDOW->setIsFloating(!PWINDOW->getIsFloating());
         PWINDOW->setDirty(true);
@@ -197,6 +197,7 @@ void KeybindManager::toggleActiveWindowFloating(std::string unusedArg) {
             const auto RESTOREISPSEUDO = PWINDOW->getIsPseudotiled();
             const auto RESTOREREALS = PWINDOW->getRealSize();
             const auto RESTOREREALP = PWINDOW->getRealPosition();
+            const auto RESTOREDRAGT = PWINDOW->getDraggingTiled();
 
             g_pWindowManager->removeWindowFromVectorSafe(PWINDOW->getDrawable());
 
@@ -215,6 +216,7 @@ void KeybindManager::toggleActiveWindowFloating(std::string unusedArg) {
             PNEWWINDOW->setIsPseudotiled(RESTOREISPSEUDO);
             PNEWWINDOW->setRealPosition(RESTOREREALP);
             PNEWWINDOW->setRealSize(RESTOREREALS);
+            PNEWWINDOW->setDraggingTiled(RESTOREDRAGT);
         }
 
         // EWMH to let everyone know
@@ -222,7 +224,8 @@ void KeybindManager::toggleActiveWindowFloating(std::string unusedArg) {
 
         EWMH::updateWindow(PWINDOW->getDrawable());
 
-        g_pWindowManager->setAllFloatingWindowsTop();
+        if (arg != "simple")
+            g_pWindowManager->setAllFloatingWindowsTop();
     }
 }
 

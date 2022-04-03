@@ -112,6 +112,9 @@ public:
     EXPOSED_MEMBER(IsPseudotiled, bool, b);
     EXPOSED_MEMBER(PseudoSize, Vector2D, vec);
 
+    // For dragging tiled windows
+    EXPOSED_MEMBER(DraggingTiled, bool, b);
+
 private:
 
 };
