@@ -19,6 +19,7 @@ void ConfigManager::init() {
     configValues["main_mod"].strValue = "SUPER";
     configValues["intelligent_transients"].intValue = 1;
     configValues["no_unmap_saving"].intValue = 1;
+    configValues["scratchpad_mon"].intValue = 1;
 
     configValues["focus_when_hover"].intValue = 1;
 
@@ -126,7 +127,8 @@ void handleBind(const std::string& command, const std::string& value) {
     if (HANDLER == "togglefloating") dispatcher = KeybindManager::toggleActiveWindowFloating;
     if (HANDLER == "splitratio") dispatcher = KeybindManager::changeSplitRatio;
     if (HANDLER == "pseudo") dispatcher = KeybindManager::togglePseudoActive;
-
+    if (HANDLER == "scratchpad") dispatcher = KeybindManager::toggleScratchpad;
+  
     if (dispatcher && KEY != 0)
         KeybindManager::keybinds.push_back(Keybind(KeybindManager::modToMask(MOD), KEY, COMMAND, dispatcher));
 }
@@ -407,6 +409,14 @@ void ConfigManager::loadConfigLoadVars() {
     isFirstLaunch = false;
 
     if (ORIGBORDERSIZE != configValues["border_size"].intValue) EWMH::refreshAllExtents(); 
+
+    // scratchpad mon
+    if (configValues["scratchpad_mon"].intValue > g_pWindowManager->monitors.size()) {
+        configValues["scratchpad_mon"].intValue = 0;
+        Debug::log(ERR, "Invalid scratchpad mon, falling back to 0");
+    }
+    if (const auto PSCRATCH = g_pWindowManager->getWorkspaceByID(SCRATCHPAD_ID); PSCRATCH)
+    	PSCRATCH->setMonitor(configValues["scratchpad_mod"].intValue);
 }
 
 void ConfigManager::applyKeybindsToX() {

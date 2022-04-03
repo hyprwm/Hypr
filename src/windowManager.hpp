@@ -38,6 +38,8 @@ public:
     Vector2D                    mouseLastPos = Vector2D(0, 0);
     int64_t                     actingOnWindowFloating = 0;
 
+    bool                        scratchpadActive = false;
+
     uint8_t                     Depth = 32;
     xcb_visualtype_t*           VisualType;
     xcb_colormap_t              Colormap;
@@ -116,6 +118,7 @@ public:
     CWindow*                    findWindowAtCursor();
 
     CWindow*                    findFirstWindowOnWorkspace(const int&);
+    CWindow*                    findPreferredOnScratchpad();
 
     bool                        shouldBeFloatedOnInit(int64_t);
     void                        doPostCreationChecks(CWindow*);

@@ -98,6 +98,8 @@ void EWMH::updateDesktops() {
 
         int msglen = 0;
         for (auto& work : workspacesVec) {
+            if (work.getID() == SCRATCHPAD_ID)
+                continue;
             msglen += strlen(std::to_string(work.getID()).c_str()) + 1;
         }
 
@@ -105,6 +107,9 @@ void EWMH::updateDesktops() {
         int curpos = 0;
         for (auto& work : workspacesVec) {
             for (int i = 0; i < strlen(std::to_string(work.getID()).c_str()) + 1; ++i) {
+                if (work.getID() == SCRATCHPAD_ID)
+                    break;
+                    
                 names[curpos] = std::to_string(work.getID())[i];
                 ++curpos;
             }

@@ -195,6 +195,14 @@ void CWindowManager::setupManager() {
 
     updateRootCursor();
 
+    CWorkspace scratchpad;
+    scratchpad.setID(SCRATCHPAD_ID);
+    for (long unsigned int i = 0; i < monitors.size(); ++i) {
+        if (monitors[i].primary)
+            scratchpad.setMonitor(monitors[i].ID);
+    }
+    workspaces.push_back(scratchpad);
+
     Debug::log(LOG, "Finished setup!");
 
     // TODO: EWMH
@@ -942,6 +950,13 @@ void CWindowManager::setEffectiveSizePosUsingConfig(CWindow* pWindow) {
         }
     }
 
+    if (pWindow->getWorkspaceID() == SCRATCHPAD_ID) {
+        TEMPEFFECTIVEPOS = TEMPEFFECTIVEPOS + ((TEMPEFFECTIVESIZE - TEMPEFFECTIVESIZE * 0.75f) * 0.5f);
+        TEMPEFFECTIVESIZE = TEMPEFFECTIVESIZE * 0.75f;
+
+        setAWindowTop(pWindow->getDrawable());
+    }
+
     pWindow->setEffectivePosition(TEMPEFFECTIVEPOS);
     pWindow->setEffectiveSize(TEMPEFFECTIVESIZE);
 }
@@ -955,7 +970,7 @@ CWindow* CWindowManager::findWindowAtCursor() {
     const auto WORKSPACE = activeWorkspaces[getMonitorFromCursor()->ID];
 
     for (auto& window : windows) {
-        if (window.getWorkspaceID() == WORKSPACE && !window.getIsFloating() && window.getDrawable() > 0 && window.getConstructed()) {
+        if (window.getWorkspaceID() == WORKSPACE && !window.getIsFloating() && window.getDrawable() > 0 && window.getConstructed() && window.getWorkspaceID() != SCRATCHPAD_ID) {
 
             if (cursorPos.x >= window.getPosition().x 
                 && cursorPos.x <= window.getPosition().x + window.getSize().x
@@ -978,6 +993,22 @@ CWindow* CWindowManager::findFirstWindowOnWorkspace(const int& work) {
     }
 
     return nullptr;
+}
+
+CWindow* CWindowManager::findPreferredOnScratchpad() {
+    Vector2D topSize;
+    CWindow* pTop = nullptr;
+
+    for (auto& w : windows) {
+        if (w.getWorkspaceID() == SCRATCHPAD_ID && w.getDrawable() > 0 && w.getConstructed()) {
+            if (w.getSize().x * w.getSize().y > topSize.x * topSize.y) {
+                topSize = w.getSize();
+                pTop = &w;
+            }
+        }
+    }
+
+    return pTop;
 }
 
 void CWindowManager::calculateNewTileSetOldTile(CWindow* pWindow) {
@@ -1304,6 +1335,9 @@ void CWindowManager::closeWindowAllChecks(int64_t id) {
 
     CLOSEDWINDOW->setDead(true);
 
+    if (CLOSEDWINDOW->getWorkspaceID() != SCRATCHPAD_ID && scratchpadActive)
+        scratchpadActive = false;
+
     if (const auto WORKSPACE = getWorkspaceByID(CLOSEDWINDOW->getWorkspaceID()); WORKSPACE && CLOSEDWINDOW->getFullscreen())
         WORKSPACE->setHasFullscreenWindow(false);
 
@@ -1539,7 +1573,11 @@ void CWindowManager::moveActiveWindowToWorkspace(int workspace) {
     PWINDOW = getWindowFromDrawable(LastWindow);
     PWINDOW->setDead(false);
 
-    if (const auto WORKSPACE = getWorkspaceByID(PWINDOW->getWorkspaceID()); WORKSPACE && PWINDOW->getFullscreen())
+    const auto WORKSPACE = getWorkspaceByID(PWINDOW->getWorkspaceID());
+
+    auto workspacesBefore = activeWorkspaces;
+
+    if (WORKSPACE && PWINDOW->getFullscreen())
         WORKSPACE->setHasFullscreenWindow(false);
 
     changeWorkspaceByID(workspace);
@@ -1547,7 +1585,11 @@ void CWindowManager::moveActiveWindowToWorkspace(int workspace) {
     // Find new mon
     int NEWMONITOR = 0;
     for (long unsigned int i = 0; i < activeWorkspaces.size(); ++i) {
-        if (activeWorkspaces[i] == workspace) {
+        if (workspace == SCRATCHPAD_ID) {
+            if (monitors[i].ID == ConfigManager::getInt("scratchpad_mon"))
+                NEWMONITOR = i;
+        }
+        else if (activeWorkspaces[i] == workspace) {
             NEWMONITOR = i;
         }
     }
@@ -1561,14 +1603,23 @@ void CWindowManager::moveActiveWindowToWorkspace(int workspace) {
         }
     }
 
+    const auto LASTFOCUS = LastWindow;
+
     if (newLastWindow) {
         setFocusedWindow(newLastWindow);
     }
 
-    if (SAVEDFLOATSTATUS)
+    PWINDOW->setConstructed(false);
+
+    if (SAVEDFLOATSTATUS && workspace != SCRATCHPAD_ID)
         Events::remapFloatingWindow(PWINDOW->getDrawable(), NEWMONITOR);
     else
         Events::remapWindow(PWINDOW->getDrawable(), false, NEWMONITOR);
+
+    PWINDOW->setConstructed(true);
+
+    // fix for scratchpad
+    PWINDOW->setWorkspaceID(workspace);
 
     // fix fullscreen status
     const auto PWORKSPACE = getWorkspaceByID(workspace);
@@ -1578,6 +1629,17 @@ void CWindowManager::moveActiveWindowToWorkspace(int workspace) {
     }
 
     PWINDOW->setDefaultSize(SAVEDDEFAULTSIZE);
+
+    if (workspace == SCRATCHPAD_ID) {
+        for (int i = 0; i < activeWorkspaces.size(); ++i) {
+            changeWorkspaceByID(workspacesBefore[i]);
+        }
+
+        changeWorkspaceByID(WORKSPACE->getID());
+        setFocusedWindow(LASTFOCUS);
+    }
+
+    QueuedPointerWarp = Vector2D(-1,-1);
 }
 
 void CWindowManager::moveActiveWindowTo(char dir) {
@@ -1893,6 +1955,9 @@ Vector2D CWindowManager::getCursorPos() {
 
 bool CWindowManager::isWorkspaceVisible(int workspaceID) {
 
+    if (workspaceID == SCRATCHPAD_ID)
+        return scratchpadActive;
+
     for (auto& workspace : activeWorkspaces) {
         if (workspace == workspaceID)
             return true;
@@ -1954,6 +2019,9 @@ void CWindowManager::updateBarInfo() {
         message.fullscreenOnBar = false;
 
     for (auto& workspace : workspaces) {
+        if (workspace.getID() == SCRATCHPAD_ID)
+            continue;
+
         message.openWorkspaces.push_back(workspace.getID());
     }
 
@@ -2155,6 +2223,7 @@ void CWindowManager::refocusWindowOnClosed() {
     // No window or last window valid
     if (!PWINDOW || getWindowFromDrawable(LastWindow)) {
         setFocusedWindow(Screen->root);  //refocus on root
+            
         return;
     }
 

@@ -539,16 +539,20 @@ CWindow* Events::remapWindow(int windowID, bool wasfloating, int forcemonitor) {
 
     // Set the parent
     // check if lastwindow is on our workspace
-    if (auto PLASTWINDOW = g_pWindowManager->getWindowFromDrawable(g_pWindowManager->LastWindow); (PLASTWINDOW && PLASTWINDOW->getWorkspaceID() == g_pWindowManager->activeWorkspaces[CURRENTSCREEN]) || wasfloating || (forcemonitor != -1 && forcemonitor != PMONITOR->ID)) {
+    if (auto PLASTWINDOW = g_pWindowManager->getWindowFromDrawable(g_pWindowManager->LastWindow); (PLASTWINDOW && PLASTWINDOW->getWorkspaceID() == g_pWindowManager->activeWorkspaces[CURRENTSCREEN]) || wasfloating || (forcemonitor != -1 && forcemonitor != PMONITOR->ID) || PWINDOWINARR->getWorkspaceID() == SCRATCHPAD_ID) {
         // LastWindow is on our workspace, let's make a new split node
 
-        if (wasfloating || (forcemonitor != -1 && forcemonitor != PMONITOR->ID) || (forcemonitor != -1 && PLASTWINDOW->getWorkspaceID() != g_pWindowManager->activeWorkspaces[CURRENTSCREEN]) || PLASTWINDOW->getIsFloating()) {
-            // if it's force monitor, find the first on a workspace.
-            if ((forcemonitor != -1 && forcemonitor != PMONITOR->ID) || (forcemonitor != -1 && PLASTWINDOW->getWorkspaceID() != g_pWindowManager->activeWorkspaces[CURRENTSCREEN])) {
-                PLASTWINDOW = g_pWindowManager->findFirstWindowOnWorkspace(g_pWindowManager->activeWorkspaces[CURRENTSCREEN]);
-            } else {
-                // find a window manually by the cursor
-                PLASTWINDOW = g_pWindowManager->findWindowAtCursor();
+        if (PWINDOWINARR->getWorkspaceID() == SCRATCHPAD_ID)
+            PLASTWINDOW = g_pWindowManager->findPreferredOnScratchpad();
+        else {
+            if (wasfloating || (forcemonitor != -1 && forcemonitor != PMONITOR->ID) || (forcemonitor != -1 && PLASTWINDOW->getWorkspaceID() != g_pWindowManager->activeWorkspaces[CURRENTSCREEN]) || PLASTWINDOW->getIsFloating()) {
+                // if it's force monitor, find the first on a workspace.
+                if ((forcemonitor != -1 && forcemonitor != PMONITOR->ID) || (forcemonitor != -1 && PLASTWINDOW->getWorkspaceID() != g_pWindowManager->activeWorkspaces[CURRENTSCREEN])) {
+                    PLASTWINDOW = g_pWindowManager->findFirstWindowOnWorkspace(g_pWindowManager->activeWorkspaces[CURRENTSCREEN]);
+                } else {
+                    // find a window manually by the cursor
+                    PLASTWINDOW = g_pWindowManager->findWindowAtCursor();
+                }
             }
         }
 
@@ -662,6 +666,13 @@ void Events::eventMapWindow(xcb_generic_event_t* event) {
         if (!g_pWindowManager->shouldBeManaged(E->window)) {
             Debug::log(LOG, "window shouldn't be managed");
             return;
+        }
+
+        if (g_pWindowManager->scratchpadActive) {
+            KeybindManager::toggleScratchpad("");
+
+            const auto PNEW = g_pWindowManager->findWindowAtCursor();
+            g_pWindowManager->LastWindow = PNEW ? PNEW->getDrawable() : 0;
         }
 
         CWindow window;

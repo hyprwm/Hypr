@@ -147,7 +147,10 @@ void KeybindManager::movefocus(std::string arg) {
 
 void KeybindManager::movetoworkspace(std::string arg) {
     try {
-        g_pWindowManager->moveActiveWindowToWorkspace(stoi(arg));
+        if (arg == "scratchpad")
+            g_pWindowManager->moveActiveWindowToWorkspace(SCRATCHPAD_ID);
+        else
+            g_pWindowManager->moveActiveWindowToWorkspace(stoi(arg));
     } catch (...) {
         Debug::log(ERR, "Invalid arg in movetoworkspace, arg: " + arg);
     }
@@ -242,4 +245,17 @@ void KeybindManager::togglePseudoActive(std::string args) {
     PWINDOW->setIsPseudotiled(!PWINDOW->getIsPseudotiled());
 
     PWINDOW->setDirty(true);
+}
+
+void KeybindManager::toggleScratchpad(std::string args) {
+    if (g_pWindowManager->getWindowsOnWorkspace(SCRATCHPAD_ID) == 0)
+        return;
+
+    g_pWindowManager->scratchpadActive = !g_pWindowManager->scratchpadActive;
+
+    g_pWindowManager->setAllWorkspaceWindowsDirtyByID(SCRATCHPAD_ID);
+
+    const auto NEWTOP = g_pWindowManager->findFirstWindowOnWorkspace(SCRATCHPAD_ID);
+    if (NEWTOP)
+        g_pWindowManager->setFocusedWindow(NEWTOP->getDrawable());
 }
