@@ -406,7 +406,7 @@ void CWindowManager::refreshDirtyWindows() {
             if (window.getChildNodeAID() != 0 || window.getNoInterventions() || window.getDock()) 
                 continue;
                 
-            setEffectiveSizePosUsingConrgifig(&window);
+            setEffectiveSizePosUsingConfig(&window);
 
             const auto PWORKSPACE = getWorkspaceByID(window.getWorkspaceID());
 
