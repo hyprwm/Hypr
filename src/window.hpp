@@ -115,6 +115,9 @@ public:
     // For dragging tiled windows
     EXPOSED_MEMBER(DraggingTiled, bool, b);
 
+    // For pinning floating
+    EXPOSED_MEMBER(Pinned, bool, b);
+
 private:
 
 };

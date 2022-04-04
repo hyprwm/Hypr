@@ -32,4 +32,5 @@ namespace KeybindManager {
     void                toggleScratchpad(std::string args);
     void                nextWorkspace(std::string args);
     void                lastWorkspace(std::string args);
+    void                pinActive(std::string args);
 };

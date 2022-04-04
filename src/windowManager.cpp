@@ -406,7 +406,7 @@ void CWindowManager::refreshDirtyWindows() {
             if (window.getChildNodeAID() != 0 || window.getNoInterventions() || window.getDock()) 
                 continue;
                 
-            setEffectiveSizePosUsingConfig(&window);
+            setEffectiveSizePosUsingConrgifig(&window);
 
             const auto PWORKSPACE = getWorkspaceByID(window.getWorkspaceID());
 
@@ -416,7 +416,7 @@ void CWindowManager::refreshDirtyWindows() {
             // first and foremost, let's check if the window isn't on a hidden workspace
             // or an animated workspace
             if (PWORKSPACE && (!isWorkspaceVisible(window.getWorkspaceID())
-                || PWORKSPACE->getAnimationInProgress())) {
+                || PWORKSPACE->getAnimationInProgress()) && !window.getPinned()) {
 
                 const auto MONITOR = getMonitorFromWindow(&window);
 
@@ -447,7 +447,7 @@ void CWindowManager::refreshDirtyWindows() {
             }
 
             // or that it is not a non-fullscreen window in a fullscreen workspace thats under
-            if (bHasFullscreenWindow && !window.getFullscreen() && (window.getUnderFullscreen() || !window.getIsFloating())) {
+            if (bHasFullscreenWindow && !window.getFullscreen() && (window.getUnderFullscreen() || !window.getIsFloating()) && !window.getPinned()) {
                 Values[0] = 150000;
                 Values[1] = 150000;
                 if (VECTORDELTANONZERO(window.getLastUpdatePosition(), Vector2D(Values[0], Values[1]))) {

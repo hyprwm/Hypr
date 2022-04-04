@@ -182,6 +182,7 @@ void KeybindManager::toggleActiveWindowFloating(std::string arg) {
     if (const auto PWINDOW = g_pWindowManager->getWindowFromDrawable(g_pWindowManager->LastWindow); PWINDOW) {
         PWINDOW->setIsFloating(!PWINDOW->getIsFloating());
         PWINDOW->setDirty(true);
+        PWINDOW->setPinned(false);
 
         // Fix window as if it's closed if we just made it floating
         if (PWINDOW->getIsFloating()) {
@@ -276,4 +277,14 @@ void KeybindManager::lastWorkspace(std::string args) {
         return;
 
     g_pWindowManager->changeWorkspaceByID(g_pWindowManager->activeWorkspaces[PMONITOR->ID] < 2 ? 1 : g_pWindowManager->activeWorkspaces[PMONITOR->ID] - 1);
+}
+
+void KeybindManager::pinActive(std::string agrs) {
+    const auto PWINDOW = g_pWindowManager->getWindowFromDrawable(g_pWindowManager->LastWindow);
+
+    if (!PWINDOW)
+        return;
+
+    if (PWINDOW->getIsFloating())
+        PWINDOW->setPinned(!PWINDOW->getPinned());
 }

@@ -130,6 +130,7 @@ void handleBind(const std::string& command, const std::string& value) {
     if (HANDLER == "scratchpad") dispatcher = KeybindManager::toggleScratchpad;
     if (HANDLER == "nextworkspace") dispatcher = KeybindManager::nextWorkspace;
     if (HANDLER == "lastworkspace") dispatcher = KeybindManager::lastWorkspace;
+    if (HANDLER == "pin") dispatcher = KeybindManager::pinActive;
   
     if (dispatcher && KEY != 0)
         KeybindManager::keybinds.push_back(Keybind(KeybindManager::modToMask(MOD), KEY, COMMAND, dispatcher));
