@@ -30,4 +30,6 @@ namespace KeybindManager {
     void                changeSplitRatio(std::string args);
     void                togglePseudoActive(std::string args);
     void                toggleScratchpad(std::string args);
+    void                nextWorkspace(std::string args);
+    void                lastWorkspace(std::string args);
 };

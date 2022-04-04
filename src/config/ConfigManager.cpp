@@ -128,6 +128,8 @@ void handleBind(const std::string& command, const std::string& value) {
     if (HANDLER == "splitratio") dispatcher = KeybindManager::changeSplitRatio;
     if (HANDLER == "pseudo") dispatcher = KeybindManager::togglePseudoActive;
     if (HANDLER == "scratchpad") dispatcher = KeybindManager::toggleScratchpad;
+    if (HANDLER == "nextworkspace") dispatcher = KeybindManager::nextWorkspace;
+    if (HANDLER == "lastworkspace") dispatcher = KeybindManager::lastWorkspace;
   
     if (dispatcher && KEY != 0)
         KeybindManager::keybinds.push_back(Keybind(KeybindManager::modToMask(MOD), KEY, COMMAND, dispatcher));

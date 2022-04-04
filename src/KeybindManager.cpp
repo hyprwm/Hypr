@@ -259,3 +259,21 @@ void KeybindManager::toggleScratchpad(std::string args) {
     if (NEWTOP)
         g_pWindowManager->setFocusedWindow(NEWTOP->getDrawable());
 }
+
+void KeybindManager::nextWorkspace(std::string args) {
+    const auto PMONITOR = g_pWindowManager->getMonitorFromCursor();
+
+    if (!PMONITOR)
+        return;
+
+    g_pWindowManager->changeWorkspaceByID(g_pWindowManager->activeWorkspaces[PMONITOR->ID] + 1);
+}
+
+void KeybindManager::lastWorkspace(std::string args) {
+    const auto PMONITOR = g_pWindowManager->getMonitorFromCursor();
+
+    if (!PMONITOR)
+        return;
+
+    g_pWindowManager->changeWorkspaceByID(g_pWindowManager->activeWorkspaces[PMONITOR->ID] < 2 ? 1 : g_pWindowManager->activeWorkspaces[PMONITOR->ID] - 1);
+}
