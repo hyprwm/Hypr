@@ -2579,3 +2579,71 @@ void CWindowManager::getICCCMSizeHints(CWindow* pWindow) {
         Debug::log(ERR, "ICCCM Size Hints failed.");
     }
 }
+
+void CWindowManager::processCursorDeltaOnWindowResizeTiled(CWindow* pWindow, const Vector2D& pointerDelta) {
+    // this resizes the window based on cursor movement,
+    // basically like a mouse-ver of splitratio
+
+    if (!pWindow)
+        return;
+
+    // TODO: support master-stack
+    if (ConfigManager::getInt("layout") == LAYOUT_MASTER){
+        Debug::log(WARN, "processCursorDeltaOnWindowResizeTiled does NOT support MASTER yet. Ignoring.");
+        return;
+    }
+
+    // Construct an allowed delta movement
+    const auto PMONITOR             = getMonitorFromWindow(pWindow);
+    const bool DISPLAYLEFT          = STICKS(pWindow->getPosition().x, PMONITOR->vecPosition.x);
+    const bool DISPLAYRIGHT         = STICKS(pWindow->getPosition().x + pWindow->getSize().x, PMONITOR->vecPosition.x + PMONITOR->vecSize.x);
+    const bool DISPLAYTOP           = STICKS(pWindow->getPosition().y, PMONITOR->vecPosition.y);
+    const bool DISPLAYBOTTOM        = STICKS(pWindow->getPosition().y + pWindow->getSize().y, PMONITOR->vecPosition.y + PMONITOR->vecSize.y);
+
+    Vector2D allowedMovement = pointerDelta;
+    if (DISPLAYLEFT && DISPLAYRIGHT)
+        allowedMovement.x = 0;
+
+    if (DISPLAYTOP && DISPLAYBOTTOM)
+        allowedMovement.y = 0;
+
+    // Get the correct containers to apply the splitratio to
+    const auto PPARENT = getWindowFromDrawable(pWindow->getParentNodeID());
+
+    // If there is no parent we ignore the request (only window)
+    if (!PPARENT)
+        return;
+
+    const bool PARENTSIDEBYSIDE = PPARENT->getSize().x / PPARENT->getSize().y > 1;
+
+    // Get the parent's parent.
+    const auto PPARENT2 = getWindowFromDrawable(PPARENT->getParentNodeID());
+
+    // if there is no parent, we have 2 windows only and have the ability to drag in only one direction.
+    if (!PPARENT2) {
+        if (PARENTSIDEBYSIDE) {
+            // splitratio adjust for pixels
+            allowedMovement.x *= 2.f / PPARENT->getSize().x;
+            PPARENT->setSplitRatio(std::clamp(PPARENT->getSplitRatio() + allowedMovement.x, (double)0.05f, (double)1.95f));
+            PPARENT->recalcSizePosRecursive();
+        } else {
+            allowedMovement.y *= 2.f / PPARENT->getSize().y;
+            PPARENT->setSplitRatio(std::clamp(PPARENT->getSplitRatio() + allowedMovement.y, (double)0.05f, (double)1.95f));
+            PPARENT->recalcSizePosRecursive();
+        }
+
+        return;
+    }
+
+    // if there is a parent, we have 2 axes of freedom
+    const auto SIDECONTAINER = PARENTSIDEBYSIDE ? PPARENT : PPARENT2;
+    const auto TOPCONTAINER = PARENTSIDEBYSIDE ? PPARENT2 : PPARENT;
+
+    allowedMovement.x *= 2.f / SIDECONTAINER->getSize().x;
+    allowedMovement.y *= 2.f / TOPCONTAINER->getSize().x;
+
+    SIDECONTAINER->setSplitRatio(std::clamp(SIDECONTAINER->getSplitRatio() + allowedMovement.x, (double)0.05f, (double)1.95f));
+    TOPCONTAINER->setSplitRatio(std::clamp(TOPCONTAINER->getSplitRatio() + allowedMovement.y, (double)0.05f, (double)1.95f));
+    SIDECONTAINER->recalcSizePosRecursive();
+    TOPCONTAINER->recalcSizePosRecursive();
+}

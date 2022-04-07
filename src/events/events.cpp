@@ -726,14 +726,16 @@ void Events::eventButtonPress(xcb_generic_event_t* event) {
 
     if (const auto PLASTWINDOW = g_pWindowManager->getWindowFromDrawable(g_pWindowManager->LastWindow); PLASTWINDOW) {
 
-        PLASTWINDOW->setDraggingTiled(!PLASTWINDOW->getIsFloating());
+        if (E->detail != 3)
+            PLASTWINDOW->setDraggingTiled(!PLASTWINDOW->getIsFloating());
 
         g_pWindowManager->actingOnWindowFloating = PLASTWINDOW->getDrawable();
         g_pWindowManager->mouseLastPos = g_pWindowManager->getCursorPos();
 
         if (!PLASTWINDOW->getIsFloating()) {
             const auto PDRAWABLE = PLASTWINDOW->getDrawable();
-            KeybindManager::toggleActiveWindowFloating("");
+            if (E->detail != 3) // right click (resize) does not
+                KeybindManager::toggleActiveWindowFloating("");
 
             // refocus
             g_pWindowManager->setFocusedWindow(PDRAWABLE);
@@ -828,16 +830,21 @@ void Events::eventMotionNotify(xcb_generic_event_t* event) {
 
         PACTINGWINDOW->setDirty(true);
     } else if (g_pWindowManager->mouseKeyDown == 3) {
-        // resizing
-        PACTINGWINDOW->setSize(PACTINGWINDOW->getSize() + POINTERDELTA);
-        // clamp
-        PACTINGWINDOW->setSize(Vector2D(std::clamp(PACTINGWINDOW->getSize().x, (double)30, (double)999999), std::clamp(PACTINGWINDOW->getSize().y, (double)30, (double)999999)));
 
-        // apply to other
-        PACTINGWINDOW->setDefaultSize(PACTINGWINDOW->getSize());
-        PACTINGWINDOW->setEffectiveSize(PACTINGWINDOW->getSize());
-        PACTINGWINDOW->setRealSize(PACTINGWINDOW->getSize());
-        PACTINGWINDOW->setPseudoSize(PACTINGWINDOW->getSize());
+        if (!PACTINGWINDOW->getIsFloating()) {
+            g_pWindowManager->processCursorDeltaOnWindowResizeTiled(PACTINGWINDOW, POINTERDELTA);
+        } else {
+            // resizing
+            PACTINGWINDOW->setSize(PACTINGWINDOW->getSize() + POINTERDELTA);
+            // clamp
+            PACTINGWINDOW->setSize(Vector2D(std::clamp(PACTINGWINDOW->getSize().x, (double)30, (double)999999), std::clamp(PACTINGWINDOW->getSize().y, (double)30, (double)999999)));
+
+            // apply to other
+            PACTINGWINDOW->setDefaultSize(PACTINGWINDOW->getSize());
+            PACTINGWINDOW->setEffectiveSize(PACTINGWINDOW->getSize());
+            PACTINGWINDOW->setRealSize(PACTINGWINDOW->getSize());
+            PACTINGWINDOW->setPseudoSize(PACTINGWINDOW->getSize());
+        }
 
         PACTINGWINDOW->setDirty(true);
     }

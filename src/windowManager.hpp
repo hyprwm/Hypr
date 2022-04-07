@@ -150,6 +150,8 @@ public:
 
     void                        changeSplitRatioCurrent(const char& dir);
 
+    void                        processCursorDeltaOnWindowResizeTiled(CWindow*, const Vector2D&);
+
 private:
 
     // Internal WM functions that don't have to be exposed
