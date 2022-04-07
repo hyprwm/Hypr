@@ -10,7 +10,7 @@
   <img src="https://img.shields.io/badge/Hi-mom!-ff69b4" />
 </p>
 <br/><br/>
-People asked me to make a discord server, so [join here!](https://discord.gg/hQ9XvMUjjr)
+People asked me to make a discord server, so <a href="https://discord.gg/hQ9XvMUjjr">join here!</a>
 <br/><br/>
 Hypr is a dynamic Linux tiling window manager for Xorg. It's written in XCB with modern C++ and aims to provide easily readable and expandable code.
 
