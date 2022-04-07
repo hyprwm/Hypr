@@ -1,6 +1,7 @@
 <p align="center">
   <img src="https://i.imgur.com/LtC153m.png" />
   <img src="https://github.com/vaxerski/Hypr/actions/workflows/c-cpp.yml/badge.svg" />
+  <a href="https://discord.gg/hQ9XvMUjjr"><img src="https://img.shields.io/badge/Join%20the-Discord%20server-6666ff" /></a>
   <img src="https://img.shields.io/github/issues/vaxerski/Hypr" />
   <img src="https://img.shields.io/github/issues-pr/vaxerski/Hypr" />
   <img src="https://img.shields.io/github/languages/top/vaxerski/Hypr" />
