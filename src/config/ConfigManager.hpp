@@ -6,6 +6,8 @@
 #include "../defines.hpp"
 #include <vector>
 
+#include "defaultConfig.hpp"
+
 enum ELayouts {
     LAYOUT_DWINDLE = 0,
     LAYOUT_MASTER

@@ -30,6 +30,7 @@
 #include <unordered_map>
 #include <regex>
 #include <vector>
+#include <filesystem>
 
 #include "./helpers/Vector.hpp"
 #include "./utilities/Debug.hpp"
