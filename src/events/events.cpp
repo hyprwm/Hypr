@@ -777,9 +777,10 @@ void Events::eventKeyPress(xcb_generic_event_t* event) {
     RETURNIFBAR;
 
     const auto KEYSYM = KeybindManager::getKeysymFromKeycode(E->detail);
+    const auto IGNOREDMOD = KeybindManager::modToMask(ConfigManager::getString("ignore_mod"));
 
     for (auto& keybind : KeybindManager::keybinds) {
-        if (keybind.getKeysym() != 0 && keybind.getKeysym() == KEYSYM && keybind.getMod() == E->state) {
+        if (keybind.getKeysym() != 0 && keybind.getKeysym() == KEYSYM && (keybind.getMod() == E->state || keybind.getMod() | IGNOREDMOD == E->state)) {
             keybind.getDispatcher()(keybind.getCommand());
             return;
             // TODO: fix duplicating keybinds

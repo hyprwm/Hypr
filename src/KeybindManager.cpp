@@ -7,8 +7,10 @@
 #include <string.h>
 
 Keybind* KeybindManager::findKeybindByKey(int mod, xcb_keysym_t keysym) {
+    const auto IGNOREMODMASK = KeybindManager::modToMask(ConfigManager::getString("ignore_mod"));
+
     for(auto& key : KeybindManager::keybinds) {
-        if (keysym == key.getKeysym() && mod == key.getMod()) {
+        if (keysym == key.getKeysym() && (mod == key.getMod() || mod == key.getMod() | IGNOREMODMASK)) {
             return &key;
         }
     }
@@ -66,6 +68,13 @@ uint32_t KeybindManager::getKeyCodeFromName(std::string name) {
 }
 
 unsigned int KeybindManager::modToMask(std::string mod) {
+
+    try {
+        uint32_t modmask = std::stoi(mod.c_str());
+        return modmask;
+    } catch(...) {
+        ; // means its not alphanumeric, go ahead
+    }
 
     unsigned int sum = 0;
 

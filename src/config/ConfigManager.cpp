@@ -20,6 +20,7 @@ void ConfigManager::init() {
     configValues["intelligent_transients"].intValue = 1;
     configValues["no_unmap_saving"].intValue = 1;
     configValues["scratchpad_mon"].intValue = 1;
+    configValues["ignore_mod"].strValue = "0";
 
     configValues["focus_when_hover"].intValue = 1;
 
@@ -448,6 +449,8 @@ void ConfigManager::applyKeybindsToX() {
         return;  // If we are in the status bar don't do this.
     }
 
+    const auto IGNOREMODMASK = KeybindManager::modToMask(configValues["ignore_mod"].strValue);
+
     Debug::log(LOG, "Applying " + std::to_string(KeybindManager::keybinds.size()) + " keybinds to X.");
 
     xcb_ungrab_key(g_pWindowManager->DisplayConnection, XCB_GRAB_ANY, g_pWindowManager->Screen->root, XCB_MOD_MASK_ANY);
@@ -456,6 +459,11 @@ void ConfigManager::applyKeybindsToX() {
     for (auto& keybind : KeybindManager::keybinds) {
         xcb_grab_key(g_pWindowManager->DisplayConnection, 1, g_pWindowManager->Screen->root,
                      keybind.getMod(), KeybindManager::getKeycodeFromKeysym(keybind.getKeysym()),
+                     XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+
+        // ignore mod
+        xcb_grab_key(g_pWindowManager->DisplayConnection, 1, g_pWindowManager->Screen->root,
+                     keybind.getMod() | IGNOREMODMASK, KeybindManager::getKeycodeFromKeysym(keybind.getKeysym()),
                      XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
     }
 
