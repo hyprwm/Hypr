@@ -10,7 +10,7 @@ Keybind* KeybindManager::findKeybindByKey(int mod, xcb_keysym_t keysym) {
     const auto IGNOREMODMASK = KeybindManager::modToMask(ConfigManager::getString("ignore_mod"));
 
     for(auto& key : KeybindManager::keybinds) {
-        if (keysym == key.getKeysym() && (mod == key.getMod() || mod == key.getMod() | IGNOREMODMASK)) {
+        if (keysym == key.getKeysym() && (mod == key.getMod() || (mod == (key.getMod() | IGNOREMODMASK)))) {
             return &key;
         }
     }
