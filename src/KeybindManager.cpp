@@ -21,6 +21,9 @@ uint32_t KeybindManager::getKeyCodeFromName(std::string name) {
     if (name == "")
         return 0;
 
+    if (name.find_first_not_of("1234567890") == std::string::npos)
+        return std::stoi(name);
+
     const auto ORIGINALCASENAME = name;
     transform(name.begin(), name.end(), name.begin(), ::tolower);
 
@@ -69,12 +72,8 @@ uint32_t KeybindManager::getKeyCodeFromName(std::string name) {
 
 unsigned int KeybindManager::modToMask(std::string mod) {
 
-    try {
-        uint32_t modmask = std::stoi(mod.c_str());
-        return modmask;
-    } catch(...) {
-        ; // means its not alphanumeric, go ahead
-    }
+    if (mod.find_first_not_of("1234567890") == std::string::npos && mod != "")
+        return std::stoi(mod);
 
     unsigned int sum = 0;
 
