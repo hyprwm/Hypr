@@ -21,8 +21,13 @@ uint32_t KeybindManager::getKeyCodeFromName(std::string name) {
     if (name == "")
         return 0;
 
-    if (name.find_first_not_of("1234567890") == std::string::npos)
-        return std::stoi(name);
+    if (name.find_first_not_of("1234567890") == std::string::npos) {
+        const auto KC = std::stoi(name);
+
+        if (KC > 10) // 0-9 are OK for parsing they are on the KB
+            return std::stoi(name);
+    }
+        
 
     const auto ORIGINALCASENAME = name;
     transform(name.begin(), name.end(), name.begin(), ::tolower);
