@@ -152,6 +152,9 @@ void CStatusBar::destroyModule(SBarModule* module) {
 }
 
 void CStatusBar::setupTray() {
+    if (ConfigManager::getInt("bar:force_no_tray") == 1)
+        return;
+
     Debug::log(LOG, "Setting up tray!");
 
     char atomName[strlen("_NET_SYSTEM_TRAY_S") + 11];
@@ -260,6 +263,9 @@ void CStatusBar::setupTray() {
 }
 
 void CStatusBar::fixTrayOnCreate() {
+    if (ConfigManager::getInt("bar:force_no_tray") == 1)
+        return;
+
     if (m_bHasTray && ConfigManager::getInt("bar:no_tray_saving") == 0) {
         for (auto& tray : g_pWindowManager->trayclients) {
             xcb_reparent_window(g_pWindowManager->DisplayConnection, tray.window, g_pWindowManager->statusBar->trayWindowID, 0, 0);
@@ -285,6 +291,8 @@ void CStatusBar::fixTrayOnCreate() {
 }
 
 void CStatusBar::saveTrayOnDestroy() {
+    if (ConfigManager::getInt("bar:force_no_tray") == 1)
+        return;
 
     // TODO: fix this instead of disabling it.
 
@@ -311,6 +319,9 @@ void CStatusBar::setup(int MonitorID) {
             break;
         }
     }
+
+    if (ConfigManager::getInt("bar:force_no_tray") == 1)
+        m_bHasTray = false;
 
     const auto MONITOR = g_pWindowManager->monitors[MonitorID];
 
@@ -548,6 +559,8 @@ int CStatusBar::drawWorkspacesModule(SBarModule* mod, int off) {
 }
 
 int CStatusBar::drawTrayModule(SBarModule* mod, int off) {
+    if (ConfigManager::getInt("bar:force_no_tray") == 1)
+        return 0;
 
     const auto PAD = 2;
 
@@ -655,6 +668,9 @@ int CStatusBar::drawModule(SBarModule* mod, int off) {
 }
 
 void CStatusBar::ensureTrayClientDead(xcb_window_t window) {
+    if (ConfigManager::getInt("bar:force_no_tray") == 1)
+        return;
+
     auto temp = g_pWindowManager->trayclients;
 
     g_pWindowManager->trayclients.clear();
@@ -668,6 +684,9 @@ void CStatusBar::ensureTrayClientDead(xcb_window_t window) {
 }
 
 void CStatusBar::ensureTrayClientHidden(xcb_window_t window, bool hide) {
+    if (ConfigManager::getInt("bar:force_no_tray") == 1)
+        return;
+
     for (auto& trayitem : g_pWindowManager->trayclients) {
         if (trayitem.window == window)
             trayitem.hidden = hide;

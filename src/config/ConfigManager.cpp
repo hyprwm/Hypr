@@ -38,6 +38,7 @@ void ConfigManager::init() {
     configValues["bar:font.secondary"].strValue = "Noto Sans";
     configValues["bar:mod_pad_in"].intValue = 4;
     configValues["bar:no_tray_saving"].intValue = 1;
+    configValues["bar:force_no_tray"].intValue = 1;
 
     configValues["status_command"].strValue = "date +%I:%M\\ %p"; // Time // Deprecated
 
