@@ -33,13 +33,20 @@ uint32_t KeybindManager::getKeyCodeFromName(std::string name) {
     transform(name.begin(), name.end(), name.begin(), ::tolower);
 
     if (name.length() == 1) {
-        // key
-        std::string command = "xmodmap -pk | grep \"(" + name + ")\"";
+        // key                                                 v keysyms can be max 8 places, + space, + 0x
+        std::string command = "xmodmap -pk | grep -E -o \".{0,11}\\(" + name + "\\)\"";
         std::string returnValue = exec(command.c_str());
 
+        if (returnValue == "") {
+            Debug::log(ERR, "Key " + name + " returned no results in the xmodmap!");
+            return 0;
+        }
+
         try {
-            returnValue = returnValue.substr(returnValue.find_first_of('x') + 1);
+            returnValue = returnValue.substr(returnValue.find_last_of('x') + 1);
             returnValue = returnValue.substr(0, returnValue.find_first_of(' '));
+
+            Debug::log(LOG, "queried for key " + name + " -> response keysym " + returnValue);
 
             return std::stoi(returnValue, nullptr, 16); // return hex to int
         } catch(...) { }
@@ -57,17 +64,23 @@ uint32_t KeybindManager::getKeyCodeFromName(std::string name) {
         } else if (name == "space") {
             return 0x20;
         } else {
-            // unknown key, find in the xmodmap
-            std::string command = "xmodmap -pk | grep \"(" + ORIGINALCASENAME + ")\"";
+            // unknown key, find in the xmodmap           v case insensitive
+            std::string command = "xmodmap -pk | grep -E -i -o \".{0,11}\\(" + name + "\\)\"";
             std::string returnValue = exec(command.c_str());
 
+            if (returnValue == "") {
+                Debug::log(ERR, "Key " + name + " returned no results in the xmodmap!");
+                return 0;
+            }
+
             try {
-                returnValue = returnValue.substr(returnValue.find_first_of('x') + 1);
+                returnValue = returnValue.substr(returnValue.find_last_of('x') + 1);
                 returnValue = returnValue.substr(0, returnValue.find_first_of(' '));
+
+                Debug::log(LOG, "queried for key " + name + " -> response keysym " + returnValue);
 
                 return std::stoi(returnValue, nullptr, 16);  // return hex to int
             } catch (...) {
-                Debug::log(ERR, "Unknown key: " + ORIGINALCASENAME);
             }
         }
     }
