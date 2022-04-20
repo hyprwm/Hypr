@@ -143,6 +143,13 @@ void EWMH::updateWindow(xcb_window_t win) {
     if (!PWINDOW->getDock()) {
         long data[] = {XCB_ICCCM_WM_STATE_NORMAL, XCB_NONE};
         xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, win, HYPRATOMS["WM_STATE"], HYPRATOMS["WM_STATE"], 32, 2, data);
+
+        if (PWINDOW->getDrawable() == g_pWindowManager->LastWindow) {
+            uint32_t dataa[] = {HYPRATOMS["_NET_WM_STATE_FOCUSED"]};
+            xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_APPEND, PWINDOW->getDrawable(), HYPRATOMS["_NET_WM_STATE"], XCB_ATOM_ATOM, 32, 1, dataa);
+        } else {
+            removeAtom(PWINDOW->getDrawable(), HYPRATOMS["_NET_WM_STATE"], HYPRATOMS["_NET_WM_STATE_FOCUSED"]);
+        }
     }
 }
 

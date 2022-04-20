@@ -566,6 +566,8 @@ void CWindowManager::setFocusedWindow(xcb_drawable_t window) {
             applyShapeToWindow(PWINDOW);
         }
 
+        const auto LASTWINID = LastWindow;
+
         LastWindow = window;
 
         if (PNEWFOCUS) {
@@ -580,6 +582,9 @@ void CWindowManager::setFocusedWindow(xcb_drawable_t window) {
 
         // EWMH
         EWMH::updateCurrentWindow(window);
+
+        EWMH::updateWindow(window);
+        EWMH::updateWindow(LASTWINID);
     }
 }
 
