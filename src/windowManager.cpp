@@ -962,6 +962,11 @@ void CWindowManager::setEffectiveSizePosUsingConfig(CWindow* pWindow) {
         setAWindowTop(pWindow->getDrawable());
     }
 
+    if (pWindow->getFullscreen()) {
+        TEMPEFFECTIVEPOS = MONITOR->vecPosition;
+        TEMPEFFECTIVESIZE = MONITOR->vecSize;
+    }
+
     pWindow->setEffectivePosition(TEMPEFFECTIVEPOS);
     pWindow->setEffectiveSize(TEMPEFFECTIVESIZE);
 }
