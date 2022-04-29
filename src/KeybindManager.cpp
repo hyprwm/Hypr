@@ -43,7 +43,7 @@ uint32_t KeybindManager::getKeyCodeFromName(std::string name) {
         }
 
         try {
-            returnValue = returnValue.substr(returnValue.find_first_of('x') + 1);
+            returnValue = returnValue.substr(returnValue.find("0x") + 2);
             returnValue = returnValue.substr(0, returnValue.find_first_of(' '));
 
             Debug::log(LOG, "queried for key " + name + " -> response keysym " + returnValue);
@@ -74,7 +74,7 @@ uint32_t KeybindManager::getKeyCodeFromName(std::string name) {
             }
 
             try {
-                returnValue = returnValue.substr(returnValue.find_first_of('x') + 1);
+                returnValue = returnValue.substr(returnValue.find("0x") + 2);
                 returnValue = returnValue.substr(0, returnValue.find_first_of(' '));
 
                 Debug::log(LOG, "queried for key " + name + " -> response keysym " + returnValue);
