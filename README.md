@@ -11,13 +11,13 @@
   <img src="https://img.shields.io/badge/Hi-mom!-ff69b4" />
 </p>
 <br/><br/>
-People asked me to make a discord server, so <a href="https://discord.gg/hQ9XvMUjjr">join here!</a>
-<br/><br/>
 Hypr is a dynamic Linux tiling window manager for Xorg. It's written in XCB with modern C++ and aims to provide easily readable and expandable code.
+<br/><br/>
 
+For Hypr with `land`, see [Hyprland](https://github.com/vaxerski/Hyprland), the Wayland Compositor.
+
+<br/>
 Hypr is _only_ a window manager. It is not a compositor and does not implement a compositor's functionality. You can run it without one (e.g. Picom) though, since it runs on Xorg, which doesn't require a compositor.
-
-Hypr needs testers! Check it out and report suggestions or bugs!
 <br/>
 
 # Key Features
