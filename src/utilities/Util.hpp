@@ -3,6 +3,7 @@
 #include "../defines.hpp"
 #include <fstream>
 #include <math.h>
+#include <array>
 
 // For precise colors
 class CFloatingColor {
