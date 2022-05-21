@@ -413,9 +413,9 @@ void CStatusBar::destroy() {
     m_bIsDestroyed = true;
 }
 
-int CStatusBar::getTextWidth(std::string text, std::string font) {
+int CStatusBar::getTextWidth(std::string text, std::string font, double size) {
     cairo_select_font_face(m_pCairo, font.c_str(), CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
-    cairo_set_font_size(m_pCairo, 12);
+    cairo_set_font_size(m_pCairo, size);
 
     cairo_text_extents_t textextents;
     cairo_text_extents(m_pCairo, text.c_str(), &textextents);
@@ -423,9 +423,9 @@ int CStatusBar::getTextWidth(std::string text, std::string font) {
     return textextents.width + 1 /* pad */;
 }
 
-void CStatusBar::drawText(Vector2D pos, std::string text, uint32_t color, std::string font) {
+void CStatusBar::drawText(Vector2D pos, std::string text, uint32_t color, std::string font, double size) {
     cairo_select_font_face(m_pCairo, font.c_str(), CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
-    cairo_set_font_size(m_pCairo, 12);
+    cairo_set_font_size(m_pCairo, size);
     cairo_set_source_rgba(m_pCairo, RED(color), GREEN(color), BLUE(color), ALPHA(color));
     cairo_move_to(m_pCairo, pos.x, pos.y);
     cairo_show_text(m_pCairo, text.c_str());
@@ -447,7 +447,8 @@ void CStatusBar::drawErrorScreen() {
     else
         drawCairoRectangle(Vector2D(0, 0), m_vecSize, 0xFFaa1111);
         
-    drawText(Vector2D(1, getTextHalfY()), ConfigManager::parseError, 0xff000000, ConfigManager::getString("bar:font.main"));
+    drawText(Vector2D(1, getTextHalfY()), ConfigManager::parseError, 0xff000000,
+        ConfigManager::getString("bar:font.main"), ConfigManager::getFloat("bar:font.size"));
 
     // do all the drawing cuz we return later
     cairo_surface_flush(m_pCairoSurface);
@@ -549,8 +550,8 @@ int CStatusBar::drawWorkspacesModule(SBarModule* mod, int off) {
 
         drawCairoRectangle(Vector2D(off + m_vecSize.y * drawnWorkspaces, 0), Vector2D(m_vecSize.y, m_vecSize.y), WORKSPACE == MOUSEWORKSPACEID ? ConfigManager::getInt("bar:col.high") : ConfigManager::getInt("bar:col.bg"));
 
-        drawText(Vector2D(off + m_vecSize.y * drawnWorkspaces + m_vecSize.y / 2.f - getTextWidth(workspaceName, ConfigManager::getString("bar:font.main")) / 2.f, getTextHalfY()),
-                 workspaceName, WORKSPACE == MOUSEWORKSPACEID ? 0xFF111111 : 0xFFFFFFFF, ConfigManager::getString("bar:font.main"));
+        drawText(Vector2D(off + m_vecSize.y * drawnWorkspaces + m_vecSize.y / 2.f - getTextWidth(workspaceName, ConfigManager::getString("bar:font.main"), ConfigManager::getFloat("bar:font.size")) / 2.f, getTextHalfY()),
+                 workspaceName, WORKSPACE == MOUSEWORKSPACEID ? 0xFF111111 : 0xFFFFFFFF, ConfigManager::getString("bar:font.main"), ConfigManager::getFloat("bar:font.size"));
 
         drawnWorkspaces++;
     }
@@ -640,8 +641,8 @@ int CStatusBar::drawModule(SBarModule* mod, int off) {
 
     // We have the value, draw the module!
 
-    const auto MODULEWIDTH = getTextWidth(mod->valueCalculated, ConfigManager::getString("bar:font.main")) + PAD;
-    const auto ICONWIDTH = getTextWidth(mod->icon, ConfigManager::getString("bar:font.secondary"));
+    const auto MODULEWIDTH = getTextWidth(mod->valueCalculated, ConfigManager::getString("bar:font.main"), ConfigManager::getFloat("bar:font.size")) + PAD;
+    const auto ICONWIDTH = getTextWidth(mod->icon, ConfigManager::getString("bar:font.secondary"), ConfigManager::getFloat("bar:font.size"));
 
     if (!MODULEWIDTH || mod->accessValueCalculated(false) == "")
         return 0; // empty module
@@ -661,8 +662,10 @@ int CStatusBar::drawModule(SBarModule* mod, int off) {
 
     drawCairoRectangle(position, Vector2D(MODULEWIDTH + ICONWIDTH, m_vecSize.y), mod->bgcolor);
 
-    drawText(position + Vector2D(PAD / 2, getTextHalfY()), mod->icon, mod->color, ConfigManager::getString("bar:font.secondary"));
-    drawText(position + Vector2D(PAD / 2 + ICONWIDTH, getTextHalfY()), mod->accessValueCalculated(false), mod->color, ConfigManager::getString("bar:font.main"));
+    drawText(position + Vector2D(PAD / 2, getTextHalfY()), mod->icon, mod->color,
+        ConfigManager::getString("bar:font.secondary"), ConfigManager::getFloat("bar:font.size"));
+    drawText(position + Vector2D(PAD / 2 + ICONWIDTH, getTextHalfY()), mod->accessValueCalculated(false), mod->color,
+        ConfigManager::getString("bar:font.main"), ConfigManager::getFloat("bar:font.size"));
 
     return MODULEWIDTH + ICONWIDTH;
 }

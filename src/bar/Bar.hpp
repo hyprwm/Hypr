@@ -96,9 +96,9 @@ private:
     cairo_surface_t*    m_pCairoSurface = nullptr;
     cairo_t*            m_pCairo        = nullptr;
 
-    void                drawText(Vector2D, std::string, uint32_t, std::string);
+    void                drawText(Vector2D, std::string, uint32_t, std::string, double);
     void                drawCairoRectangle(Vector2D, Vector2D, uint32_t);
-    int                 getTextWidth(std::string, std::string);
+    int                 getTextWidth(std::string, std::string, double);
     int                 drawModule(SBarModule*, int);
     int                 drawWorkspacesModule(SBarModule*, int);
     int                 getTextHalfY();
