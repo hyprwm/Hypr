@@ -285,7 +285,9 @@ void parseLine(std::string& line) {
         return;
     }
 
-    if (line.find("}") != std::string::npos && ConfigManager::currentCategory != "") {
+    std::size_t closingBrace = line.find("}");
+    if (closingBrace != std::string::npos && ConfigManager::currentCategory != "" &&
+            (closingBrace == 0 || line[closingBrace - 1] != '\\')) {
         ConfigManager::currentCategory = "";
         return;
     }

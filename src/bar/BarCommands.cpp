@@ -158,17 +158,26 @@ std::string BarCommands::parseCommand(std::string command) {
         else if (c == '$') {
             // find the next one
             for (long unsigned int j = i + 1; i < command.length(); ++j) {
-                if (command[j] == '$') {
+                if (command[j] == '$' && command[j - 1] != '\\') {
                     // found!
-                    auto toSend = command.substr(i + 1);
-                    toSend = toSend.substr(0, toSend.find_first_of('$'));
-                    result += parseDollar(toSend);
+                    auto toSend = command.substr(i + 1, j - (i + 1));
+                    std::string toSendWithRemovedEscapes = "";
+                    for (std::size_t k = 0; k < toSend.length(); ++k) {
+                        if (toSend[k] == '\\' && (k + 1) < toSend.length()) {
+                            char next = toSend[k + 1];
+                            if (next == '$' || next == '{' || next == '}') {
+                                continue;
+                            }
+                        } 
+                        toSendWithRemovedEscapes += toSend[k];
+                    }
+                    result += parseDollar(toSendWithRemovedEscapes);
                     i = j;
                     break;
                 }
 
                 if (j + 1 == command.length()) {
-                    Debug::log(ERR, "Unescaped $ in a module, module command: ");
+                    Debug::log(ERR, "Unpaired $ in a module, module command: ");
                     Debug::log(NONE, command);
                 }
             }
