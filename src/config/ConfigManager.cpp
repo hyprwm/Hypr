@@ -34,6 +34,7 @@ void ConfigManager::init() {
     configValues["bar:height"].intValue = 15;
     configValues["bar:col.bg"].intValue = 0xFF111111;
     configValues["bar:col.high"].intValue = 0xFFFF3333;
+    configValues["bar:font.size"].floatValue = 12;
     configValues["bar:font.main"].strValue = "Noto Sans";
     configValues["bar:font.secondary"].strValue = "Noto Sans";
     configValues["bar:mod_pad_in"].intValue = 4;
