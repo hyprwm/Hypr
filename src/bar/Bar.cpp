@@ -420,7 +420,7 @@ int CStatusBar::getTextWidth(std::string text, std::string font, double size) {
     cairo_text_extents_t textextents;
     cairo_text_extents(m_pCairo, text.c_str(), &textextents);
    
-    return textextents.width + 1 /* pad */;
+    return textextents.x_advance;
 }
 
 void CStatusBar::drawText(Vector2D pos, std::string text, uint32_t color, std::string font, double size) {
