@@ -62,7 +62,7 @@ see the [Wiki](https://github.com/vaxerski/Hypr/wiki/Building) to see build and 
 # Configuring
 See the [Wiki Page](https://github.com/vaxerski/Hypr/wiki/Configuring-Hypr) for a detailed overview on the config, or refer to the example config in examples/hypr.conf.
 
-You have to use a config, place it in ~/.config/hypr/hypr.conf
+You have to use a config, place it in ~/.config/hypr/hyprland.conf
 
 # Screenshot Gallery
 
