@@ -551,7 +551,7 @@ int CStatusBar::drawWorkspacesModule(SBarModule* mod, int off) {
         drawCairoRectangle(Vector2D(off + m_vecSize.y * drawnWorkspaces, 0), Vector2D(m_vecSize.y, m_vecSize.y), WORKSPACE == MOUSEWORKSPACEID ? ConfigManager::getInt("bar:col.high") : ConfigManager::getInt("bar:col.bg"));
 
         drawText(Vector2D(off + m_vecSize.y * drawnWorkspaces + m_vecSize.y / 2.f - getTextWidth(workspaceName, ConfigManager::getString("bar:font.main"), ConfigManager::getFloat("bar:font.size")) / 2.f, getTextHalfY()),
-                 workspaceName, WORKSPACE == MOUSEWORKSPACEID ? 0xFF111111 : 0xFFFFFFFF, ConfigManager::getString("bar:font.main"), ConfigManager::getFloat("bar:font.size"));
+                 workspaceName, WORKSPACE == MOUSEWORKSPACEID ? ConfigManager::getInt("bar:col.font_secondary") : ConfigManager::getInt("bar:col.font_main"), ConfigManager::getString("bar:font.main"), ConfigManager::getFloat("bar:font.size"));
 
         drawnWorkspaces++;
     }
