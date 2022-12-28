@@ -29,7 +29,9 @@ ELSE()
     message(STATUS "Configuring Hypr in Release with CMake!")
 ENDIF(CMAKE_BUILD_TYPE MATCHES Debug OR CMAKE_BUILD_TYPE MATCHES DEBUG)
 
-target_link_libraries(Hypr rt)
+IF(UNIX AND NOT APPLE)
+    target_link_libraries(Hypr rt)
+ENDIF()
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
