@@ -1,3 +1,6 @@
+Please note: i havent done any shit yet this is still normal hypr
+
+
 <p align="center">
   <img src="https://i.imgur.com/LtC153m.png" />
   <img src="https://github.com/vaxerski/Hypr/actions/workflows/c-cpp.yml/badge.svg" />
