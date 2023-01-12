@@ -1,4 +1,5 @@
-Please note: i havent done any shit yet this is still normal hypr
+plz note: i havent done any shit yet this is still normal hypr
+okay wtf i dont understand lmao
 
 
 <p align="center">
