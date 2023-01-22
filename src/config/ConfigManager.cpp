@@ -129,7 +129,8 @@ void handleBind(const std::string& command, const std::string& value) {
     if (HANDLER == "movewindow") dispatcher = KeybindManager::movewindow;
     if (HANDLER == "movefocus") dispatcher = KeybindManager::movefocus;
     if (HANDLER == "movetoworkspace") dispatcher = KeybindManager::movetoworkspace;
-    if (HANDLER == "workspace") dispatcher = KeybindManager::changeworkspace;
+    if (HANDLER == "workspace" || HANDLER == "ws") dispatcher = KeybindManager::changeworkspace;
+    if (HANDLER == "relativeworkspace") dispatcher = KeybindManager::changetorelativeworkspace;
     if (HANDLER == "lastworkspace") dispatcher = KeybindManager::changetolastworkspace;
     if (HANDLER == "togglefloating") dispatcher = KeybindManager::toggleActiveWindowFloating;
     if (HANDLER == "splitratio") dispatcher = KeybindManager::changeSplitRatio;

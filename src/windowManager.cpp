@@ -1755,7 +1755,13 @@ void CWindowManager::moveActiveFocusTo(char dir) {
     QueuedPointerWarp = Vector2D(NEIGHBOR->getPosition() + (NEIGHBOR->getSize() / 2.f));
 }
 
+void CWindowManager::relativeWorkspace(int relativenum) {
+    changeWorkspaceByID(activeWorkspaceID + relativenum);
+}
+
 void CWindowManager::changeWorkspaceByID(int ID) {
+
+    activeWorkspaceID = ID;
 
     auto MONITOR = getMonitorFromCursor();
 
@@ -1775,7 +1781,7 @@ void CWindowManager::changeWorkspaceByID(int ID) {
     // mark old workspace dirty
     setAllWorkspaceWindowsDirtyByID(activeWorkspaces[MONITOR->ID]);
 
-    // save old workspace for anim
+    // save old workspace for animation
     auto OLDWORKSPACE = activeWorkspaces[MONITOR->ID];
     lastActiveWorkspaceID = OLDWORKSPACE;
 

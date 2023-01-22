@@ -53,6 +53,7 @@ public:
     // holds the IDs of open workspaces, Monitor ID -> workspace ID
     std::deque<int>             activeWorkspaces;
     int                         lastActiveWorkspaceID = 1;
+    int                         activeWorkspaceID = 1;
 
     // Not really pipes, but files. Oh well. Used for IPC.
     SIPCPipe                    m_sIPCBarPipeIn = {ISDEBUG ? "/tmp/hypr/hyprbarind" : "/tmp/hypr/hyprbarin", 0};
@@ -97,6 +98,7 @@ public:
     void                        toggleWindowFullscrenn(const int&);
     void                        recalcAllDocks();
 
+    void                        relativeWorkspace(int);
     void                        changeWorkspaceByID(int);
     void                        changeToLastWorkspace();
     void                        setAllWorkspaceWindowsDirtyByID(int);

@@ -175,6 +175,12 @@ void KeybindManager::movetoworkspace(std::string arg) {
     try {
         if (arg == "scratchpad")
             g_pWindowManager->moveActiveWindowToWorkspace(SCRATCHPAD_ID);
+        // else if (arg[0] == '+')
+        //     arg.erase(0, 1);
+        //     g_pWindowManager->moveActiveWindowToWorkspace(stoi(arg)+1);
+        // else if (arg[0] == '-')
+        //     arg.erase(0, 1);
+        //     g_pWindowManager->moveActiveWindowToWorkspace(stoi(arg)-1);
         else
             g_pWindowManager->moveActiveWindowToWorkspace(stoi(arg));
     } catch (...) {
@@ -193,6 +199,15 @@ void KeybindManager::changeworkspace(std::string arg) {
         Debug::log(LOG, "Changing the current workspace to " + std::to_string(ID));
         g_pWindowManager->changeWorkspaceByID(ID);
     }
+}
+
+void KeybindManager::changetorelativeworkspace(std::string arg) {
+    if (arg == "+") 
+        g_pWindowManager->relativeWorkspace(1);
+    if (arg == "-") 
+        g_pWindowManager->relativeWorkspace(-1);
+    
+    // Debug::log(LOG, "Changing the current workspace by " + arg + "1");
 }
 
 void KeybindManager::changetolastworkspace(std::string arg) {
