@@ -2489,21 +2489,42 @@ void CWindowManager::recalcAllDocks() {
 void CWindowManager::startWipeAnimOnWorkspace(const int& oldwork, const int& newwork) {
     const auto PMONITOR = getMonitorFromWorkspace(newwork);
 
-    for (auto& work : workspaces) {
-        if (work.getID() == oldwork) {
-            if (ConfigManager::getInt("animations:workspaces") == 1)
-                work.setCurrentOffset(Vector2D(0,0));
-            else
-                work.setCurrentOffset(Vector2D(150000, 150000));
-            work.setGoalOffset(Vector2D(PMONITOR->vecSize.x, 0));
-            work.setAnimationInProgress(true);
-        } else if (work.getID() == newwork) {
-            if (ConfigManager::getInt("animations:workspaces") == 1)
-                work.setCurrentOffset(Vector2D(-PMONITOR->vecSize.x, 0));
-            else
-                work.setCurrentOffset(Vector2D(0, 0));
-            work.setGoalOffset(Vector2D(0, 0));
-            work.setAnimationInProgress(true);
+    if (newwork < oldwork) { //Swipe from left to right
+        for (auto& work : workspaces) {
+            if (work.getID() == oldwork) {
+                if (ConfigManager::getInt("animations:workspaces") == 1)
+                    work.setCurrentOffset(Vector2D(0,0));
+                else
+                    work.setCurrentOffset(Vector2D(150000, 150000));
+                work.setGoalOffset(Vector2D(PMONITOR->vecSize.x, 0));
+                work.setAnimationInProgress(true);
+            } else if (work.getID() == newwork) {
+                if (ConfigManager::getInt("animations:workspaces") == 1)
+                    work.setCurrentOffset(Vector2D(-PMONITOR->vecSize.x, 0));
+                else
+                    work.setCurrentOffset(Vector2D(0, 0));
+                work.setGoalOffset(Vector2D(0, 0));
+                work.setAnimationInProgress(true);
+            }
+        }
+    }
+    else {  //Swipe from right to left (oldwork < newwork)
+        for (auto& work : workspaces) {
+            if (work.getID() == oldwork) {
+                if (ConfigManager::getInt("animations:workspaces") == 1)
+                    work.setCurrentOffset(Vector2D(0,0));
+                else
+                    work.setCurrentOffset(Vector2D(150000, 150000));
+                work.setGoalOffset(Vector2D(-PMONITOR->vecSize.x, 0));
+                work.setAnimationInProgress(true);
+            } else if (work.getID() == newwork) {
+                if (ConfigManager::getInt("animations:workspaces") == 1)
+                    work.setCurrentOffset(Vector2D(PMONITOR->vecSize.x, 0));
+                else
+                    work.setCurrentOffset(Vector2D(0, 0));
+                work.setGoalOffset(Vector2D(0, 0));
+                work.setAnimationInProgress(true);
+            }
         }
     }
 }
