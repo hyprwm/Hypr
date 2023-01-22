@@ -2594,10 +2594,10 @@ void CWindowManager::changeSplitRatioCurrent(const char& dir) {
 
     switch(dir) {
         case '+':
-            PARENT->setSplitRatio(PARENT->getSplitRatio() + 0.05f);
+            PARENT->setSplitRatio(PARENT->getSplitRatio() + 0.1f);
             break;
         case '-':
-            PARENT->setSplitRatio(PARENT->getSplitRatio() - 0.05f);
+            PARENT->setSplitRatio(PARENT->getSplitRatio() - 0.1f);
             break;
         default:
             Debug::log(ERR, "changeSplitRatioCurrent called with an invalid dir!");
