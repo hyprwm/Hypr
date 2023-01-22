@@ -54,6 +54,8 @@ public:
     std::deque<int>             activeWorkspaces;
     int                         lastActiveWorkspaceID = 1;
     int                         activeWorkspaceID = 1;
+    int                         upperWorkspaceLimit = 10;
+    int                         lowerWorkspaceLimit = 1;
 
     // Not really pipes, but files. Oh well. Used for IPC.
     SIPCPipe                    m_sIPCBarPipeIn = {ISDEBUG ? "/tmp/hypr/hyprbarind" : "/tmp/hypr/hyprbarin", 0};

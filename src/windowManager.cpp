@@ -1756,6 +1756,8 @@ void CWindowManager::moveActiveFocusTo(char dir) {
 }
 
 void CWindowManager::relativeWorkspace(int relativenum) {
+    if (activeWorkspaceID + relativenum < lowerWorkspaceLimit) return;
+    if (activeWorkspaceID + relativenum > upperWorkspaceLimit) return;
     changeWorkspaceByID(activeWorkspaceID + relativenum);
 }
 

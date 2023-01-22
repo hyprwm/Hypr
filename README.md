@@ -8,7 +8,6 @@ As the name suggests
 While Wayland is the future
 
 I still want Xorg
-
 <br/>
 
 <p align="center">
