@@ -1,6 +1,10 @@
-plz note: i havent done any shit yet this is still normal hypr
-okay wtf i dont understand lmao
+<p align="center">
+  end-4/hyprland-is-great-but-i-want-xorg
+</p>
 
+- As the name suggests
+- While Wayland is the future
+- I still want Xorg
 
 <p align="center">
   <img src="https://i.imgur.com/LtC153m.png" />
