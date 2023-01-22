@@ -2,9 +2,14 @@
   end-4/hyprland-is-great-but-i-want-xorg
 </p>
 
-- As the name suggests
-- While Wayland is the future
-- I still want Xorg
+<br/>
+As the name suggests
+
+While Wayland is the future
+
+I still want Xorg
+
+<br/>
 
 <p align="center">
   <img src="https://i.imgur.com/LtC153m.png" />
