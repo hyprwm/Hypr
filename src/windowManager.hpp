@@ -96,6 +96,7 @@ public:
     void                        moveActiveWindowTo(char);
     void                        moveActiveFocusTo(char);
     void                        moveActiveWindowToWorkspace(int);
+    void                        moveActiveWindowToRelativeWorkspace(int);
     void                        warpCursorTo(Vector2D);
     void                        toggleWindowFullscrenn(const int&);
     void                        recalcAllDocks();

@@ -1553,6 +1553,12 @@ void CWindowManager::warpCursorTo(Vector2D to) {
     free(pointerreply);
 }
 
+void CWindowManager::moveActiveWindowToRelativeWorkspace(int relativenum) {
+    if (activeWorkspaceID + relativenum < lowerWorkspaceLimit) return;
+    if (activeWorkspaceID + relativenum > upperWorkspaceLimit) return;
+    moveActiveWindowToWorkspace(activeWorkspaceID + relativenum);
+}
+
 void CWindowManager::moveActiveWindowToWorkspace(int workspace) {
 
     auto PWINDOW = getWindowFromDrawable(LastWindow);
