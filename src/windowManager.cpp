@@ -2570,7 +2570,7 @@ SMonitor* CWindowManager::getMonitorFromCoord(const Vector2D coord) {
     return nullptr;
 }
 
-void CWindowManager::changeSplitRatioCurrent(std::string& dir) {
+void CWindowManager::changeSplitRatioCurrent(std::string dir) {
 
     const auto CURRENT = getWindowFromDrawable(LastWindow);
 
@@ -2586,17 +2586,14 @@ void CWindowManager::changeSplitRatioCurrent(std::string& dir) {
         return;
     }
 
-    switch(dir) {
-        case "+":
-            PARENT->setSplitRatio(PARENT->getSplitRatio() + 0.05f);
-            break;
-        case "-":
-            PARENT->setSplitRatio(PARENT->getSplitRatio() - 0.05f);
-            break;
-        default:
-            PARENT->setSplitRatio(PARENT->getSplitRatio() + std::stof(dir));
-            // Debug::log(ERR, "changeSplitRatioCurrent called with an invalid dir!");
-            return;
+    if (dir == "+") {
+        PARENT->setSplitRatio(PARENT->getSplitRatio() + 0.05f);
+    }
+    else if (dir == "-") {
+        PARENT->setSplitRatio(PARENT->getSplitRatio() - 0.05f);
+    }
+    else {
+        PARENT->setSplitRatio(PARENT->getSplitRatio() + std::stof(dir));
     }
 
     PARENT->setSplitRatio(std::clamp(PARENT->getSplitRatio(), 0.1f, 1.9f));

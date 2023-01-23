@@ -153,7 +153,7 @@ public:
 
     bool                        shouldBeManaged(const int&);
 
-    void                        changeSplitRatioCurrent(std::string& dir);
+    void                        changeSplitRatioCurrent(std::string dir);
 
     void                        processCursorDeltaOnWindowResizeTiled(CWindow*, const Vector2D&);
 

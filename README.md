@@ -1,20 +1,4 @@
 <p align="center">
-  end-4/hyprland-is-great-but-i-want-xorg
-</p>
-
-<br/>
-As the name suggests
-
-While Wayland is the future
-
-I still want Xorg
-<br/>
-
-# Stuff fixed/added so far
-- Workspace animation direction
-- Relative workspace switching
-
-<p align="center">
   <img src="https://i.imgur.com/LtC153m.png" />
   <img src="https://github.com/vaxerski/Hypr/actions/workflows/c-cpp.yml/badge.svg" />
   <a href="https://discord.gg/hQ9XvMUjjr"><img src="https://img.shields.io/badge/Join%20the-Discord%20server-6666ff" /></a>
