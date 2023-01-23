@@ -2505,8 +2505,7 @@ void CWindowManager::startWipeAnimOnWorkspace(const int& oldwork, const int& new
                 work.setAnimationInProgress(true);
             }
         }
-    }
-    else {  // Wipe from right to left (oldwork < newwork)
+    } else {  // Wipe from right to left (oldwork < newwork)
         for (auto& work : workspaces) {
             if (work.getID() == oldwork) {
                 if (ConfigManager::getInt("animations:workspaces") == 1)
@@ -2584,15 +2583,12 @@ void CWindowManager::changeSplitRatioCurrent(std::string dir) {
         return;
     }
 
-    if (dir == "+") {
+    if (dir == "+") 
         PARENT->setSplitRatio(PARENT->getSplitRatio() + 0.05f);
-    }
-    else if (dir == "-") {
+    else if (dir == "-") 
         PARENT->setSplitRatio(PARENT->getSplitRatio() - 0.05f);
-    }
-    else {
+    else 
         PARENT->setSplitRatio(PARENT->getSplitRatio() + std::stof(dir));
-    }
 
     PARENT->setSplitRatio(std::clamp(PARENT->getSplitRatio(), 0.1f, 1.9f));
 

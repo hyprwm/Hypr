@@ -51,7 +51,7 @@ void ConfigManager::init() {
 
     // animations
     configValues["animations:speed"].floatValue = 1;
-    configValues["animations:windowresizespeed"].floatValue = 1;
+    configValues["animations:window_resize_speed"].floatValue = 1;
     configValues["animations:enabled"].intValue = 0;
     configValues["animations:cheap"].intValue = 1;
     configValues["animations:borders"].intValue = 1;
