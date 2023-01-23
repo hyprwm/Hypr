@@ -1554,8 +1554,7 @@ void CWindowManager::warpCursorTo(Vector2D to) {
 }
 
 void CWindowManager::moveActiveWindowToRelativeWorkspace(int relativenum) {
-    if (activeWorkspaceID + relativenum < lowerWorkspaceLimit) return;
-    if (activeWorkspaceID + relativenum > upperWorkspaceLimit) return;
+    if (activeWorkspaceID + relativenum < 1) return;
     moveActiveWindowToWorkspace(activeWorkspaceID + relativenum);
 }
 
