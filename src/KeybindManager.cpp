@@ -187,12 +187,6 @@ void KeybindManager::movetoworkspace(std::string arg) {
     try {
         if (arg == "scratchpad")
             g_pWindowManager->moveActiveWindowToWorkspace(SCRATCHPAD_ID);
-        // else if (arg[0] == '+')
-        //     arg.erase(0, 1);
-        //     g_pWindowManager->moveActiveWindowToWorkspace(stoi(arg)+1);
-        // else if (arg[0] == '-')
-        //     arg.erase(0, 1);
-        //     g_pWindowManager->moveActiveWindowToWorkspace(stoi(arg)-1);
         else
             g_pWindowManager->moveActiveWindowToWorkspace(stoi(arg));
     } catch (...) {

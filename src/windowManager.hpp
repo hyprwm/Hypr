@@ -99,7 +99,6 @@ public:
     void                        toggleWindowFullscrenn(const int&);
     void                        recalcAllDocks();
 
-    void                        relativeWorkspace(int);
     void                        changeWorkspaceByID(int);
     void                        changeToLastWorkspace();
     void                        setAllWorkspaceWindowsDirtyByID(int);

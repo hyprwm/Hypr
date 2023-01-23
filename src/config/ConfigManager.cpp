@@ -11,7 +11,6 @@
 #include <string.h>
 #include <iostream>
 
-// Default values
 void ConfigManager::init() {
     configValues["border_size"].intValue = 1;
     configValues["gaps_in"].intValue = 5;
