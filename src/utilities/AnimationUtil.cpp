@@ -8,6 +8,7 @@ void AnimationUtil::move() {
     lastFrame = std::chrono::high_resolution_clock::now();
 
     const double ANIMATIONSPEED = std::max(1.f / ((double)ConfigManager::getFloat("animations:speed") * DELTA) * 462.f, (double)1.f);
+    const double RESIZEANIMATIONSPEED = std::max(1.f / ((double)ConfigManager::getFloat("animations:windowresizespeed") * DELTA) * 462.f, (double)1.f);
     
     bool updateRequired = false;
     // Now we are (or should be, lul) thread-safe.
@@ -77,7 +78,7 @@ void AnimationUtil::move() {
             const auto REALSIZ = window.getRealSize();
             const auto EFFSIZ = window.getEffectiveSize();
 
-            window.setRealSize(Vector2D(parabolic(REALSIZ.x, EFFSIZ.x, ANIMATIONSPEED), parabolic(REALSIZ.y, EFFSIZ.y, ANIMATIONSPEED)));
+            window.setRealSize(Vector2D(parabolic(REALSIZ.x, EFFSIZ.x, RESIZEANIMATIONSPEED), parabolic(REALSIZ.y, EFFSIZ.y, RESIZEANIMATIONSPEED)));
         }
 
         // set not animated if already done here
