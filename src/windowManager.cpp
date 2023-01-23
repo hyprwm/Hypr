@@ -1761,9 +1761,6 @@ void CWindowManager::moveActiveFocusTo(char dir) {
 }
 
 void CWindowManager::changeWorkspaceByID(int ID) {
-
-    activeWorkspaceID = ID;
-
     auto MONITOR = getMonitorFromCursor();
 
     if (!MONITOR) {
@@ -1801,8 +1798,9 @@ void CWindowManager::changeWorkspaceByID(int ID) {
             // if fullscreen, set to the fullscreen window
             focusOnWorkspace(ID);
 
-            // Update bar info
+            // Update bar info, activeWorkspaceID
             updateBarInfo();
+            activeWorkspaceID = ID;
 
             Debug::log(LOG, "Bar info updated with workspace changed.");
 
@@ -1823,8 +1821,9 @@ void CWindowManager::changeWorkspaceByID(int ID) {
     activeWorkspaces[MONITOR->ID] = workspaces[workspaces.size() - 1].getID();
     LastWindow = -1;
 
-    // Update bar info
+    // Update bar info, activeWorkspaceID
     updateBarInfo();
+    activeWorkspaceID = ID;
 
     // Wipe animation
     startWipeAnimOnWorkspace(OLDWORKSPACE, ID);
@@ -2488,7 +2487,7 @@ void CWindowManager::recalcAllDocks() {
 void CWindowManager::startWipeAnimOnWorkspace(const int& oldwork, const int& newwork) {
     const auto PMONITOR = getMonitorFromWorkspace(newwork);
 
-    if (newwork < oldwork) { //Swipe from left to right
+    if (newwork < oldwork) { // Wipe from left to right
         for (auto& work : workspaces) {
             if (work.getID() == oldwork) {
                 if (ConfigManager::getInt("animations:workspaces") == 1)
@@ -2507,7 +2506,7 @@ void CWindowManager::startWipeAnimOnWorkspace(const int& oldwork, const int& new
             }
         }
     }
-    else {  //Swipe from right to left (oldwork < newwork)
+    else {  // Wipe from right to left (oldwork < newwork)
         for (auto& work : workspaces) {
             if (work.getID() == oldwork) {
                 if (ConfigManager::getInt("animations:workspaces") == 1)
@@ -2676,7 +2675,7 @@ void CWindowManager::processCursorDeltaOnWindowResizeTiled(CWindow* pWindow, con
     const auto TOPCONTAINER = PARENTSIDEBYSIDE ? PPARENT2 : PPARENT;
 
     allowedMovement.x *= 2.f / SIDECONTAINER->getSize().x;
-    allowedMovement.y *= 2.f / TOPCONTAINER->getSize().x;
+    allowedMovement.y *= 2.f / TOPCONTAINER->getSize().y;
 
     SIDECONTAINER->setSplitRatio(std::clamp(SIDECONTAINER->getSplitRatio() + allowedMovement.x, (double)0.05f, (double)1.95f));
     TOPCONTAINER->setSplitRatio(std::clamp(TOPCONTAINER->getSplitRatio() + allowedMovement.y, (double)0.05f, (double)1.95f));
