@@ -1761,12 +1761,6 @@ void CWindowManager::moveActiveFocusTo(char dir) {
     QueuedPointerWarp = Vector2D(NEIGHBOR->getPosition() + (NEIGHBOR->getSize() / 2.f));
 }
 
-void CWindowManager::relativeWorkspace(int relativenum) {
-    if (activeWorkspaceID + relativenum < lowerWorkspaceLimit) return;
-    if (activeWorkspaceID + relativenum > upperWorkspaceLimit) return;
-    changeWorkspaceByID(activeWorkspaceID + relativenum);
-}
-
 void CWindowManager::changeWorkspaceByID(int ID) {
 
     activeWorkspaceID = ID;
@@ -2576,7 +2570,7 @@ SMonitor* CWindowManager::getMonitorFromCoord(const Vector2D coord) {
     return nullptr;
 }
 
-void CWindowManager::changeSplitRatioCurrent(const char& dir) {
+void CWindowManager::changeSplitRatioCurrent(std::string& dir) {
 
     const auto CURRENT = getWindowFromDrawable(LastWindow);
 
@@ -2593,14 +2587,15 @@ void CWindowManager::changeSplitRatioCurrent(const char& dir) {
     }
 
     switch(dir) {
-        case '+':
-            PARENT->setSplitRatio(PARENT->getSplitRatio() + 0.1f);
+        case "+":
+            PARENT->setSplitRatio(PARENT->getSplitRatio() + 0.05f);
             break;
-        case '-':
-            PARENT->setSplitRatio(PARENT->getSplitRatio() - 0.1f);
+        case "-":
+            PARENT->setSplitRatio(PARENT->getSplitRatio() - 0.05f);
             break;
         default:
-            Debug::log(ERR, "changeSplitRatioCurrent called with an invalid dir!");
+            PARENT->setSplitRatio(PARENT->getSplitRatio() + std::stof(dir));
+            // Debug::log(ERR, "changeSplitRatioCurrent called with an invalid dir!");
             return;
     }
 

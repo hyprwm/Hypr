@@ -213,15 +213,6 @@ void KeybindManager::changeworkspace(std::string arg) {
     }
 }
 
-void KeybindManager::changetorelativeworkspace(std::string arg) {
-    if (arg == "+") 
-        g_pWindowManager->relativeWorkspace(1);
-    if (arg == "-") 
-        g_pWindowManager->relativeWorkspace(-1);
-    
-    // Debug::log(LOG, "Changing the current workspace by " + arg + "1");
-}
-
 void KeybindManager::changetolastworkspace(std::string arg) {
     Debug::log(LOG, "Changing the current workspace to the last workspace");
     g_pWindowManager->changeToLastWorkspace();
@@ -287,7 +278,7 @@ void KeybindManager::toggleActiveWindowFloating(std::string arg) {
 }
 
 void KeybindManager::changeSplitRatio(std::string args) {
-    g_pWindowManager->changeSplitRatioCurrent(args[0]);
+    g_pWindowManager->changeSplitRatioCurrent(args);
 }
 
 void KeybindManager::togglePseudoActive(std::string args) {
