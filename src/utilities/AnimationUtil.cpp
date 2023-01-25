@@ -8,7 +8,7 @@ void AnimationUtil::move() {
     lastFrame = std::chrono::high_resolution_clock::now();
 
     const double ANIMATIONSPEED = std::max(1.f / ((double)ConfigManager::getFloat("animations:speed") * DELTA) * 462.f, (double)1.f);
-    const double RESIZEANIMATIONSPEED = std::max(1.f / ((double)ConfigManager::getFloat("animations:windowresizespeed") * DELTA) * 462.f, (double)1.f);
+    const double RESIZEANIMATIONSPEED = std::max(1.f / ((double)ConfigManager::getFloat("animations:window_resize_speed") * DELTA) * 462.f, (double)1.f);
     
     bool updateRequired = false;
     // Now we are (or should be, lul) thread-safe.
