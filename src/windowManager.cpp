@@ -1553,6 +1553,11 @@ void CWindowManager::warpCursorTo(Vector2D to) {
     free(pointerreply);
 }
 
+void CWindowManager::moveActiveWindowToRelativeWorkspace(int relativenum) {
+    if (activeWorkspaceID + relativenum < 1) return;
+    moveActiveWindowToWorkspace(activeWorkspaceID + relativenum);
+}
+
 void CWindowManager::moveActiveWindowToWorkspace(int workspace) {
 
     auto PWINDOW = getWindowFromDrawable(LastWindow);
@@ -1756,7 +1761,6 @@ void CWindowManager::moveActiveFocusTo(char dir) {
 }
 
 void CWindowManager::changeWorkspaceByID(int ID) {
-
     auto MONITOR = getMonitorFromCursor();
 
     if (!MONITOR) {
@@ -1775,7 +1779,7 @@ void CWindowManager::changeWorkspaceByID(int ID) {
     // mark old workspace dirty
     setAllWorkspaceWindowsDirtyByID(activeWorkspaces[MONITOR->ID]);
 
-    // save old workspace for anim
+    // save old workspace for animation
     auto OLDWORKSPACE = activeWorkspaces[MONITOR->ID];
     lastActiveWorkspaceID = OLDWORKSPACE;
 
@@ -1794,8 +1798,9 @@ void CWindowManager::changeWorkspaceByID(int ID) {
             // if fullscreen, set to the fullscreen window
             focusOnWorkspace(ID);
 
-            // Update bar info
+            // Update bar info, activeWorkspaceID
             updateBarInfo();
+            activeWorkspaceID = ID;
 
             Debug::log(LOG, "Bar info updated with workspace changed.");
 
@@ -1816,8 +1821,9 @@ void CWindowManager::changeWorkspaceByID(int ID) {
     activeWorkspaces[MONITOR->ID] = workspaces[workspaces.size() - 1].getID();
     LastWindow = -1;
 
-    // Update bar info
+    // Update bar info, activeWorkspaceID
     updateBarInfo();
+    activeWorkspaceID = ID;
 
     // Wipe animation
     startWipeAnimOnWorkspace(OLDWORKSPACE, ID);
@@ -2481,21 +2487,41 @@ void CWindowManager::recalcAllDocks() {
 void CWindowManager::startWipeAnimOnWorkspace(const int& oldwork, const int& newwork) {
     const auto PMONITOR = getMonitorFromWorkspace(newwork);
 
-    for (auto& work : workspaces) {
-        if (work.getID() == oldwork) {
-            if (ConfigManager::getInt("animations:workspaces") == 1)
-                work.setCurrentOffset(Vector2D(0,0));
-            else
-                work.setCurrentOffset(Vector2D(150000, 150000));
-            work.setGoalOffset(Vector2D(PMONITOR->vecSize.x, 0));
-            work.setAnimationInProgress(true);
-        } else if (work.getID() == newwork) {
-            if (ConfigManager::getInt("animations:workspaces") == 1)
-                work.setCurrentOffset(Vector2D(-PMONITOR->vecSize.x, 0));
-            else
-                work.setCurrentOffset(Vector2D(0, 0));
-            work.setGoalOffset(Vector2D(0, 0));
-            work.setAnimationInProgress(true);
+    if (newwork < oldwork) { // Wipe from left to right
+        for (auto& work : workspaces) {
+            if (work.getID() == oldwork) {
+                if (ConfigManager::getInt("animations:workspaces") == 1)
+                    work.setCurrentOffset(Vector2D(0,0));
+                else
+                    work.setCurrentOffset(Vector2D(150000, 150000));
+                work.setGoalOffset(Vector2D(PMONITOR->vecSize.x, 0));
+                work.setAnimationInProgress(true);
+            } else if (work.getID() == newwork) {
+                if (ConfigManager::getInt("animations:workspaces") == 1)
+                    work.setCurrentOffset(Vector2D(-PMONITOR->vecSize.x, 0));
+                else
+                    work.setCurrentOffset(Vector2D(0, 0));
+                work.setGoalOffset(Vector2D(0, 0));
+                work.setAnimationInProgress(true);
+            }
+        }
+    } else {  // Wipe from right to left (oldwork < newwork)
+        for (auto& work : workspaces) {
+            if (work.getID() == oldwork) {
+                if (ConfigManager::getInt("animations:workspaces") == 1)
+                    work.setCurrentOffset(Vector2D(0,0));
+                else
+                    work.setCurrentOffset(Vector2D(150000, 150000));
+                work.setGoalOffset(Vector2D(-PMONITOR->vecSize.x, 0));
+                work.setAnimationInProgress(true);
+            } else if (work.getID() == newwork) {
+                if (ConfigManager::getInt("animations:workspaces") == 1)
+                    work.setCurrentOffset(Vector2D(PMONITOR->vecSize.x, 0));
+                else
+                    work.setCurrentOffset(Vector2D(0, 0));
+                work.setGoalOffset(Vector2D(0, 0));
+                work.setAnimationInProgress(true);
+            }
         }
     }
 }
@@ -2541,7 +2567,7 @@ SMonitor* CWindowManager::getMonitorFromCoord(const Vector2D coord) {
     return nullptr;
 }
 
-void CWindowManager::changeSplitRatioCurrent(const char& dir) {
+void CWindowManager::changeSplitRatioCurrent(std::string dir) {
 
     const auto CURRENT = getWindowFromDrawable(LastWindow);
 
@@ -2557,17 +2583,12 @@ void CWindowManager::changeSplitRatioCurrent(const char& dir) {
         return;
     }
 
-    switch(dir) {
-        case '+':
-            PARENT->setSplitRatio(PARENT->getSplitRatio() + 0.05f);
-            break;
-        case '-':
-            PARENT->setSplitRatio(PARENT->getSplitRatio() - 0.05f);
-            break;
-        default:
-            Debug::log(ERR, "changeSplitRatioCurrent called with an invalid dir!");
-            return;
-    }
+    if (dir == "+") 
+        PARENT->setSplitRatio(PARENT->getSplitRatio() + 0.05f);
+    else if (dir == "-") 
+        PARENT->setSplitRatio(PARENT->getSplitRatio() - 0.05f);
+    else 
+        PARENT->setSplitRatio(PARENT->getSplitRatio() + std::stof(dir));
 
     PARENT->setSplitRatio(std::clamp(PARENT->getSplitRatio(), 0.1f, 1.9f));
 
@@ -2650,7 +2671,7 @@ void CWindowManager::processCursorDeltaOnWindowResizeTiled(CWindow* pWindow, con
     const auto TOPCONTAINER = PARENTSIDEBYSIDE ? PPARENT2 : PPARENT;
 
     allowedMovement.x *= 2.f / SIDECONTAINER->getSize().x;
-    allowedMovement.y *= 2.f / TOPCONTAINER->getSize().x;
+    allowedMovement.y *= 2.f / TOPCONTAINER->getSize().y;
 
     SIDECONTAINER->setSplitRatio(std::clamp(SIDECONTAINER->getSplitRatio() + allowedMovement.x, (double)0.05f, (double)1.95f));
     TOPCONTAINER->setSplitRatio(std::clamp(TOPCONTAINER->getSplitRatio() + allowedMovement.y, (double)0.05f, (double)1.95f));

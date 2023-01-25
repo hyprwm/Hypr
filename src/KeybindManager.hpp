@@ -27,6 +27,7 @@ namespace KeybindManager {
     void                toggleActiveWindowFullscreen(std::string args);
     void                toggleActiveWindowFloating(std::string args);
     void                movetoworkspace(std::string args);
+    void                movetorelativeworkspace(std::string args);
     void                changeSplitRatio(std::string args);
     void                togglePseudoActive(std::string args);
     void                toggleScratchpad(std::string args);

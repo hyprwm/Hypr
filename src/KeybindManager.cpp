@@ -171,6 +171,18 @@ void KeybindManager::movefocus(std::string arg) {
     g_pWindowManager->moveActiveFocusTo(arg[0]);
 }
 
+void KeybindManager::movetorelativeworkspace(std::string arg) {
+    try {
+        if (arg == "+")
+            g_pWindowManager->moveActiveWindowToRelativeWorkspace(1);
+        else if (arg == "-")
+            g_pWindowManager->moveActiveWindowToRelativeWorkspace(-1);
+    } catch (...) {
+        Debug::log(ERR, "Invalid arg in movetoworkspace, arg: " + arg);
+    }
+    
+}
+
 void KeybindManager::movetoworkspace(std::string arg) {
     try {
         if (arg == "scratchpad")
@@ -260,7 +272,7 @@ void KeybindManager::toggleActiveWindowFloating(std::string arg) {
 }
 
 void KeybindManager::changeSplitRatio(std::string args) {
-    g_pWindowManager->changeSplitRatioCurrent(args[0]);
+    g_pWindowManager->changeSplitRatioCurrent(args);
 }
 
 void KeybindManager::togglePseudoActive(std::string args) {
