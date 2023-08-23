@@ -136,7 +136,7 @@ void EWMH::updateWindow(xcb_window_t win) {
     if (!PWINDOW || win < 1)
         return;
 
-    const auto WORKSPACE = PWINDOW->getWorkspaceID();
+    const auto WORKSPACE = PWINDOW->getWorkspaceID() - 1; // because xorgs counts from 0, part 2
     xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, win, HYPRATOMS["_NET_WM_DESKTOP"], XCB_ATOM_CARDINAL, 32, 1, &WORKSPACE);
 
     // ICCCM State Normal
