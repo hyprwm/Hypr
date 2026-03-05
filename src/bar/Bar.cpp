@@ -13,7 +13,7 @@ bool isParentDead() {
 
 void parseEvent() {
     while(1) {
-        g_pWindowManager->recieveEvent();
+        g_pWindowManager->receiveEvent("bar");
     }
 }
 
@@ -244,7 +244,7 @@ void CStatusBar::setupTray() {
     free(SELREPLY);
     free(TRAYREPLY);
 
-    Debug::log(LOG, "Tray setup done, sending message!");
+    Debug::log(LOG, "Tray setup done, sending message! Tray window id: " + std::to_string(trayWindowID));
 
     uint8_t buf[32] = {NULL};
     xcb_client_message_event_t* event = (xcb_client_message_event_t*)buf;
@@ -268,6 +268,7 @@ void CStatusBar::fixTrayOnCreate() {
 
     if (m_bHasTray && ConfigManager::getInt("bar:no_tray_saving") == 0) {
         for (auto& tray : g_pWindowManager->trayclients) {
+            Debug::log(LOG, "Fixing tray client on create " + std::to_string(tray.window) + " by reparenting to tray " + std::to_string(g_pWindowManager->statusBar->trayWindowID));
             xcb_reparent_window(g_pWindowManager->DisplayConnection, tray.window, g_pWindowManager->statusBar->trayWindowID, 0, 0);
             xcb_map_window(g_pWindowManager->DisplayConnection, tray.window);
             tray.hidden = false;
@@ -300,6 +301,7 @@ void CStatusBar::saveTrayOnDestroy() {
         return;
 
     for (auto& tray : g_pWindowManager->trayclients) {
+        Debug::log(LOG, "Saving tray client on destroy " + std::to_string(tray.window) + " by reparenting to root " + std::to_string(g_pWindowManager->Screen->root));
         xcb_reparent_window(g_pWindowManager->DisplayConnection, tray.window, g_pWindowManager->Screen->root, 30000, 30000);
     }
 }
@@ -383,13 +385,13 @@ void CStatusBar::setup(int MonitorID) {
     // fix tray
     fixTrayOnCreate();
 
-    Debug::log(LOG, "Bar setup done!");
+    Debug::log(LOG, "Bar setup done! Bar window id " + std::to_string(m_iWindowID));
 
     m_bIsDestroyed = false;
 }
 
 void CStatusBar::destroy() {
-    Debug::log(LOG, "Destroying the bar!");
+    Debug::log(LOG, "Destroying bar! Bar window id " + std::to_string(m_iWindowID));
 
     if (m_bIsDestroyed) 
         return;
@@ -411,6 +413,7 @@ void CStatusBar::destroy() {
     m_pCairo = nullptr;
 
     m_bIsDestroyed = true;
+    Debug::log(LOG, "Destroyed bar! Bar window id " + std::to_string(m_iWindowID));
 }
 
 int CStatusBar::getTextWidth(std::string text, std::string font, double size) {

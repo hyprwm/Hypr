@@ -125,13 +125,13 @@ void Events::eventLeave(xcb_generic_event_t* event) {
 void Events::eventDestroy(xcb_generic_event_t* event) {
     const auto E = reinterpret_cast<xcb_destroy_notify_event_t*>(event);
 
+    Debug::log(LOG, "Destroy called on event " + std::to_string(E->event) + " window " + std::to_string(E->window));
+
     // let bar check if it wasnt a tray item
     if (g_pWindowManager->statusBar)
         g_pWindowManager->statusBar->ensureTrayClientDead(E->window);
 
     RETURNIFBAR;
-
-    Debug::log(LOG, "Destroy called on " + std::to_string(E->window));
 
     g_pWindowManager->closeWindowAllChecks(E->window);
 
@@ -145,6 +145,8 @@ void Events::eventDestroy(xcb_generic_event_t* event) {
 void Events::eventUnmapWindow(xcb_generic_event_t* event) {
     const auto E = reinterpret_cast<xcb_unmap_notify_event_t*>(event);
 
+    Debug::log(LOG, "Unmap called on event " + std::to_string(E->event) + " window " + std::to_string(E->window));
+
     // let bar check if it wasnt a tray item
     if (g_pWindowManager->statusBar)
         g_pWindowManager->statusBar->ensureTrayClientHidden(E->window, true);
@@ -154,11 +156,11 @@ void Events::eventUnmapWindow(xcb_generic_event_t* event) {
     const auto PCLOSEDWINDOW = g_pWindowManager->getWindowFromDrawable(E->window);
 
     if (!PCLOSEDWINDOW) {
-        Debug::log(LOG, "Unmap called on an invalid window: " + std::to_string(E->window));
+        Debug::log(LOG, "Unmap called on an invalid window: event " + std::to_string(E->event) + " window " + std::to_string(E->window));
         return; // bullshit window?
     }
 
-    Debug::log(LOG, "Unmap called on " + std::to_string(E->window) + " -> " + PCLOSEDWINDOW->getName());
+    Debug::log(LOG, "Unmap called on event " + std::to_string(E->event) + " window " + std::to_string(E->window) + " -> " + PCLOSEDWINDOW->getName());
 
     if (!PCLOSEDWINDOW->getDock())
         g_pWindowManager->closeWindowAllChecks(E->window);
@@ -635,9 +637,6 @@ CWindow* Events::remapWindow(int windowID, bool wasfloating, int forcemonitor) {
 void Events::eventMapWindow(xcb_generic_event_t* event) {
     const auto E = reinterpret_cast<xcb_map_request_event_t*>(event);
 
-    // Ignore sequence
-    ignoredEvents.push_back(E->sequence);
-
     // let bar check if it wasnt a tray item
     if (g_pWindowManager->statusBar)
         g_pWindowManager->statusBar->ensureTrayClientHidden(E->window, false);
@@ -645,7 +644,12 @@ void Events::eventMapWindow(xcb_generic_event_t* event) {
     RETURNIFBAR;
 
     // Map the window
-    xcb_map_window(g_pWindowManager->DisplayConnection, E->window);
+    const auto COOKIE = xcb_map_window(g_pWindowManager->DisplayConnection, E->window);
+
+    // Ignore sequence
+    Debug::log(LOG, "Will ignore map request event sequence " + std::to_string(E->sequence) + " on window " + std::to_string(E->window));
+    auto ignoreEvent = std::make_tuple(COOKIE.sequence, XCB_MAP_REQUEST);
+    Events::ignoredEvents.push_back(ignoreEvent);
 
     // We check if the window is not on our tile-blacklist and if it is, we have a special treatment procedure for it.
     // this func also sets some stuff
@@ -941,6 +945,7 @@ void Events::eventClientMessage(xcb_generic_event_t* event) {
             g_pWindowManager->trayclients.push_back(newTrayClient);
 
             xcb_map_window(g_pWindowManager->DisplayConnection, CLIENT);
+            Debug::log(LOG, "Docked window " + std::to_string(CLIENT) +  " to the bar " + std::to_string(g_pWindowManager->statusBar->getWindowID()));
         }
     }
 }

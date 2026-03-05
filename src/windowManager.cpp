@@ -214,8 +214,8 @@ bool CWindowManager::handleEvent() {
 
     xcb_flush(DisplayConnection);
     
-    // recieve the event. Blocks.
-    recieveEvent();
+    // receive the event. Blocks.
+    receiveEvent("main");
 
     // refresh and apply the parameters of all dirty windows.
     refreshDirtyWindows();
@@ -251,7 +251,7 @@ bool CWindowManager::handleEvent() {
     return true;
 }
 
-void CWindowManager::recieveEvent() {
+void CWindowManager::receiveEvent(const std::string& id) {
     const auto ev = xcb_wait_for_event(DisplayConnection);
     if (ev != NULL) {
         while (animationUtilBusy) {
@@ -259,13 +259,15 @@ void CWindowManager::recieveEvent() {
         }
 
         for (auto& e : Events::ignoredEvents) {
-            if (e == ev->sequence) {
-                Debug::log(LOG, "Ignoring event type " + std::to_string(ev->response_type & ~0x80) + ".");
+            auto [sequence, responseType] = e;
+            if (sequence == ev->sequence &&
+                (responseType == 0 || responseType == ev->response_type)) {
+                Debug::log(LOG, id + ": Ignoring event type " + eventCodeToString(ev->response_type) + " sequence " + std::to_string(ev->sequence));
                 free(ev);
                 return;
             }
         }
-                
+
         if (Events::ignoredEvents.size() > 20)
             Events::ignoredEvents.pop_front();
 
@@ -282,31 +284,31 @@ void CWindowManager::recieveEvent() {
         switch (EVENTCODE) {
             case XCB_ENTER_NOTIFY:
                 Events::eventEnter(ev);
-                Debug::log(LOG, "Event dispatched ENTER");
+                Debug::log(LOG, id + ": Event dispatched ENTER");
                 break;
             case XCB_LEAVE_NOTIFY:
                 Events::eventLeave(ev);
-                Debug::log(LOG, "Event dispatched LEAVE");
+                Debug::log(LOG, id + ": Event dispatched LEAVE");
                 break;
             case XCB_DESTROY_NOTIFY:
                 Events::eventDestroy(ev);
-                Debug::log(LOG, "Event dispatched DESTROY");
+                Debug::log(LOG, id + ": Event dispatched DESTROY");
                 break;
             case XCB_UNMAP_NOTIFY:
                 Events::eventUnmapWindow(ev);
-                Debug::log(LOG, "Event dispatched UNMAP");
+                Debug::log(LOG, id + ": Event dispatched UNMAP");
                 break;
             case XCB_MAP_REQUEST:
                 Events::eventMapWindow(ev);
-                Debug::log(LOG, "Event dispatched MAP");
+                Debug::log(LOG, id + ": Event dispatched MAP");
                 break;
             case XCB_BUTTON_PRESS:
                 Events::eventButtonPress(ev);
-                Debug::log(LOG, "Event dispatched BUTTON_PRESS");
+                Debug::log(LOG, id + ": Event dispatched BUTTON_PRESS");
                 break;
             case XCB_BUTTON_RELEASE:
                 Events::eventButtonRelease(ev);
-                Debug::log(LOG, "Event dispatched BUTTON_RELEASE");
+                Debug::log(LOG, id + ": Event dispatched BUTTON_RELEASE");
                 break;
             case XCB_MOTION_NOTIFY:
                 Events::eventMotionNotify(ev);
@@ -314,31 +316,31 @@ void CWindowManager::recieveEvent() {
                 break;
             case XCB_EXPOSE:
                 Events::eventExpose(ev);
-                Debug::log(LOG, "Event dispatched EXPOSE");
+                Debug::log(LOG, id + ": Event dispatched EXPOSE");
                 break;
             case XCB_KEY_PRESS:
                 Events::eventKeyPress(ev);
-                Debug::log(LOG, "Event dispatched KEY_PRESS");
+                Debug::log(LOG, id + ": Event dispatched KEY_PRESS");
                 break;
             case XCB_CLIENT_MESSAGE:
                 Events::eventClientMessage(ev);
-                Debug::log(LOG, "Event dispatched CLIENT_MESSAGE");
+                Debug::log(LOG, id + ": Event dispatched CLIENT_MESSAGE");
                 break;
             case XCB_CONFIGURE_REQUEST:
                 Events::eventConfigure(ev);
-                Debug::log(LOG, "Event dispatched CONFIGURE");
+                Debug::log(LOG, id + ": Event dispatched CONFIGURE");
                 break;
 
             default:
 
                 if ((EVENTCODE != 14) && (EVENTCODE != 13) && (EVENTCODE != 0) && (EVENTCODE != 22) && (TYPE - RandREventBase != XCB_RANDR_SCREEN_CHANGE_NOTIFY))
-                    Debug::log(WARN, "Unknown event: " + std::to_string(ev->response_type & ~0x80));
+                    Debug::log(WARN, id + ": Unknown event: " +  eventCodeToString(ev->response_type));
                 break;
         }
 
         if ((int)TYPE - RandREventBase == XCB_RANDR_SCREEN_CHANGE_NOTIFY && RandREventBase > 0) {
             Events::eventRandRScreenChange(ev);
-            Debug::log(LOG, "Event dispatched RANDR_SCREEN_CHANGE");
+            Debug::log(LOG, id + ": Event dispatched RANDR_SCREEN_CHANGE");
         }
 
         free(ev);
@@ -361,7 +363,8 @@ void CWindowManager::processBarHiding() {
 
         if (WORK->getHasFullscreenWindow() && !w.getDockHidden()) {
             const auto COOKIE = xcb_unmap_window(DisplayConnection, w.getDrawable());
-            Events::ignoredEvents.push_back(COOKIE.sequence);
+            auto event = std::make_tuple(COOKIE.sequence, 0);
+            Events::ignoredEvents.push_back(event);
             w.setDockHidden(true);
         }
             
@@ -480,7 +483,8 @@ void CWindowManager::refreshDirtyWindows() {
                     const auto COOKIE = xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, Values);
                     window.setLastUpdatePosition(Vector2D(Values[0], Values[1]));
 
-                    Events::ignoredEvents.push_back(COOKIE.sequence);
+                    auto event = std::make_tuple(COOKIE.sequence, 0);
+                    Events::ignoredEvents.push_back(event);
                 }
             } else {
                 // Update the position because the border makes the window jump
@@ -491,7 +495,8 @@ void CWindowManager::refreshDirtyWindows() {
                     const auto COOKIE = xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, Values);
                     window.setLastUpdatePosition(Vector2D(Values[0], Values[1]));
 
-                    Events::ignoredEvents.push_back(COOKIE.sequence);
+                    auto event = std::make_tuple(COOKIE.sequence, 0);
+                    Events::ignoredEvents.push_back(event);
                 }
 
                 Values[0] = (int)ConfigManager::getInt("border_size");
@@ -509,7 +514,8 @@ void CWindowManager::refreshDirtyWindows() {
                     const auto COOKIE = xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, Values);
                     window.setLastUpdateSize(Vector2D(Values[0], Values[1]));
 
-                    Events::ignoredEvents.push_back(COOKIE.sequence);
+                    auto event = std::make_tuple(COOKIE.sequence, 0);
+                    Events::ignoredEvents.push_back(event);
                 }
                 window.setFirstAnimFrame(true);
             }
@@ -524,7 +530,8 @@ void CWindowManager::refreshDirtyWindows() {
                         const auto COOKIE = xcb_configure_window(DisplayConnection, window.getDrawable(), XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, Values);
                         window.setLastUpdateSize(Vector2D(Values[0], Values[1]));
 
-                        Events::ignoredEvents.push_back(COOKIE.sequence);
+                        auto event = std::make_tuple(COOKIE.sequence, 0);
+                        Events::ignoredEvents.push_back(event);
                     }
                 }
             }
@@ -2086,7 +2093,8 @@ void CWindowManager::setAllFloatingWindowsTop() {
 void CWindowManager::setAWindowTop(xcb_window_t window) {
     Values[0] = XCB_STACK_MODE_ABOVE;
     const auto COOKIE = xcb_configure_window(g_pWindowManager->DisplayConnection, window, XCB_CONFIG_WINDOW_STACK_MODE, Values);
-    Events::ignoredEvents.push_back(COOKIE.sequence);
+    auto event = std::make_tuple(COOKIE.sequence, 0);
+    Events::ignoredEvents.push_back(event);
 
     // set the bar topper jic
     Values[0] = XCB_STACK_MODE_ABOVE;

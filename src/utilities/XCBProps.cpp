@@ -126,3 +126,78 @@ uint8_t getWindowState(const int& win) {
     }
     return returns;
 }
+
+std::string eventCodeToString(const uint8_t& code) {
+    switch (code) {
+        case XCB_KEY_PRESS:
+            return "XCB_KEY_PRESS";
+        case XCB_KEY_RELEASE:
+            return "XCB_KEY_RELEASE";
+        case XCB_BUTTON_PRESS:
+            return "XCB_BUTTON_PRESS";
+        case XCB_BUTTON_RELEASE:
+            return "XCB_BUTTON_RELEASE";
+        case XCB_MOTION_NOTIFY:
+            return "XCB_MOTION_NOTIFY";
+        case XCB_ENTER_NOTIFY:
+            return "XCB_ENTER_NOTIFY";
+        case XCB_LEAVE_NOTIFY:
+            return "XCB_LEAVE_NOTIFY";
+        case XCB_FOCUS_IN:
+            return "XCB_FOCUS_IN";
+        case XCB_FOCUS_OUT:
+            return "XCB_FOCUS_OUT";
+        case XCB_KEYMAP_NOTIFY:
+            return "XCB_KEYMAP_NOTIFY";
+        case XCB_EXPOSE:
+            return "XCB_EXPOSE";
+        case XCB_GRAPHICS_EXPOSURE:
+            return "XCB_GRAPHICS_EXPOSURE";
+        case XCB_NO_EXPOSURE:
+            return "XCB_NO_EXPOSURE";
+        case XCB_VISIBILITY_NOTIFY:
+            return "XCB_VISIBILITY_NOTIFY";
+        case XCB_CREATE_NOTIFY:
+            return "XCB_CREATE_NOTIFY";
+        case XCB_DESTROY_NOTIFY:
+            return "XCB_DESTROY_NOTIFY";
+        case XCB_UNMAP_NOTIFY:
+            return "XCB_UNMAP_NOTIFY";
+        case XCB_MAP_NOTIFY:
+            return "XCB_MAP_NOTIFY";
+        case XCB_MAP_REQUEST:
+            return "XCB_MAP_REQUEST";
+        case XCB_REPARENT_NOTIFY:
+            return "XCB_REPARENT_NOTIFY";
+        case XCB_CONFIGURE_NOTIFY:
+            return "XCB_CONFIGURE_NOTIFY";
+        case XCB_CONFIGURE_REQUEST:
+            return "XCB_CONFIGURE_REQUEST";
+        case XCB_GRAVITY_NOTIFY:
+            return "XCB_GRAVITY_NOTIFY";
+        case XCB_RESIZE_REQUEST:
+            return "XCB_RESIZE_REQUEST";
+        case XCB_CIRCULATE_NOTIFY:
+            return "XCB_CIRCULATE_NOTIFY";
+        case XCB_CIRCULATE_REQUEST:
+            return "XCB_CIRCULATE_REQUEST";
+        case XCB_PROPERTY_NOTIFY:
+            return "XCB_PROPERTY_NOTIFY";
+        case XCB_SELECTION_CLEAR:
+            return "XCB_SELECTION_CLEAR";
+        case XCB_SELECTION_REQUEST:
+            return "XCB_SELECTION_REQUEST";
+        case XCB_SELECTION_NOTIFY:
+            return "XCB_SELECTION_NOTIFY";
+        case XCB_COLORMAP_NOTIFY:
+            return "XCB_COLORMAP_NOTIFY";
+        case XCB_CLIENT_MESSAGE:
+            return "XCB_CLIENT_MESSAGE";
+        case XCB_MAPPING_NOTIFY:
+            return "XCB_MAPPING_NOTIFY";
+        case XCB_GE_GENERIC:
+            return "XCB_GE_GENERIC";
+        default:
+            return "UNKNOWN_EVENT";
+    }
+}

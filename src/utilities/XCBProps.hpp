@@ -10,3 +10,5 @@ std::string getWindowName(uint64_t window);
 uint8_t getWindowState(const int& win);
 
 void removeAtom(const int& window, xcb_atom_t prop, xcb_atom_t atom);
+
+std::string eventCodeToString(const uint8_t& code);

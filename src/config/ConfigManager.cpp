@@ -416,6 +416,7 @@ void ConfigManager::loadConfigLoadVars() {
 
     // Reload the bar as well, don't load it before the default is loaded.
     if (loadBar && g_pWindowManager->statusBar && (configValues["bar:enabled"].intValue == 1 || parseError != "")) {
+        Debug::log(WARN, "Destroying bar because reloading! Bar window id " + std::to_string(g_pWindowManager->statusBar->getWindowID()));
         g_pWindowManager->statusBar->destroy();
 
         // make the bar height visible

@@ -80,7 +80,7 @@ public:
 
     void                        setupManager();
     bool                        handleEvent();
-    void                        recieveEvent();
+    void                        receiveEvent(const std::string& id);
     void                        refreshDirtyWindows();
 
     void                        setFocusedWindow(xcb_drawable_t);
