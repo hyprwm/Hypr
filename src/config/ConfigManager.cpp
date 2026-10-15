@@ -81,9 +81,9 @@ void configSetValueSafe(const std::string& COMMAND, const std::string& VALUE) {
             if (VALUE.find("0x") == 0) {
                 // Values with 0x are hex
                 const auto VALUEWITHOUTHEX = VALUE.substr(2);
-                CONFIGENTRY.intValue = stol(VALUEWITHOUTHEX, nullptr, 16);
+                CONFIGENTRY.intValue = stoll(VALUEWITHOUTHEX, nullptr, 16);
             } else
-                CONFIGENTRY.intValue = stol(VALUE);
+                CONFIGENTRY.intValue = stoll(VALUE);
         } catch (...) {
             Debug::log(WARN, "Error reading value of " + COMMAND);
             ConfigManager::parseError = "Error setting value <" + VALUE + "> for field <" + COMMAND + ">.";
@@ -215,8 +215,8 @@ void parseModule(const std::string& COMMANDC, const std::string& VALUE) {
     else if (ALIGN == "center") module->alignment = CENTER;
 
     try {
-        module->color = stol(COL1.substr(2), nullptr, 16);
-        module->bgcolor = stol(COL2.substr(2), nullptr, 16);
+        module->color = stoll(COL1.substr(2), nullptr, 16);
+        module->bgcolor = stoll(COL2.substr(2), nullptr, 16);
     } catch (...) {
         Debug::log(ERR, "Module creation color error: invalid color");
         ConfigManager::parseError = "Module creation error in color: invalid color.";
